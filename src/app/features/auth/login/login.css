@@ -1,0 +1,412 @@
+/* VARIABLES GLOBALES LOGIN - PAISAJE AURORA */
+:root {
+  --bg-sky: #000000;
+  /* Fondo negro puro */
+  --bg-card: #f8fafc;
+  /* Blanco mate hiper-claro para accesibilidad */
+  --text-dark: #0f172a;
+  --text-muted: #748192;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --error: #ef4444;
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* LAYOUT PAISAJE */
+.landscape-login {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-sky);
+  font-family: var(--font-main);
+  overflow: hidden;
+  display: flex;
+  justify-content: flex-end;
+  /* Formulario a la derecha */
+  align-items: center;
+}
+
+/* --- CIELO Y AURORAS --- */
+.sky-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.aurora-glow {
+  position: absolute;
+  filter: blur(50px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* Aurora Base Verde (Esmeralda oscuro) */
+.glow-1 {
+  top: 15%;
+  left: -5%;
+  width: 75vw;
+  height: 30vh;
+  background: radial-gradient(ellipse at 50% 50%, rgba(16, 185, 129, 0.45) 0%, rgba(6, 182, 212, 0.2) 50%, transparent 70%);
+  transform: rotate(-10deg);
+  animation: aurora-wave 14s ease-in-out infinite alternate;
+}
+
+/* Aurora Alta Púrpura/Azul */
+.glow-2 {
+  top: 5%;
+  left: 20%;
+  width: 60vw;
+  height: 35vh;
+  background: radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.35) 0%, rgba(59, 130, 246, 0.15) 50%, transparent 70%);
+  transform: rotate(-15deg);
+  animation: aurora-wave 18s ease-in-out infinite alternate-reverse;
+}
+
+/* Aurora de Volumen (Verde Brillante) */
+.glow-3 {
+  top: 25%;
+  left: 35%;
+  width: 50vw;
+  height: 25vh;
+  background: radial-gradient(ellipse at 50% 50%, rgba(52, 211, 153, 0.35) 0%, transparent 70%);
+  transform: rotate(-5deg);
+  animation: aurora-wave 12s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-wave {
+  0% {
+    transform: rotate(-10deg) scaleY(1) translateX(0);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: rotate(-12deg) scaleY(1.3) translateX(3%);
+    opacity: 0.9;
+  }
+
+  100% {
+    transform: rotate(-8deg) scaleY(0.9) translateX(-3%);
+    opacity: 0.6;
+  }
+}
+
+/* Reacción al focus del formulario */
+.landscape-login.user-is-typing .aurora-glow {
+  filter: blur(45px);
+  opacity: 1;
+}
+
+/* --- MONTAÑAS --- */
+.mountain-range {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45vh;
+  /* Las montañas ocupan buena parte inferior */
+  z-index: 2;
+  pointer-events: none;
+}
+
+.mountain-range svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Elimina espacio en blanco debajo */
+}
+
+/* --- ISOTIPO MINIMALISTA --- */
+.bottom-left-logo {
+  position: absolute;
+  bottom: 3rem;
+  left: 4rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.3s ease;
+}
+
+.bottom-left-logo:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.logo-text {
+  font-weight: 600;
+  letter-spacing: 2px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+/* --- TARJETA FLOTANTE (DERECHA) --- */
+.floating-wrapper {
+  position: relative;
+  z-index: 10;
+  margin-right: 8vw;
+  /* Separación del borde derecho */
+}
+
+.login-card-square {
+  background: var(--bg-card);
+  width: 440px;
+  min-height: 440px;
+  /* Sensación cuadrada */
+  border-radius: 16px;
+  padding: 3.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  /* Sombra hiper profunda para despegarlo del paisaje */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.login-card-square.focused {
+  transform: translateY(-4px);
+  /* Sombra oscura profunda + Resplandor (backlight) azul brillante */
+  box-shadow:
+    0 30px 60px -10px rgba(0, 0, 0, 0.9),
+    0 0 50px -10px rgba(37, 99, 235, 0.35),
+    0 0 0 1px rgba(37, 99, 235, 0.2);
+}
+
+.login-header {
+  margin-bottom: 2.5rem;
+  text-align: left;
+}
+
+.login-header h2 {
+  color: #ffffff !important; /* Fuerza blanco puro ignorando variables */
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9); /* Sombra intensa para resaltar */
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin: 0 0 0.25rem 0;
+}
+
+.login-header p {
+  color: #e2e8f0 !important; /* Gris muy claro */
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* FORMULARIO ACCESIBLE */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.form-group label {
+  font-size: 0.95rem;
+  color: #ffffff !important; /* Blanco puro forzado */
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+  font-weight: 600;
+  /* Alta legibilidad */
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  color: #94a3b8;
+}
+
+.form-group input {
+  width: 100%;
+  background: #1e293b; /* Fondo oscuro (Slate 800) */
+  border: 2px solid #ffffff; /* Borde blanco puro */
+  color: #ffffff; /* Texto escrito en blanco */
+  padding: 1rem 1rem 1rem 3.2rem;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.form-group input:focus {
+  background: #0f172a; /* Ligeramente más oscuro al enfocar (Slate 900) */
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+.form-group input::placeholder {
+  color: #94a3b8;
+}
+
+.form-group.has-error input {
+  border-color: var(--error);
+}
+
+/* BOTÓN MASIVO */
+.btn-acceso {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 1.1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+}
+
+.btn-acceso:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.btn-acceso:disabled {
+  background: #cbd5e1;
+  color: #f8fafc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ERROR NEUTRO */
+.error-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #b91c1c;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: #fef2f2;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #ef4444;
+  animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+/* --- BLOCKING LOADER --- */
+.blocking-loader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.loader-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loader-title {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.loader-message {
+  color: #93c5fd;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-3px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(3px, 0, 0);
+  }
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .landscape-login {
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .floating-wrapper {
+    margin-right: 0;
+    width: 100%;
+  }
+
+  .login-card-square {
+    width: 100%;
+    min-height: auto;
+    padding: 2.5rem 2rem;
+  }
+
+  .bottom-left-logo {
+    display: none;
+    /* Ocultar en móvil para mantener limpio */
+  }
+}

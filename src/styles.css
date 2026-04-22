@@ -1,1 +1,34 @@
 /* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Paleta de Colores Principal */
+  --color-primary: hsl(220, 70%, 45%);
+  --color-primary-dark: hsl(220, 70%, 32%);
+  --color-surface: hsl(220, 15%, 97%);
+  --color-surface-card: hsl(0, 0%, 100%);
+  --font-main: 'Inter', sans-serif;
+  --text-main: hsl(220, 20%, 20%);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-main);
+  background-color: #0a0f1e; /* Fondo oscuro base para evitar destellos blancos */
+  color: var(--text-main);
+  /* Previene el scroll horizontal si algo se desborda */
+  overflow-x: hidden; 
+}
+
+app-root {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
