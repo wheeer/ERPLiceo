@@ -182,8 +182,9 @@
 }
 
 .login-header h2 {
-  color: #ffffff !important; /* Fuerza blanco puro ignorando variables */
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9); /* Sombra intensa para resaltar */
+  color: #ffffff !important;
+  /* Blanco puro forzado para destacar en el cielo */
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: -0.5px;
@@ -191,7 +192,7 @@
 }
 
 .login-header p {
-  color: #e2e8f0 !important; /* Gris muy claro */
+  color: #e2e8f0 !important;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
   font-size: 0.95rem;
   margin: 0;
@@ -212,10 +213,9 @@
 
 .form-group label {
   font-size: 0.95rem;
-  color: #ffffff !important; /* Blanco puro forzado */
+  color: #ffffff !important;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
   font-weight: 600;
-  /* Alta legibilidad */
 }
 
 .input-wrapper {
@@ -232,9 +232,12 @@
 
 .form-group input {
   width: 100%;
-  background: #1e293b; /* Fondo oscuro (Slate 800) */
-  border: 2px solid #ffffff; /* Borde blanco puro */
-  color: #ffffff; /* Texto escrito en blanco */
+  background: #1e293b;
+  /* Fondo oscuro (Slate 800) */
+  border: 2px solid #ffffff;
+  /* Borde blanco puro */
+  color: #ffffff;
+  /* Texto escrito en blanco */
   padding: 1rem 1rem 1rem 3.2rem;
   border-radius: 8px;
   font-size: 1.05rem;
@@ -243,7 +246,8 @@
 }
 
 .form-group input:focus {
-  background: #0f172a; /* Ligeramente más oscuro al enfocar (Slate 900) */
+  background: #0f172a;
+  /* Ligeramente más oscuro al enfocar (Slate 900) */
   border-color: var(--accent);
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
 }
@@ -407,6 +411,5 @@
 
   .bottom-left-logo {
     display: none;
-    /* Ocultar en móvil para mantener limpio */
   }
 }

@@ -1,34 +1,116 @@
-/* You can add global styles to this file, and also import other style files */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
+/* VARIABLES GLOBALES Y SISTEMA DE TEMAS */
 :root {
-  /* Paleta de Colores Principal */
-  --color-primary: hsl(220, 70%, 45%);
-  --color-primary-dark: hsl(220, 70%, 32%);
-  --color-surface: hsl(220, 15%, 97%);
-  --color-surface-card: hsl(0, 0%, 100%);
-  --font-main: 'Inter', sans-serif;
-  --text-main: hsl(220, 20%, 20%);
+  /* TEMA CLARO (Default) */
+  --bg-body: #f1f5f9;
+  --bg-surface-main: #ffffff;
+  --bg-header: rgba(255, 255, 255, 0.85);
+  --bg-sidebar: rgba(15, 23, 42, 0.9); /* Sidebar siempre oscuro para elegancia */
+  --bg-dropdown: #ffffff;
+  
+  --text-primary: #0f172a;
+  --text-muted: #64748b;
+  --text-dark: #0f172a;
+  
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --border-color: #e2e8f0;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
+/* TEMA OSCURO (Clase inyectada por ThemeService) */
+.dark-theme {
+  --bg-body: #020617;
+  --bg-surface-main: #0f172a;
+  --bg-header: rgba(15, 23, 42, 0.85);
+  --bg-sidebar: rgba(2, 6, 23, 0.95);
+  --bg-dropdown: #1e293b;
+  
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dark: #f8fafc;
+  
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* RESET Y BASE */
 * {
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
-html, body {
-  width: 100%;
-  height: 100%;
-  font-family: var(--font-main);
-  background-color: #0a0f1e; /* Fondo oscuro base para evitar destellos blancos */
-  color: var(--text-main);
-  /* Previene el scroll horizontal si algo se desborda */
-  overflow-x: hidden; 
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow: hidden;
 }
 
-app-root {
-  display: block;
+/* ESTILOS COMUNES PARA PÁGINAS DE MÓDULOS (SKELETONS) */
+.module-page {
   width: 100%;
   height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
+
+.module-hero {
+  max-width: 600px;
+  padding: 3rem;
+  background: var(--bg-surface-main);
+  border-radius: 24px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  animation: fade-in-up 0.5s ease-out;
+}
+
+.module-icon {
+  width: 80px;
+  height: 80px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--accent);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+}
+
+.module-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.module-subtitle {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.module-badge {
+  display: inline-block;
+  padding: 0.5rem 1.25rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 100px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* UTILIDADES */
+.text-accent { color: var(--accent); }
+.bg-glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }

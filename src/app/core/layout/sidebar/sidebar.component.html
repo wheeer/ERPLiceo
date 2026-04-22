@@ -1,0 +1,50 @@
+<nav class="erp-sidebar" [class.collapsed]="isCollapsed" aria-label="Navegación principal">
+  
+  <!-- LOGO SUPERIOR -->
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </div>
+    @if (!isCollapsed) {
+      <div class="brand-text">
+        <span class="brand-main">Liceos</span>
+        <span class="brand-sub">Sistema ERP</span>
+      </div>
+    }
+  </div>
+
+  <!-- SEPARADOR -->
+  <div class="sidebar-divider"></div>
+
+  <!-- NAVEGACIÓN PRINCIPAL -->
+  <ul class="nav-list" role="list">
+    @for (item of navItems; track item.ruta) {
+      <li class="nav-item">
+        <a
+          [routerLink]="item.ruta"
+          routerLinkActive="active"
+          class="nav-link"
+          [title]="isCollapsed ? item.label : ''"
+        >
+          <span class="nav-icon" [innerHTML]="item.icon"></span>
+          @if (!isCollapsed) {
+            <span class="nav-label">{{ item.label }}</span>
+          }
+          <span class="nav-active-bar"></span>
+        </a>
+      </li>
+    }
+  </ul>
+
+  <!-- PARTE INFERIOR: Versión -->
+  <div class="sidebar-footer">
+    @if (!isCollapsed) {
+      <span class="sidebar-version">v1.0.0-MVP</span>
+    }
+    <div class="sidebar-footer-dot"></div>
+  </div>
+
+</nav>

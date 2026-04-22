@@ -1,6 +1,7 @@
 import { Component, OnDestroy } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
 
 @Component({
@@ -28,7 +29,7 @@ export class Login implements OnDestroy {
   loadingMessage = '';
   private loaderSubscription?: Subscription;
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private router: Router) {
     // Formularios Reactivos para limpieza y validación robusta
     this.loginForm = this.fb.group({
       rut: ['', [Validators.required, Validators.minLength(4)]],
@@ -78,11 +79,13 @@ export class Login implements OnDestroy {
       
       this.cargando = false;
       
-      // Mensaje neutro, nunca revelar si el usuario existe o la clave está mal específicamente
-      this.error = 'Credenciales inválidas. Acceso denegado.';
-      
-      // Limpiar solo la contraseña por seguridad
-      this.loginForm.controls['password'].reset();
+      // Simulación: redirigir si el RUT no es "error" (para pruebas)
+      if (this.loginForm.value.rut !== 'error') {
+        this.router.navigate(['/app/dashboard']);
+      } else {
+        this.error = 'Credenciales inválidas. Acceso denegado.';
+        this.loginForm.controls['password'].reset();
+      }
     }, 3500); 
   }
 }

@@ -1,0 +1,95 @@
+:host {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-body, #0a0a0c); /* Color base, se pisará con styles.css */
+}
+
+/* Arquitectura Grid Principal */
+.app-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  width: 100%;
+  height: 100%;
+  transition: grid-template-columns 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Estado Colapsado (Solo Iconos) */
+.app-layout.sidebar-collapsed {
+  grid-template-columns: 80px 1fr;
+}
+
+.layout-sidebar {
+  /* El glassmorphism se define dentro del componente sidebar, aquí solo aseguramos el layout */
+  z-index: 30;
+  box-shadow: 1px 0 10px rgba(0,0,0,0.1);
+}
+
+.layout-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.layout-header {
+  height: 70px;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.layout-router-area {
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2rem;
+  /* Área de trabajo limpia para enfoque en los datos */
+  background-color: var(--bg-surface-main, #f8fafc);
+  /* Un pequeño borde redondeado arriba a la izquierda para separar visualmente */
+  border-top-left-radius: 1.5rem;
+  box-shadow: inset 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.layout-footer {
+  height: 45px;
+  flex-shrink: 0;
+  background-color: var(--bg-surface-main, #f8fafc);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+/* Barra de Carga Superior (Feedback Psicológico) */
+.top-loading-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--accent, #3b82f6);
+  z-index: 9999;
+  width: 0%;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px var(--accent, #3b82f6);
+}
+
+/* RESPONSIVE: Tablets y Celulares */
+@media (max-width: 1024px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .layout-sidebar {
+    position: fixed;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  /* En móvil, "colapsado" significa oculto. "No colapsado" significa visible encima de todo */
+  .app-layout:not(.sidebar-collapsed) .layout-sidebar {
+    transform: translateX(0);
+  }
+
+  .layout-router-area {
+    border-radius: 0; /* Sin bordes redondeados en móvil */
+    padding: 1rem;
+  }
+}
