@@ -1,91 +1,118 @@
-import { Component, OnDestroy } from '@angular/core';
-import { NgIf, NgFor } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Component, OnDestroy, inject } from '@angular/core';
+import { NgIf, NgFor, CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [NgIf, NgFor, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './login.html',
   styleUrls: ['./login.css']
 })
 export class Login implements OnDestroy {
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private authService = inject(AuthService);
+
   loginForm: FormGroup;
   
   // Estado del UI
   cargando = false;
+  mostrarFormulario = true; // Control para evitar el flash (Corrección #1)
   error = '';
   isFocused = false;
+  showPassword = false;
 
-  // Blocking Loader (Mensajes de carga seguros - Heurística de Visibilidad)
+  // Loader (Heurística H1)
   private readonly loaderMessages = [
-    "Estableciendo canal seguro...",
-    "Validando credenciales...",
-    "Generando token de sesión...",
-    "Preparando entorno..."
+    "Sincronizando con el servidor central...",
+    "Verificando permisos institucionales...",
+    "Validando identidad...",
+    "Preparando su espacio de trabajo..."
   ];
-  loadingMessage = '';
+  loadingMessage = this.loaderMessages[0]; // Inicializado para evitar parpadeo (Corrección #5)
   private loaderSubscription?: Subscription;
 
-  constructor(private fb: FormBuilder, private router: Router) {
-    // Formularios Reactivos para limpieza y validación robusta
+  constructor() {
     this.loginForm = this.fb.group({
-      rut: ['', [Validators.required, Validators.minLength(4)]],
+      rut: ['', [Validators.required, this.validarRutChileno]], // Validador real (Corrección #6)
       password: ['', [Validators.required]]
     });
   }
 
-  ngOnDestroy() {
-    if (this.loaderSubscription) this.loaderSubscription.unsubscribe();
+  // Algoritmo de Módulo 11 para RUT Chileno (Corrección #6)
+  private validarRutChileno(control: AbstractControl): ValidationErrors | null {
+    const value = control.value?.replace(/\./g, '').replace(/-/g, '').toUpperCase();
+    if (!value || value.length < 8) return { rutInvalido: true };
+
+    const cuerpo = value.slice(0, -1);
+    const dv = value.slice(-1);
+
+    if (!/^\d+$/.test(cuerpo)) return { rutInvalido: true };
+
+    let suma = 0;
+    let multiplo = 2;
+
+    for (let i = cuerpo.length - 1; i >= 0; i--) {
+      suma += multiplo * parseInt(cuerpo.charAt(i));
+      multiplo = multiplo < 7 ? multiplo + 1 : 2;
+    }
+
+    const dvEsperado = 11 - (suma % 11);
+    let dvFinal = dvEsperado === 11 ? '0' : dvEsperado === 10 ? 'K' : dvEsperado.toString();
+
+    return dv === dvFinal ? null : { rutInvalido: true };
   }
 
-  /**
-   * Evento que detona la micro-interacción visual al enfocar inputs
-   * Ayuda a la accesibilidad destacando la columna activa.
-   */
-  setFocus(state: boolean) {
-    this.isFocused = state;
+  togglePassword() {
+    this.showPassword = !this.showPassword;
   }
 
-  /**
-   * Manejo seguro del login, incluyendo timing attack prevention (simulado)
-   */
   iniciarSesion(event?: Event) {
     if (event) event.preventDefault();
-    if (this.loginForm.invalid) {
-      // Forzar que se muestren los errores si intentan enviar vacío
+    
+    // Evitar múltiples envíos (Corrección #8)
+    if (this.cargando || this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
 
     this.error = '';
     this.cargando = true;
-    this.loadingMessage = this.loaderMessages[0];
+    
+    // Iniciamos la transición suave
+    setTimeout(() => {
+        this.mostrarFormulario = false;
+    }, 100);
 
-    // Rotación de mensajes en el Blocking Loader
-    let msgIndex = 1;
-    this.loaderSubscription = interval(800).subscribe(() => {
-      if (msgIndex < this.loaderMessages.length) {
-        this.loadingMessage = this.loaderMessages[msgIndex];
-        msgIndex++;
-      }
+    // Ciclo de mensajes (Honestos con el proceso de simulación)
+    this.loaderSubscription = interval(1000).subscribe(val => {
+      this.loadingMessage = this.loaderMessages[(val + 1) % this.loaderMessages.length];
     });
 
-    // Simular tiempo de respuesta uniforme para evitar ataques de timing (Heurística de seguridad)
+    // Simulación de latencia de red
     setTimeout(() => {
-      if (this.loaderSubscription) this.loaderSubscription.unsubscribe();
-      
+      this.loaderSubscription?.unsubscribe();
       this.cargando = false;
       
-      // Simulación: redirigir si el RUT no es "error" (para pruebas)
-      if (this.loginForm.value.rut !== 'error') {
+      const rutValue = this.loginForm.value.rut;
+
+      // Usamos el AuthService real (Corrección #10)
+      if (rutValue !== '0-0') { // Simulamos que todos los RUT válidos entran excepto este de prueba
+        this.authService.login(rutValue);
         this.router.navigate(['/app/dashboard']);
       } else {
-        this.error = 'Credenciales inválidas. Acceso denegado.';
-        this.loginForm.controls['password'].reset();
+        this.error = 'Credenciales no reconocidas en la base de datos institucional.';
+        this.mostrarFormulario = true;
+        this.loginForm.controls['password'].reset(); // Reset silencioso pero con feedback de error (Corrección #9)
       }
     }, 3500); 
+  }
+
+  ngOnDestroy() {
+    this.loaderSubscription?.unsubscribe();
   }
 }

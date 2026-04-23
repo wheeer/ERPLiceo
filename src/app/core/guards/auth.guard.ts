@@ -1,17 +1,15 @@
 import { inject } from '@angular/core';
 import { Router, type CanActivateFn } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
 export const authGuard: CanActivateFn = (route, state) => {
+  const authService = inject(AuthService);
   const router = inject(Router);
   
-  // Lógica mockeada temporalmente para el MVP.
-  // Más adelante verificaremos un token JWT real.
-  const isAuthenticated = true; // Cambiar a false para probar el rechazo
-
-  if (isAuthenticated) {
+  if (authService.isAuthenticated) {
     return true;
   } else {
-    // Si no está autenticado, lo devolvemos al login de inmediato
+    // Si no hay sesión real, bloqueamos el acceso (Corrección #7 de auditoría)
     return router.createUrlTree(['/login']);
   }
 };

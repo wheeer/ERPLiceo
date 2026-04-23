@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-header',
@@ -13,12 +14,13 @@ export class HeaderComponent {
   @Output() toggleSidebarEvent = new EventEmitter<void>();
 
   themeService = inject(ThemeService);
+  private authService = inject(AuthService);
 
-  // Datos del usuario simulados (MVP - después vendrán del AuthService)
+  // Datos del usuario (Cargados desde localStorage o AuthService)
   usuario = {
-    nombre: 'Nombre Apellido',
+    nombre: localStorage.getItem('user_name') || 'Usuario Demo',
     rol: 'Administrativo',
-    iniciales: 'NA'
+    iniciales: 'UD'
   };
 
   notificaciones = [
@@ -45,7 +47,6 @@ export class HeaderComponent {
   }
 
   cerrarSesion() {
-    // MVP: redirigir al login (AuthService real aquí en el futuro)
-    window.location.href = '/login';
+    this.authService.logout();
   }
 }

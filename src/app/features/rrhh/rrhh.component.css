@@ -1,0 +1,291 @@
+/* ============================================================
+   TAREA 2.2: RRHH — Tabla de Empleados Mock
+   Gestión de personal con 5 registros de empleados
+   ============================================================ */
+
+.rrhh-container {
+  width: 100%;
+  height: 100%;
+  padding: 2rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+  background: var(--bg-body);
+}
+
+/* HEADER */
+.rrhh-header {
+  text-align: left;
+}
+
+.rrhh-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+.rrhh-subtitle {
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* TABLE WRAPPER */
+.table-wrapper {
+  background: var(--bg-surface-main);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* TABLA */
+.employees-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+/* ENCABEZADOS */
+.employees-table thead {
+  background: linear-gradient(
+    135deg,
+    rgba(37, 99, 235, 0.05) 0%,
+    rgba(37, 99, 235, 0.02) 100%
+  );
+  border-bottom: 2px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.employees-table thead th {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+/* FILAS */
+.employees-table tbody tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.employees-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.employees-table tbody tr:hover {
+  background: rgba(37, 99, 235, 0.03);
+}
+
+/* CELDAS */
+.employees-table tbody td {
+  padding: 1rem 1.25rem;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+/* ESPECÍFICOS POR COLUMNA */
+.cell-rut {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.cell-nombre {
+  font-weight: 600;
+}
+
+.cell-correo {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  word-break: break-word;
+}
+
+.cell-cargo {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  max-width: 250px;
+}
+
+.cell-fecha {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* INFORMACIÓN DEL EMPLEADO */
+.employee-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.employee-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.employee-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* STATUS BADGES */
+.status-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.status-active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.status-inactive {
+  background: rgba(107, 114, 128, 0.15);
+  color: #6b7280;
+}
+
+.status-leave {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+/* TABLE FOOTER */
+.table-footer {
+  padding: 1rem 1.25rem;
+  background: rgba(37, 99, 235, 0.02);
+  border-top: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ============================================================
+   RESPONSIVE — TABLET Y MOBILE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .rrhh-container {
+    padding: 1.5rem 1rem;
+    gap: 1.25rem;
+  }
+  
+  .rrhh-title {
+    font-size: 1.8rem;
+  }
+  
+  .rrhh-subtitle {
+    font-size: 0.95rem;
+  }
+  
+  .employees-table {
+    font-size: 0.8rem;
+  }
+  
+  .employees-table thead th,
+  .employees-table tbody td {
+    padding: 0.75rem 0.85rem;
+  }
+  
+  .cell-cargo,
+  .cell-correo {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .employee-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .rrhh-container {
+    padding: 1rem 0.75rem;
+    gap: 1rem;
+  }
+  
+  .rrhh-title {
+    font-size: 1.5rem;
+  }
+  
+  .rrhh-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .table-wrapper {
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+  
+  .employees-table {
+    font-size: 0.7rem;
+    min-width: 100%;
+  }
+  
+  .employees-table thead th {
+    padding: 0.6rem 0.5rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.2px;
+  }
+  
+  .employees-table tbody td {
+    padding: 0.6rem 0.5rem;
+  }
+  
+  .cell-correo,
+  .cell-cargo {
+    display: none;
+  }
+  
+  .employee-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+  
+  .status-badge {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.65rem;
+  }
+  
+  .table-footer {
+    padding: 0.75rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}

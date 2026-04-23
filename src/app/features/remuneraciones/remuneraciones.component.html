@@ -1,10 +1,52 @@
-<div class="module-page">
-  <div class="module-hero">
-    <div class="module-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-    </div>
-    <h1 class="module-title">Remuneraciones</h1>
-    <p class="module-subtitle">Liquidaciones de sueldo, pagos y gestión financiera del personal.</p>
-    <span class="module-badge">Próximamente</span>
+<div class="remuneraciones-container">
+  <!-- HEADER -->
+  <div class="remuneraciones-header">
+    <h1 class="remuneraciones-title">Remuneraciones</h1>
+    <p class="remuneraciones-subtitle">Nómina y liquidaciones de sueldo — Abril 2026</p>
+  </div>
+
+  <!-- TABLA DE NÓMINA -->
+  <div class="table-wrapper">
+    <table class="payroll-table">
+      <thead>
+        <tr>
+          <th>RUT</th>
+          <th>Nombre</th>
+          <th>Cargo</th>
+          <th class="amount">Sueldo Base</th>
+          <th class="amount">AFP</th>
+          <th class="amount">Descuentos</th>
+          <th class="amount total">Neto</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (payroll of payrollData; track payroll.id) {
+          <tr>
+            <td class="cell-rut">{{ payroll.rut }}</td>
+            <td class="cell-nombre">{{ payroll.nombre }}</td>
+            <td class="cell-cargo">{{ payroll.cargo }}</td>
+            <td class="cell-amount">{{ formatCurrency(payroll.sueldoBase) }}</td>
+            <td class="cell-amount">{{ formatCurrency(payroll.afp) }}</td>
+            <td class="cell-amount">{{ formatCurrency(payroll.descuentos) }}</td>
+            <td class="cell-amount total-neto">{{ formatCurrency(payroll.neto) }}</td>
+          </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr class="totals-row">
+          <td colspan="3">TOTAL</td>
+          <td class="cell-amount">{{ formatCurrency(getTotalSueldo()) }}</td>
+          <td class="cell-amount">-</td>
+          <td class="cell-amount">-</td>
+          <td class="cell-amount total-neto">{{ formatCurrency(getTotalNeto()) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- INFO -->
+  <div class="remuneraciones-info">
+    <span class="info-badge">{{ payrollData.length }} empleados</span>
+    <span class="info-text">Período: {{ payrollData[0].periodo }}</span>
   </div>
 </div>

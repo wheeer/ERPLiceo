@@ -1,10 +1,57 @@
-<div class="module-page">
-  <div class="module-hero">
-    <div class="module-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+<div class="inventario-container">
+  <!-- HEADER -->
+  <div class="inventario-header">
+    <h1 class="inventario-title">Inventario</h1>
+    <p class="inventario-subtitle">Control de stock y ubicaciones de equipos y accesorios</p>
+  </div>
+
+  <!-- TABLA DE INVENTARIO -->
+  <div class="table-wrapper">
+    <table class="inventory-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          <th>Categoría</th>
+          <th class="amount">Stock</th>
+          <th>Ubicación</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of inventoryItems; track item.id) {
+          <tr>
+            <td class="cell-codigo">
+              <span class="codigo-badge">{{ item.codigo }}</span>
+            </td>
+            <td class="cell-producto">{{ item.producto }}</td>
+            <td class="cell-categoria">
+              <span class="category-tag">{{ item.categoria }}</span>
+            </td>
+            <td class="cell-stock" [class]="item.stock === 0 ? 'zero-stock' : ''">
+              {{ item.stock }}
+            </td>
+            <td class="cell-ubicacion">{{ item.ubicacion }}</td>
+            <td class="cell-estado">
+              <span class="status-badge" [class]="getStatusColor(item.estado)">
+                {{ getStatusLabel(item.estado) }}
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER CON ESTADÍSTICAS -->
+  <div class="inventario-footer">
+    <div class="stat">
+      <span class="stat-label">Total de artículos:</span>
+      <span class="stat-value">{{ getItemsCount() }}</span>
     </div>
-    <h1 class="module-title">Inventario</h1>
-    <p class="module-subtitle">Gestión de insumos, stock crítico y bodega del Liceo EMTP.</p>
-    <span class="module-badge">Próximamente</span>
+    <div class="stat">
+      <span class="stat-label">Unidades en stock:</span>
+      <span class="stat-value">{{ getTotalItems() }}</span>
+    </div>
   </div>
 </div>

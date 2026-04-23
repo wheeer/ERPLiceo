@@ -1,10 +1,52 @@
-<div class="module-page">
-  <div class="module-hero">
-    <div class="module-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-    </div>
-    <h1 class="module-title">Dashboard</h1>
-    <p class="module-subtitle">Panel de control y resumen gerencial del sistema ERP EMTP.</p>
-    <span class="module-badge">Próximamente</span>
+<div class="dashboard-container">
+  <!-- HEADER -->
+  <div class="dashboard-header">
+    <h1 class="dashboard-title">Actividad Reciente</h1>
+    <p class="dashboard-subtitle">Timeline de cambios y operaciones en el sistema</p>
+  </div>
+
+  <!-- TIMELINE DE ACTIVIDADES -->
+  <div class="activity-timeline">
+    @for (activity of activities; track activity.id; let last = $last) {
+      <div class="timeline-item" [class]="'timeline-item--' + activity.module">
+        
+        <!-- CONECTOR (Línea vertical) -->
+        <div class="timeline-connector" [class.is-last]="last"></div>
+        
+        <!-- INDICADOR (Punto con icono) -->
+        <div class="timeline-indicator" [class]="'timeline-indicator--' + activity.type">
+          @switch (activity.type) {
+            @case ('create') {
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            }
+            @case ('update') {
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            }
+            @case ('delete') {
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            }
+            @case ('login') {
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            }
+            @case ('export') {
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            }
+          }
+        </div>
+        
+        <!-- CONTENIDO -->
+        <div class="timeline-content">
+          <div class="activity-header">
+            <h3 class="activity-title">{{ activity.action }}</h3>
+            <span class="activity-time">{{ formatTime(activity.timestamp) }}</span>
+          </div>
+          <p class="activity-description">{{ activity.description }}</p>
+          <div class="activity-footer">
+            <span class="activity-user">{{ activity.user }}</span>
+            <span class="activity-module" [class]="'badge--' + activity.module">{{ activity.module }}</span>
+          </div>
+        </div>
+      </div>
+    }
   </div>
 </div>

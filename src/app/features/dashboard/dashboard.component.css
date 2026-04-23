@@ -1,0 +1,328 @@
+/* ============================================================
+   TAREA 2.1: DASHBOARD — Timeline de Actividades
+   Log de auditoría con timeline visual de cambios en el sistema
+   ============================================================ */
+
+.dashboard-container {
+  width: 100%;
+  height: 100%;
+  padding: 2rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  overflow-y: auto;
+  background: var(--bg-body);
+}
+
+/* HEADER */
+.dashboard-header {
+  text-align: left;
+}
+
+.dashboard-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+.dashboard-subtitle {
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* TIMELINE */
+.activity-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ITEM DEL TIMELINE */
+.timeline-item {
+  position: relative;
+  padding-left: 60px;
+  padding-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+/* CONECTOR (Línea vertical) */
+.timeline-connector {
+  position: absolute;
+  left: 20px;
+  top: 40px;
+  width: 2px;
+  background: var(--border-color);
+  flex: 1;
+}
+
+.timeline-connector.is-last {
+  height: 0;
+}
+
+/* INDICADOR (Punto) */
+.timeline-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-surface-main);
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+/* Variantes de indicador por tipo de actividad */
+.timeline-indicator--create {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.timeline-indicator--update {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.timeline-indicator--delete {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.timeline-indicator--login {
+  background: rgba(168, 85, 247, 0.1);
+  border-color: #a855f7;
+  color: #a855f7;
+}
+
+.timeline-indicator--export {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.timeline-indicator svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* CONTENIDO DEL TIMELINE */
+.timeline-content {
+  background: var(--bg-surface-main);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.timeline-item:hover .timeline-content {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm), 0 0 0 3px rgba(37, 99, 235, 0.05);
+}
+
+.timeline-item:hover .timeline-indicator {
+  transform: scale(1.15);
+}
+
+/* HEADER DE ACTIVIDAD */
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.activity-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.activity-time {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* DESCRIPCIÓN */
+.activity-description {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0 0 0.75rem 0;
+  line-height: 1.5;
+}
+
+/* FOOTER DE ACTIVIDAD */
+.activity-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.activity-user {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* BADGES DE MÓDULO */
+.activity-module {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.badge--rrhh {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.badge--remuneraciones {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.badge--inventario {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.badge--auth {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+/* ============================================================
+   RESPONSIVE — TABLET Y MOBILE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1.5rem 1rem;
+    gap: 1.5rem;
+  }
+  
+  .dashboard-title {
+    font-size: 1.8rem;
+  }
+  
+  .dashboard-subtitle {
+    font-size: 0.95rem;
+  }
+  
+  .timeline-item {
+    padding-left: 50px;
+    padding-bottom: 1.5rem;
+  }
+  
+  .timeline-connector {
+    left: 17px;
+  }
+  
+  .timeline-indicator {
+    width: 34px;
+    height: 34px;
+    left: 2px;
+  }
+  
+  .timeline-content {
+    padding: 1rem;
+  }
+  
+  .activity-title {
+    font-size: 0.95rem;
+  }
+  
+  .activity-time {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-container {
+    padding: 1rem 0.75rem;
+    gap: 1rem;
+  }
+  
+  .dashboard-title {
+    font-size: 1.5rem;
+  }
+  
+  .dashboard-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .activity-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .activity-time {
+    font-size: 0.7rem;
+  }
+  
+  .timeline-item {
+    padding-left: 45px;
+    padding-bottom: 1.25rem;
+  }
+  
+  .timeline-connector {
+    left: 15px;
+  }
+  
+  .timeline-indicator {
+    width: 30px;
+    height: 30px;
+    left: 0;
+    font-size: 0.75rem;
+  }
+  
+  .timeline-content {
+    padding: 0.8rem;
+  }
+  
+  .activity-title {
+    font-size: 0.9rem;
+  }
+  
+  .activity-description {
+    font-size: 0.85rem;
+  }
+  
+  .activity-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .activity-user {
+    font-size: 0.75rem;
+  }
+}

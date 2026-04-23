@@ -1,10 +1,49 @@
-<div class="module-page">
-  <div class="module-hero">
-    <div class="module-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-    </div>
-    <h1 class="module-title">Recursos Humanos</h1>
-    <p class="module-subtitle">Gestión de personal, contratos y asistencia del Liceo EMTP.</p>
-    <span class="module-badge">Próximamente</span>
+<div class="rrhh-container">
+  <!-- HEADER -->
+  <div class="rrhh-header">
+    <h1 class="rrhh-title">Recursos Humanos</h1>
+    <p class="rrhh-subtitle">Gestión de personal y datos laborales</p>
+  </div>
+
+  <!-- TABLA DE EMPLEADOS -->
+  <div class="table-wrapper">
+    <table class="employees-table">
+      <thead>
+        <tr>
+          <th>RUT</th>
+          <th>Nombre</th>
+          <th>Correo</th>
+          <th>Cargo</th>
+          <th>Fecha Ingreso</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (employee of employees; track employee.id; let index = $index) {
+          <tr [class.table-row-hover]="true">
+            <td class="cell-rut">{{ employee.rut }}</td>
+            <td class="cell-nombre">
+              <div class="employee-info">
+                <span class="employee-avatar">{{ employee.nombre.charAt(0) }}</span>
+                <span class="employee-name">{{ employee.nombre }}</span>
+              </div>
+            </td>
+            <td class="cell-correo">{{ employee.correo }}</td>
+            <td class="cell-cargo">{{ employee.cargo }}</td>
+            <td class="cell-fecha">{{ formatDate(employee.fechaIngreso) }}</td>
+            <td class="cell-estado">
+              <span class="status-badge" [class]="getStatusColor(employee.estado)">
+                {{ getStatusLabel(employee.estado) }}
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER CON INFORMACIÓN -->
+  <div class="table-footer">
+    <span class="footer-info">Total de empleados: {{ employees.length }}</span>
   </div>
 </div>
