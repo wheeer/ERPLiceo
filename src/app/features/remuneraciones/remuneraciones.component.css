@@ -36,11 +36,11 @@
   background: var(--bg-surface-main);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: auto;
   box-shadow: var(--shadow-sm);
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
 }
 
 .payroll-table {
@@ -113,6 +113,32 @@
 .total-neto {
   color: var(--accent);
   font-weight: 700;
+}
+
+.center {
+  text-align: center !important;
+}
+
+.btn-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pdf:hover {
+  background: #ef4444;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
 }
 
 .payroll-table tfoot {

@@ -1,10 +1,22 @@
 <div class="rrhh-container">
   <!-- HEADER -->
-  <div class="rrhh-header">
-    <h1 class="rrhh-title">Recursos Humanos</h1>
-    <p class="rrhh-subtitle">Gestión de personal y datos laborales</p>
+  <div class="rrhh-header-row">
+    <div class="rrhh-header">
+      <h1 class="rrhh-title">Recursos Humanos</h1>
+      <p class="rrhh-subtitle">Gestión de personal y datos laborales</p>
+    </div>
+    
+    <div class="view-toggle">
+      <button class="toggle-btn" [class.active]="viewMode === 'table'" (click)="viewMode = 'table'">
+        Tabla Empleados
+      </button>
+      <button class="toggle-btn" [class.active]="viewMode === 'calendar'" (click)="viewMode = 'calendar'">
+        Asistencia Mensual
+      </button>
+    </div>
   </div>
 
+  @if (viewMode === 'table') {
   <!-- TABLA DE EMPLEADOS -->
   <div class="table-wrapper">
     <table class="employees-table">
@@ -46,4 +58,38 @@
   <div class="table-footer">
     <span class="footer-info">Total de empleados: {{ employees.length }}</span>
   </div>
+  } @else {
+  <!-- CALENDARIO DE ASISTENCIA (Mock) -->
+  <div class="calendar-wrapper">
+    <div class="calendar-top">
+      <h3 class="calendar-month">Abril 2026 - Registro de Asistencia General</h3>
+      <div class="calendar-legend">
+        <span class="legend-item"><span class="dot present"></span> Presente</span>
+        <span class="legend-item"><span class="dot absent"></span> Ausente</span>
+        <span class="legend-item"><span class="dot leave"></span> Licencia</span>
+      </div>
+    </div>
+    
+    <div class="calendar-grid">
+      <div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div><div class="cal-day-header">Mié</div>
+      <div class="cal-day-header">Jue</div><div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div><div class="cal-day-header">Dom</div>
+      
+      <!-- Offset para Abril 2026 (Empieza Miércoles = 2 espacios) -->
+      <div class="cal-day empty"></div>
+      <div class="cal-day empty"></div>
+      
+      @for (day of daysInMonth; track day) {
+        <div class="cal-day" [class]="'cal-status-' + getAttendanceStatus(day)">
+          <span class="day-number">{{ day }}</span>
+          @if (getAttendanceStatus(day) === 'absent') {
+            <span class="day-tag tag-absent">Falta</span>
+          }
+          @if (getAttendanceStatus(day) === 'leave') {
+            <span class="day-tag tag-leave">Licencia</span>
+          }
+        </div>
+      }
+    </div>
+  </div>
+  }
 </div>

@@ -20,6 +20,14 @@ interface ActivityLog {
 })
 export class DashboardComponent {
   
+  // Métricas MVP (Propuesta de valor)
+  metrics = [
+    { title: 'Personal Activo', value: '142', icon: 'users', color: 'blue', subtext: '+3 altas este mes' },
+    { title: 'Stock Crítico', value: '8', icon: 'alert', color: 'red', subtext: 'Insumos requieren atención' },
+    { title: 'Nómina Pendiente', value: '1', icon: 'file', color: 'emerald', subtext: 'Mes de Abril' },
+    { title: 'Alertas Sistema', value: '3', icon: 'bell', color: 'purple', subtext: 'Sin leer' }
+  ];
+
   // Mock: Actividades recientes del sistema
   activities: ActivityLog[] = [
     {

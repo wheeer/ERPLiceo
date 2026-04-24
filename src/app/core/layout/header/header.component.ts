@@ -1,7 +1,9 @@
-import { Component, EventEmitter, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Output, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
 import { AuthService } from '../../services/auth.service';
+import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
+import { filter, map, mergeMap, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-header',
@@ -10,11 +12,16 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit, OnDestroy {
   @Output() toggleSidebarEvent = new EventEmitter<void>();
 
   themeService = inject(ThemeService);
   private authService = inject(AuthService);
+  private router = inject(Router);
+  private activatedRoute = inject(ActivatedRoute);
+
+  pageTitle = 'Dashboard Principal';
+  private routerSub!: Subscription;
 
   // Datos del usuario (Cargados desde localStorage o AuthService)
   usuario = {
@@ -48,5 +55,24 @@ export class HeaderComponent {
 
   cerrarSesion() {
     this.authService.logout();
+  }
+
+  ngOnInit() {
+    this.routerSub = this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd),
+      map(() => this.activatedRoute),
+      map(route => {
+        while (route.firstChild) route = route.firstChild;
+        return route;
+      }),
+      filter(route => route.outlet === 'primary'),
+      mergeMap(route => route.data)
+    ).subscribe(data => {
+      this.pageTitle = data['title'] || 'ERP EMTP';
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.routerSub) this.routerSub.unsubscribe();
   }
 }

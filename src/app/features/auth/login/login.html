@@ -4,22 +4,29 @@
     <div class="aurora-container">
       <div class="aurora-glow aurora-1"></div>
       <div class="aurora-glow aurora-2"></div>
+      <div class="aurora-glow aurora-3"></div>
     </div>
   
     <!-- MONTAÑAS -->
     <div class="mountain-range">
-      <div class="mountain-peak peak-1"></div>
-      <div class="mountain-peak peak-2"></div>
-      <div class="mountain-peak peak-3"></div>
+      <!-- Fila 2 (Lejana) -->
+      <div class="mountain-peak row-2 peak-1"></div>
+      <div class="mountain-peak row-2 peak-2"></div>
+      <div class="mountain-peak row-2 peak-3"></div>
+      
+      <!-- Fila 1 (Cercana) -->
+      <div class="mountain-peak row-1 peak-4"></div>
+      <div class="mountain-peak row-1 peak-5"></div>
+      <div class="mountain-peak row-1 peak-6"></div>
     </div>
   
     <!-- CONTENEDOR PRINCIPAL -->
-    <div class="floating-wrapper" [class.fade-out]="cargando && !mostrarFormulario">
+    <div class="floating-wrapper">
       
       @if (mostrarFormulario) {
         <div class="login-header">
-          <h2>Acceso Centralizado</h2>
-          <p>Ingrese sus credenciales corporativas</p>
+          <h2>Acceso al Sistema</h2>
+          <p>Ingresa tus credenciales para continuar</p>
         </div>
     
         <form [formGroup]="loginForm" (ngSubmit)="iniciarSesion($event)" class="login-form">
@@ -79,7 +86,7 @@
     
           <!-- BOTÓN SUBMIT -->
           <button type="submit" class="btn-submit" [disabled]="loginForm.invalid || cargando">
-            <span>{{ cargando ? 'Verificando...' : 'Ingresar al Sistema' }}</span>
+            <span>Iniciar Sesión</span>
           </button>
         </form>
     
@@ -105,8 +112,15 @@
 
       @if (cargando && !mostrarFormulario) {
         <div class="blocking-loader">
-          <div class="spinner"></div>
-          <p class="loader-text">{{ loadingMessage }}</p>
+          <div class="spinner pulse"></div>
+          <div class="loader-message">
+            <p class="loader-text">{{ loadingMessage }}</p>
+            <div class="loader-progress">
+              <div class="loader-progress-dot active"></div>
+              <div class="loader-progress-dot"></div>
+              <div class="loader-progress-dot"></div>
+            </div>
+          </div>
         </div>
       }
     </div>

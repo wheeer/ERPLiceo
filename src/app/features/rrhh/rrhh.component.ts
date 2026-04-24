@@ -20,6 +20,24 @@ interface Employee {
 })
 export class RrhhComponent {
   
+  viewMode: 'table' | 'calendar' = 'table';
+  
+  // Para el mock de calendario (Mes actual - Abril 2026)
+  daysInMonth = Array.from({length: 30}, (_, i) => i + 1);
+  
+  getAttendanceStatus(day: number): 'present' | 'absent' | 'leave' | 'weekend' {
+    const weekends = [4, 5, 11, 12, 18, 19, 25, 26];
+    if (weekends.includes(day)) return 'weekend';
+    
+    const absences = [3, 14, 22];
+    if (absences.includes(day)) return 'absent';
+    
+    const leaves = [8, 9, 10];
+    if (leaves.includes(day)) return 'leave';
+    
+    return 'present';
+  }
+
   // Mock: Lista de 5 empleados
   employees: Employee[] = [
     {

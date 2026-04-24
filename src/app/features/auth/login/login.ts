@@ -1,4 +1,4 @@
-import { Component, OnDestroy, inject } from '@angular/core';
+import { Component, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { NgIf, NgFor, CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -16,6 +16,7 @@ export class Login implements OnDestroy {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private authService = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
 
   loginForm: FormGroup;
   
@@ -82,21 +83,20 @@ export class Login implements OnDestroy {
 
     this.error = '';
     this.cargando = true;
-    
-    // Iniciamos la transición suave
-    setTimeout(() => {
-        this.mostrarFormulario = false;
-    }, 100);
+    this.mostrarFormulario = false; // Cambio instantáneo para evitar confusión
+    this.cdr.detectChanges();
 
     // Ciclo de mensajes (Honestos con el proceso de simulación)
     this.loaderSubscription = interval(1000).subscribe(val => {
       this.loadingMessage = this.loaderMessages[(val + 1) % this.loaderMessages.length];
+      this.cdr.detectChanges();
     });
 
     // Simulación de latencia de red
     setTimeout(() => {
       this.loaderSubscription?.unsubscribe();
       this.cargando = false;
+      this.cdr.detectChanges();
       
       const rutValue = this.loginForm.value.rut;
 
@@ -108,6 +108,7 @@ export class Login implements OnDestroy {
         this.error = 'Credenciales no reconocidas en la base de datos institucional.';
         this.mostrarFormulario = true;
         this.loginForm.controls['password'].reset(); // Reset silencioso pero con feedback de error (Corrección #9)
+        this.cdr.detectChanges();
       }
     }, 3500); 
   }

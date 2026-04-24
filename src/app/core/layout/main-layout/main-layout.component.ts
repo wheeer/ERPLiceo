@@ -13,8 +13,19 @@ import { FooterComponent } from '../footer/footer.component';
 })
 export class MainLayoutComponent {
   isSidebarCollapsed = false;
+  isMobileSidebarOpen = false;
 
   toggleSidebar() {
-    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+    if (window.innerWidth <= 1024) {
+      // Mobile/Tablet: controla si el sidebar se muestra como overlay
+      this.isMobileSidebarOpen = !this.isMobileSidebarOpen;
+    } else {
+      // Desktop: colapsa/expande el sidebar (260px ↔ 80px)
+      this.isSidebarCollapsed = !this.isSidebarCollapsed;
+    }
+  }
+
+  closeMobileSidebar() {
+    this.isMobileSidebarOpen = false;
   }
 }

@@ -36,11 +36,11 @@
   background: var(--bg-surface-main);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: auto;
   box-shadow: var(--shadow-sm);
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
 }
 
 .inventory-table {
@@ -78,6 +78,16 @@
 
 .inventory-table tbody tr:hover {
   background: rgba(139,92,246,0.03);
+}
+
+/* ALERTAS VISUALES */
+.inventory-table tbody tr.alert-row {
+  background: rgba(239, 68, 68, 0.03);
+  border-left: 3px solid #ef4444;
+}
+
+.inventory-table tbody tr.alert-row:hover {
+  background: rgba(239, 68, 68, 0.06);
 }
 
 .inventory-table tbody td {
@@ -126,6 +136,26 @@
   font-weight: 700;
   color: var(--accent);
   font-size: 1rem;
+}
+
+.stock-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.stock-alert-icon {
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  animation: pulse-alert 2s infinite;
+}
+
+@keyframes pulse-alert {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 .cell-stock.zero-stock {

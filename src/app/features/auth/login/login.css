@@ -100,17 +100,17 @@
 
 :host {
   /* Fondos */
-  --bg-sky: #000000;
-  --bg-aurora-main: rgba(79, 70, 229, 0.4); /* Índigo para Aurora */
-  --bg-aurora-alt: rgba(16, 185, 129, 0.3); /* Esmeralda para Aurora */
+  --bg-sky: #07111e;
+  --bg-aurora-main: rgba(79, 70, 229, 0.4); /* Índigo */
+  --bg-aurora-alt: rgba(16, 185, 129, 0.3); /* Esmeralda */
   
   /* Acentos */
-  --accent: #3b82f6; /* Azul brillante (focus + hover) */
+  --accent: #00d9ff; /* Azul/Cian vibrante (focus + hover) */
   --error: #f87171; /* Rojo suave (errores) */
   
-  /* Tarjeta (Glass Morphism) */
-  --glass-bg: rgba(15, 23, 42, 0.65); /* Fondo semi-transparente */
-  --glass-border: rgba(255, 255, 255, 0.2); /* Borde sutil */
+  /* Tarjeta (Glass Morphism Matte) */
+  --glass-bg: rgba(15, 20, 35, 0.85); /* Textura mate: menos transparente */
+  --glass-border: rgba(255, 255, 255, 0.15); /* Borde sutil */
   
   /* Tipografía */
   --text-primary: #ffffff; /* Blanco puro */
@@ -130,13 +130,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: linear-gradient(
-    180deg,
-    #0a0e27 0%,    /* Cielo superior: azul oscuro */
-    #1a1f42 35%,   /* Transición media: índigo */
-    #2d1b4e 65%,   /* Transición baja: púrpura oscuro */
-    #000000 100%   /* Base: negro puro */
-  );
+  background-color: var(--bg-sky);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow: hidden;
   display: flex;
@@ -166,52 +160,51 @@
 /* Aurora Glow - Base para las nebulosas */
 .aurora-glow {
   position: absolute;
-  filter: blur(60px);
-  opacity: 0.7;
+  border-radius: 50%;
   mix-blend-mode: screen;
-  transition: filter 1s ease, opacity 1s ease;
-  /* Optimización: evita re-layout durante animaciones */
-  transform: translateZ(0);
+  pointer-events: none;
 }
 
-/* Aurora 1 - Índigo (superior izquierda) */
+/* Aurora 1 - Índigo (banda principal inclinada) */
 .aurora-1 {
-  top: -5%;
-  left: -5%;
-  width: 35vw;
-  height: 35vh;
-  background: radial-gradient(
-    circle at 30% 30%,
-    var(--bg-aurora-main) 0%,
-    transparent 70%
-  );
-  opacity: 0.5;
-  animation: 
-    aurora-float-1 25s ease-in-out infinite alternate,
-    aurora-pulse-1 20s ease-in-out infinite,
-    aurora-color-shift-1 35s ease-in-out infinite;
-  /* Optimización: solo estas propiedades son animadas */
-  will-change: transform, opacity;
+  top: 10%;
+  left: -10%;
+  width: 120vw;
+  height: 15vh;
+  border-radius: 50%;
+  background: rgba(79, 70, 229, 0.35);
+  filter: blur(60px);
+  transform: rotate(-15deg);
+  animation: aurora-float-1 25s ease-in-out infinite alternate,
+             aurora-color-shift-1 18s ease-in-out infinite alternate;
 }
 
-/* Aurora 2 - Esmeralda (inferior derecha) */
+/* Aurora 2 - Esmeralda (banda inferior solapada) */
 .aurora-2 {
-  bottom: -5%;
-  right: -5%;
-  width: 30vw;
-  height: 30vh;
-  background: radial-gradient(
-    circle at 70% 70%,
-    var(--bg-aurora-alt) 0%,
-    transparent 70%
-  );
-  opacity: 0.4;
-  animation: 
-    aurora-float-2 30s ease-in-out infinite alternate,
-    aurora-pulse-2 22s ease-in-out infinite,
-    aurora-color-shift-2 40s ease-in-out infinite;
-  /* Optimización: solo estas propiedades son animadas */
-  will-change: transform, opacity;
+  top: 20%;
+  left: 0%;
+  width: 100vw;
+  height: 12vh;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.25);
+  filter: blur(50px);
+  transform: rotate(-12deg);
+  animation: aurora-float-2 30s ease-in-out infinite alternate-reverse,
+             aurora-color-shift-2 22s ease-in-out infinite alternate;
+}
+
+/* Aurora 3 - Cian (detalle) */
+.aurora-3 {
+  top: 5%;
+  left: 20%;
+  width: 80vw;
+  height: 8vh;
+  border-radius: 50%;
+  background: rgba(34, 211, 238, 0.15);
+  filter: blur(40px);
+  transform: rotate(-18deg);
+  animation: aurora-float-3 20s ease-in-out infinite alternate,
+             aurora-color-shift-3 15s ease-in-out infinite alternate-reverse;
 }
 
 /* Mountain Range - Montañas base */
@@ -221,54 +214,39 @@
   left: 0;
   right: 0;
   height: 25vh;
-  background: linear-gradient(
-    to top,
-    #000000 0%,      /* Base negro puro */
-    #0a0a15 15%,     /* Transición oscura */
-    #1a1a2e 30%,     /* Profundidad */
-    transparent 100% /* Desvanecimiento */
-  );
   z-index: 2;
-  opacity: 0.7;  /* Ligeramente más visible */
-  will-change: opacity;
+  opacity: 0.9;
 }
 
 /* Mountain Peak - Triángulos de montañas */
 .mountain-peak {
   position: absolute;
   bottom: 0;
-  background: linear-gradient(
-    180deg,
-    #1a1a2e 0%,      /* Cima: gris oscuro */
-    #000000 80%      /* Base: negro */
-  );
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
   will-change: transform;
 }
 
-.peak-1 {
-  left: -10%;
-  width: 50%;
-  height: 35vh;
-  opacity: 0.8;
-  animation: mountain-depth-1 12s ease-in-out infinite alternate;
+/* Fila 2 - Lejana (Más clara/azulada) */
+.row-2 {
+  background: linear-gradient(180deg, #0d1f35 0%, #07111e 80%);
+  z-index: 1;
 }
 
-.peak-2 {
-  right: -5%;
-  width: 60%;
-  height: 45vh;
-  opacity: 0.9;
-  animation: mountain-depth-2 15s ease-in-out infinite alternate;
+/* Fila 1 - Cercana (Más oscura) */
+.row-1 {
+  background: linear-gradient(180deg, #020408 0%, #000000 80%);
+  z-index: 2;
 }
 
-.peak-3 {
-  left: 25%;
-  width: 40%;
-  height: 30vh;
-  opacity: 0.7;
-  animation: mountain-depth-3 18s ease-in-out infinite alternate;
-}
+/* Tamaños y Posiciones Fila 2 (Lejana) */
+.peak-1 { left: -10%; width: 45%; height: 35vh; opacity: 0.85; animation: mountain-depth-1 12s ease-in-out infinite alternate; }
+.peak-2 { left: 20%; width: 55%; height: 40vh; opacity: 0.9; animation: mountain-depth-2 15s ease-in-out infinite alternate; }
+.peak-3 { right: -5%; width: 40%; height: 30vh; opacity: 0.85; animation: mountain-depth-3 18s ease-in-out infinite alternate; }
+
+/* Tamaños y Posiciones Fila 1 (Cercana) */
+.peak-4 { left: -5%; width: 50%; height: 25vh; opacity: 0.95; animation: mountain-depth-1 14s ease-in-out infinite alternate; }
+.peak-5 { left: 30%; width: 60%; height: 30vh; opacity: 1; animation: mountain-depth-2 17s ease-in-out infinite alternate; }
+.peak-6 { right: -10%; width: 45%; height: 20vh; opacity: 0.9; animation: mountain-depth-3 20s ease-in-out infinite alternate; }
 
 /* ============================================================
    SECCIÓN 4: CONTENEDOR FLOTANTE
@@ -290,10 +268,10 @@
   max-width: 310px;
   padding: 2.5rem 1.8rem;
   
-  /* Glass Morphism Base */
-  background: rgba(20, 30, 60, 0.6);  /* Más opaco y oscuro */
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  /* Glass Morphism Matte Base */
+  background: var(--glass-bg);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
   
   /* Border y Profundidad */
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -620,24 +598,21 @@
    Feedback visual para estados de carga y errores.
    ============================================================ */
 
-/* Blocking Loader Container */
+/* Blocking Loader Inside Card */
 .blocking-loader {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(15, 23, 42, 0.7);  /* Overlay semi-transparente */
-  backdrop-filter: blur(3px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  z-index: 100;
-  animation: fade-in 0.5s ease-out forwards;
-  border-radius: 20px;  /* Match tarjeta */
-  padding: 2rem;
+  min-height: 350px;
+  width: 100%;
+  animation: fade-in-overlay 0.6s ease-out forwards;
+}
+
+@keyframes fade-in-overlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Spinner */
@@ -838,28 +813,23 @@
 
 /* Aurora Float 1 - Movimiento índigo */
 @keyframes aurora-float-1 {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  50% {
-    transform: translate(8%, 3%) rotate(2.5deg);
-  }
-  100% {
-    transform: translate(10%, 5%) rotate(5deg);
-  }
+  0% { transform: translateX(-3%) rotate(-15deg); opacity: 0.8; }
+  50% { transform: translateX(2%) rotate(-13deg); opacity: 1; }
+  100% { transform: translateX(4%) rotate(-15deg); opacity: 0.8; }
 }
 
 /* Aurora Float 2 - Movimiento esmeralda */
 @keyframes aurora-float-2 {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  50% {
-    transform: translate(-8%, -3%) rotate(-2.5deg);
-  }
-  100% {
-    transform: translate(-10%, -5%) rotate(-5deg);
-  }
+  0% { transform: translateX(3%) rotate(-12deg); opacity: 0.7; }
+  50% { transform: translateX(-2%) rotate(-14deg); opacity: 0.9; }
+  100% { transform: translateX(-4%) rotate(-12deg); opacity: 0.7; }
+}
+
+/* Aurora Float 3 - Movimiento cian */
+@keyframes aurora-float-3 {
+  0% { transform: translateX(-2%) rotate(-18deg); opacity: 0.6; }
+  50% { transform: translateX(3%) rotate(-16deg); opacity: 0.8; }
+  100% { transform: translateX(5%) rotate(-18deg); opacity: 0.6; }
 }
 
 /* Card Float - Flotación sutil de la tarjeta (6s ciclo) */
@@ -922,30 +892,25 @@
   }
 }
 
-/* Aurora Color Shift 1 - Cambio sutil de color (Índigo ↔ Violeta) */
+/* Aurora Color Shift 1 - Índigo a Azul/Cian */
 @keyframes aurora-color-shift-1 {
-  0% {
-    filter: hue-rotate(0deg) saturate(100%);
-  }
-  50% {
-    filter: hue-rotate(15deg) saturate(110%);
-  }
-  100% {
-    filter: hue-rotate(0deg) saturate(100%);
-  }
+  0% { filter: blur(60px) hue-rotate(0deg); }
+  50% { filter: blur(65px) hue-rotate(-20deg); }
+  100% { filter: blur(55px) hue-rotate(30deg); }
 }
 
-/* Aurora Color Shift 2 - Cambio sutil de color (Esmeralda ↔ Cian) */
+/* Aurora Color Shift 2 - Esmeralda a Azul/Cian */
 @keyframes aurora-color-shift-2 {
-  0% {
-    filter: hue-rotate(0deg) saturate(100%);
-  }
-  50% {
-    filter: hue-rotate(-15deg) saturate(110%);
-  }
-  100% {
-    filter: hue-rotate(0deg) saturate(100%);
-  }
+  0% { filter: blur(50px) hue-rotate(0deg); }
+  50% { filter: blur(55px) hue-rotate(40deg); }
+  100% { filter: blur(45px) hue-rotate(-15deg); }
+}
+
+/* Aurora Color Shift 3 - Cian a Azul/Esmeralda */
+@keyframes aurora-color-shift-3 {
+  0% { filter: blur(40px) hue-rotate(0deg); }
+  50% { filter: blur(45px) hue-rotate(-30deg); }
+  100% { filter: blur(35px) hue-rotate(25deg); }
 }
 
 /* Mountain Depth 1 - Profundidad pico izquierdo */

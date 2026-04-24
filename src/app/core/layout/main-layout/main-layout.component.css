@@ -36,7 +36,7 @@
 .layout-header {
   height: 70px;
   flex-shrink: 0;
-  z-index: 20;
+  z-index: 40;
 }
 
 .layout-router-area {
@@ -71,25 +71,66 @@
   box-shadow: 0 0 10px var(--accent, #3b82f6);
 }
 
+/* OVERLAY: Oculto por defecto en desktop para no romper el grid */
+.sidebar-overlay {
+  display: none;
+}
+
 /* RESPONSIVE: Tablets y Celulares */
 @media (max-width: 1024px) {
-  .app-layout {
+
+  /* PASO 1 FIX: Neutralizar la especificidad mayor de .sidebar-collapsed en mobile.
+     Sin esto, .app-layout.sidebar-collapsed (2 clases) gana sobre .app-layout (1 clase)
+     y fuerza grid-template-columns: 80px 1fr en mobile, rompiendo el layout. */
+  .app-layout,
+  .app-layout.sidebar-collapsed {
     grid-template-columns: 1fr;
   }
-  
+
+  /* Sidebar: empieza debajo del header en mobile */
   .layout-sidebar {
     position: fixed;
+    top: 70px; /* Altura del header */
+    left: 0;
+    height: calc(100vh - 70px);
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 50;
   }
 
-  /* En móvil, "colapsado" significa oculto. "No colapsado" significa visible encima de todo */
-  .app-layout:not(.sidebar-collapsed) .layout-sidebar {
+  /* Sidebar visible en mobile SOLO cuando se activa la clase .mobile-sidebar-open */
+  .app-layout.mobile-sidebar-open .layout-sidebar {
     transform: translateX(0);
   }
 
+  /* El header debe estar SIEMPRE por encima del sidebar y overlay en mobile */
+  .layout-header {
+    position: relative;
+    z-index: 60;
+  }
+
+  /* Overlay oscuro detrás del sidebar, empieza debajo del header */
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 49;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .app-layout.mobile-sidebar-open .sidebar-overlay {
+    opacity: 1;
+    pointer-events: all;
+  }
+
   .layout-router-area {
-    border-radius: 0; /* Sin bordes redondeados en móvil */
+    border-radius: 0;
     padding: 1rem;
   }
 }

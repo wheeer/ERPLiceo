@@ -15,10 +15,10 @@ export const routes: Routes = [
     component: MainLayoutComponent,
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', component: DashboardComponent },
-      { path: 'rrhh', component: RrhhComponent },
-      { path: 'remuneraciones', component: RemuneracionesComponent },
-      { path: 'inventario', component: InventarioComponent },
+      { path: 'dashboard', component: DashboardComponent, data: { title: 'Dashboard Principal' } },
+      { path: 'rrhh', component: RrhhComponent, data: { title: 'Recursos Humanos' } },
+      { path: 'remuneraciones', component: RemuneracionesComponent, data: { title: 'Remuneraciones' } },
+      { path: 'inventario', component: InventarioComponent, data: { title: 'Inventario y Stock' } },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

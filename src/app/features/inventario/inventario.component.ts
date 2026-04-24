@@ -7,6 +7,7 @@ interface InventoryItem {
   producto: string;
   categoria: string;
   stock: number;
+  stockCritico: number;
   ubicacion: string;
   estado: 'disponible' | 'bajo-stock' | 'descontinuado';
 }
@@ -28,6 +29,7 @@ export class InventarioComponent {
       producto: 'Monitor Dell 24 pulgadas FHD',
       categoria: 'Hardware',
       stock: 12,
+      stockCritico: 5,
       ubicacion: 'Bodega A - Estante 1',
       estado: 'disponible'
     },
@@ -37,6 +39,7 @@ export class InventarioComponent {
       producto: 'Teclado Mecánico RGB',
       categoria: 'Perifericos',
       stock: 3,
+      stockCritico: 5,
       ubicacion: 'Bodega B - Estante 3',
       estado: 'bajo-stock'
     },
@@ -46,6 +49,7 @@ export class InventarioComponent {
       producto: 'Memoria RAM DDR4 8GB',
       categoria: 'Componentes',
       stock: 25,
+      stockCritico: 10,
       ubicacion: 'Bodega A - Estante 2',
       estado: 'disponible'
     },
@@ -55,6 +59,7 @@ export class InventarioComponent {
       producto: 'SSD Samsung 256GB NVMe',
       categoria: 'Almacenamiento',
       stock: 0,
+      stockCritico: 2,
       ubicacion: 'Bodega C - Estante 1',
       estado: 'descontinuado'
     },
@@ -64,6 +69,7 @@ export class InventarioComponent {
       producto: 'Mouse Láser inalámbrico',
       categoria: 'Perifericos',
       stock: 18,
+      stockCritico: 5,
       ubicacion: 'Bodega B - Estante 2',
       estado: 'disponible'
     },
@@ -73,6 +79,7 @@ export class InventarioComponent {
       producto: 'Hub USB 7 puertos',
       categoria: 'Accesorios',
       stock: 8,
+      stockCritico: 3,
       ubicacion: 'Bodega A - Estante 4',
       estado: 'disponible'
     },
@@ -82,6 +89,7 @@ export class InventarioComponent {
       producto: 'Cable HDMI Premium 2m',
       categoria: 'Cableria',
       stock: 42,
+      stockCritico: 15,
       ubicacion: 'Bodega D - Estante 1',
       estado: 'disponible'
     },
@@ -91,6 +99,7 @@ export class InventarioComponent {
       producto: 'Proyector Epson 3000 lúmenes',
       categoria: 'Audiovisual',
       stock: 2,
+      stockCritico: 3,
       ubicacion: 'Bodega C - Estante 3',
       estado: 'bajo-stock'
     },
@@ -100,6 +109,7 @@ export class InventarioComponent {
       producto: 'Pantalla Interactiva 65"',
       categoria: 'Audiovisual',
       stock: 5,
+      stockCritico: 2,
       ubicacion: 'Bodega C - Estante 2',
       estado: 'disponible'
     },
@@ -109,6 +119,7 @@ export class InventarioComponent {
       producto: 'Fuente de Poder 550W 80+',
       categoria: 'Componentes',
       stock: 1,
+      stockCritico: 3,
       ubicacion: 'Bodega A - Estante 3',
       estado: 'bajo-stock'
     }

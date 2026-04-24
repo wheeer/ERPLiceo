@@ -96,4 +96,9 @@ export class RemuneracionesComponent {
   getTotalNeto(): number {
     return this.payrollData.reduce((sum, p) => sum + p.neto, 0);
   }
+
+  descargarPDF(payroll: Payroll) {
+    alert(`Mock: Generando PDF de liquidación para ${payroll.nombre}...`);
+    // Aquí iría la lógica real usando librerías como jsPDF o llamadas al backend.
+  }
 }

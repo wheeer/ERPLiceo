@@ -1,59 +1,64 @@
-# ErpLiceos
+# ERP EMTP — Sistema de Gestión Centralizado
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.7.
+![Estado del Proyecto](https://img.shields.io/badge/Estado-Mockup_Navegable_(EPE2)-blue?style=for-the-badge)
+![Angular](https://img.shields.io/badge/Angular_21-DD0031?style=for-the-badge&logo=angular&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
 
-## Development server
+## Descripción del Proyecto
 
-To start a local development server, run:
+**ERP EMTP** es una solución integral de planificación de recursos diseñada específicamente para Liceos Técnicos Profesionales (EMTP) en Chile. El sistema centraliza la gestión administrativa, docente y de inventario, resolviendo la fragmentación de datos y optimizando los procesos operativos de la institución.
 
-```bash
-ng serve
-```
+Este proyecto forma parte de la evaluación **EPE2**, enfocándose en la creación de un mockup navegable de alta fidelidad con una experiencia de usuario (UX) madura y profesional.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+---
 
-## Code scaffolding
+## Características Principales
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### Login Aurora (Experiencia de Usuario Premium)
+- **Diseño Estético y Minimalista**: Inspirado en la sobriedad y elegancia corporativa.
+- **Atmósfera Dinámica**: Fondo de aurora boreal en un cielo nocturno con montañas y animaciones sutiles.
+- **Glassmorphism**: Interfaz de tarjeta flotante con textura mate y efectos de profundidad.
+- **Feedback Interactivo**: Iluminación dinámica (Glow) según el foco del usuario y estados de carga progresivos.
 
-```bash
-ng generate component component-name
-```
+### Módulos Integrados (MVP)
+1.  **Dashboard Central**: Panel de control con métricas clave y accesos directos.
+2.  **Recursos Humanos (RRHH)**: Gestión de personal, mantenedor de funcionarios y visualización de asistencia.
+3.  **Remuneraciones**: Liquidación de sueldos, cálculo de bonos, descuentos y generación de documentos.
+4.  **Inventario**: Control de stock crítico, trazabilidad de insumos y sistema de alertas.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+---
 
-```bash
-ng generate --help
-```
+## Filosofía de Diseño y Usabilidad
 
-## Building
+El sistema ha sido auditado bajo las **10 Heurísticas de Jakob Nielsen**, priorizando:
+- **Visibilidad del estado del sistema**: Feedback inmediato en cada acción del usuario.
+- **Consistencia y estándares**: Sistema de diseño unificado en todos los módulos operativos.
+- **Prevención de errores**: Validaciones visuales y mensajes claros con soluciones sugeridas.
+- **Diseño estético y funcional**: Eliminación de ruidos visuales para centrarse en la eficiencia del dato.
 
-To build the project run:
+---
 
-```bash
-ng build
-```
+## Stack Tecnológico
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+- **Frontend**: Angular 21
+- **Estilos**: CSS3 (Vanilla) con Sistema de Design Tokens
+- **Iconografía**: SVG Inline / Lucide Icons
+- **Tipografía**: Inter (Google Fonts) para máxima legibilidad
 
-## Running unit tests
+---
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Seguridad y Protocolos (Consideraciones)
 
-```bash
-ng test
-```
+Aunque el proyecto se encuentra en fase de mockup, se han diseñado las interfaces considerando:
+- **Validación de RUT**: Implementación de algoritmo Módulo 11 para validación chilena.
+- **Protección de Datos**: Alineación con la Ley 21.096 de Protección de Datos Personales.
+- **Roles de Usuario**: Diferenciación de accesos para Administrativos, Directivos y Docentes.
 
-## Running end-to-end tests
+---
 
-For end-to-end (e2e) testing, run:
+## Equipo de Desarrollo
+*Desarrollado para la cátedra de Desarrollo de Sistemas ERP.*
 
-```bash
-ng e2e
-```
+---
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+**Versión**: 1.0.0 — Abril 2026

@@ -1,10 +1,15 @@
-<div class="app-layout" [class.sidebar-collapsed]="isSidebarCollapsed">
-  
+<div class="app-layout"
+  [class.sidebar-collapsed]="isSidebarCollapsed"
+  [class.mobile-sidebar-open]="isMobileSidebarOpen">
+
     <!-- BARRA DE PROGRESO DE RUTA (Feedback Psicológico) -->
     <div class="top-loading-bar" id="route-progress-bar"></div>
+
+    <!-- OVERLAY MOBILE: Cierra sidebar al hacer clic fuera -->
+    <div class="sidebar-overlay" (click)="closeMobileSidebar()"></div>
   
     <!-- SIDEBAR (Navegación Lateral) -->
-    <app-sidebar class="layout-sidebar" [isCollapsed]="isSidebarCollapsed"></app-sidebar>
+    <app-sidebar class="layout-sidebar" [isCollapsed]="isSidebarCollapsed" (closeSidebar)="closeMobileSidebar()"></app-sidebar>
   
     <!-- ÁREA PRINCIPAL -->
     <div class="layout-content-wrapper">
