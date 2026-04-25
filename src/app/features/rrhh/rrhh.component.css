@@ -1,6 +1,5 @@
 /* ============================================================
-   TAREA 2.2: RRHH — Tabla de Empleados Mock
-   Gestión de personal con 5 registros de empleados
+   MÓDULO: RECURSOS HUMANOS
    ============================================================ */
 
 .rrhh-container {
@@ -426,3 +425,307 @@
     font-size: 0.8rem;
   }
 }
+
+/* ============================================================
+   Estilos de componentes de interfaz: tabs, formularios y modales
+   ============================================================ */
+
+/* TABS DEL MÓDULO */
+.module-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ACTION BAR Y BOTONES */
+.action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.action-bar h2 {
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-primary:hover { opacity: 0.9; }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ACCIONES EN TABLA (CRUD) */
+.cell-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.btn-action {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-action:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-view:hover { color: #3b82f6; border-color: #3b82f6; }
+.btn-edit:hover { color: #f59e0b; border-color: #f59e0b; }
+.btn-delete:hover { color: #ef4444; border-color: #ef4444; }
+
+.employee-info-detailed {
+  display: flex;
+  flex-direction: column;
+}
+
+.employee-subtext {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* MODAL DE CREACIÓN / EDICIÓN */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in 0.2s ease-out;
+}
+
+.modal-content {
+  background: var(--bg-surface-main);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  animation: slide-up 0.3s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 { margin: 0; font-size: 1.3rem; color: var(--text-primary); }
+
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+}
+
+.btn-close:hover { color: var(--text-primary); }
+
+.crud-form .form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.crud-form .form-row > * { flex: 1; }
+
+.form-group {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.form-group input, .form-group select {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus, .form-group select:focus {
+  border-color: var(--accent);
+}
+
+.form-group input.error, .form-group select.error {
+  border-color: #ef4444;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* FICHA EMPLEADO */
+.ficha-wrapper {
+  background: var(--bg-surface-main);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.ficha-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.btn-back {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0;
+}
+
+.btn-back:hover { color: var(--accent); }
+
+.ficha-perfil {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.ficha-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 2.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ficha-nombres h2 { margin: 0 0 0.3rem 0; font-size: 1.6rem; color: var(--text-primary); }
+.ficha-nombres p { margin: 0 0 0.8rem 0; color: var(--text-muted); font-size: 1rem; }
+
+.ficha-detalles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.detalle-grupo label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detalle-grupo p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }

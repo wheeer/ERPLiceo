@@ -1,95 +1,287 @@
 <div class="rrhh-container">
-  <!-- HEADER -->
+  <!-- HEADER CON TABS -->
   <div class="rrhh-header-row">
     <div class="rrhh-header">
       <h1 class="rrhh-title">Recursos Humanos</h1>
       <p class="rrhh-subtitle">Gestión de personal y datos laborales</p>
     </div>
     
-    <div class="view-toggle">
-      <button class="toggle-btn" [class.active]="viewMode === 'table'" (click)="viewMode = 'table'">
-        Tabla Empleados
+    <!-- TABS DEL MÓDULO -->
+    <div class="module-tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'general'" (click)="changeTab('general')">
+        Vista General
       </button>
-      <button class="toggle-btn" [class.active]="viewMode === 'calendar'" (click)="viewMode = 'calendar'">
-        Asistencia Mensual
+      <button class="tab-btn" [class.active]="activeTab === 'gestion'" (click)="changeTab('gestion')">
+        Gestión de Personal
       </button>
-    </div>
-  </div>
-
-  @if (viewMode === 'table') {
-  <!-- TABLA DE EMPLEADOS -->
-  <div class="table-wrapper">
-    <table class="employees-table">
-      <thead>
-        <tr>
-          <th>RUT</th>
-          <th>Nombre</th>
-          <th>Correo</th>
-          <th>Cargo</th>
-          <th>Fecha Ingreso</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (employee of employees; track employee.id; let index = $index) {
-          <tr [class.table-row-hover]="true">
-            <td class="cell-rut">{{ employee.rut }}</td>
-            <td class="cell-nombre">
-              <div class="employee-info">
-                <span class="employee-avatar">{{ employee.nombre.charAt(0) }}</span>
-                <span class="employee-name">{{ employee.nombre }}</span>
-              </div>
-            </td>
-            <td class="cell-correo">{{ employee.correo }}</td>
-            <td class="cell-cargo">{{ employee.cargo }}</td>
-            <td class="cell-fecha">{{ formatDate(employee.fechaIngreso) }}</td>
-            <td class="cell-estado">
-              <span class="status-badge" [class]="getStatusColor(employee.estado)">
-                {{ getStatusLabel(employee.estado) }}
-              </span>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-
-  <!-- FOOTER CON INFORMACIÓN -->
-  <div class="table-footer">
-    <span class="footer-info">Total de empleados: {{ employees.length }}</span>
-  </div>
-  } @else {
-  <!-- CALENDARIO DE ASISTENCIA (Mock) -->
-  <div class="calendar-wrapper">
-    <div class="calendar-top">
-      <h3 class="calendar-month">Abril 2026 - Registro de Asistencia General</h3>
-      <div class="calendar-legend">
-        <span class="legend-item"><span class="dot present"></span> Presente</span>
-        <span class="legend-item"><span class="dot absent"></span> Ausente</span>
-        <span class="legend-item"><span class="dot leave"></span> Licencia</span>
-      </div>
-    </div>
-    
-    <div class="calendar-grid">
-      <div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div><div class="cal-day-header">Mié</div>
-      <div class="cal-day-header">Jue</div><div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div><div class="cal-day-header">Dom</div>
-      
-      <!-- Offset para Abril 2026 (Empieza Miércoles = 2 espacios) -->
-      <div class="cal-day empty"></div>
-      <div class="cal-day empty"></div>
-      
-      @for (day of daysInMonth; track day) {
-        <div class="cal-day" [class]="'cal-status-' + getAttendanceStatus(day)">
-          <span class="day-number">{{ day }}</span>
-          @if (getAttendanceStatus(day) === 'absent') {
-            <span class="day-tag tag-absent">Falta</span>
-          }
-          @if (getAttendanceStatus(day) === 'leave') {
-            <span class="day-tag tag-leave">Licencia</span>
-          }
-        </div>
+      @if (activeTab === 'ficha' && selectedEmployee) {
+        <button class="tab-btn active">
+          Ficha: {{ selectedEmployee.nombre.split(' ')[0] }}
+        </button>
       }
     </div>
   </div>
+
+  <!-- ============================================== -->
+  <!-- TAB 1: VISTA GENERAL -->
+  <!-- ============================================== -->
+  @if (activeTab === 'general') {
+    <div class="view-toggle-container">
+      <div class="view-toggle">
+        <button class="toggle-btn" [class.active]="viewMode === 'table'" (click)="viewMode = 'table'">
+          Resumen Empleados
+        </button>
+        <button class="toggle-btn" [class.active]="viewMode === 'calendar'" (click)="viewMode = 'calendar'">
+          Asistencia Mensual
+        </button>
+      </div>
+    </div>
+
+    @if (viewMode === 'table') {
+      <div class="table-wrapper">
+        <table class="employees-table">
+          <thead>
+            <tr>
+              <th>RUT</th>
+              <th>Nombre</th>
+              <th>Cargo</th>
+              <th>Fecha Ingreso</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (employee of employees; track employee.id) {
+              <tr>
+                <td class="cell-rut">{{ employee.rut }}</td>
+                <td class="cell-nombre">
+                  <div class="employee-info">
+                    <span class="employee-avatar">{{ employee.nombre.charAt(0) }}</span>
+                    <span class="employee-name">{{ employee.nombre }}</span>
+                  </div>
+                </td>
+                <td class="cell-cargo">{{ employee.cargo }}</td>
+                <td class="cell-fecha">{{ formatDate(employee.fechaIngreso) }}</td>
+                <td class="cell-estado">
+                  <span class="status-badge" [class]="getStatusColor(employee.estado)">
+                    {{ getStatusLabel(employee.estado) }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span class="footer-info">Total de empleados: {{ employees.length }}</span>
+      </div>
+    } @else {
+      <!-- CALENDARIO DE ASISTENCIA -->
+      <div class="calendar-wrapper">
+        <div class="calendar-top">
+          <h3 class="calendar-month">Abril 2026 - Registro de Asistencia General</h3>
+          <div class="calendar-legend">
+            <span class="legend-item"><span class="dot present"></span> Presente</span>
+            <span class="legend-item"><span class="dot absent"></span> Ausente</span>
+            <span class="legend-item"><span class="dot leave"></span> Licencia</span>
+          </div>
+        </div>
+        
+        <div class="calendar-grid">
+          <div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div><div class="cal-day-header">Mié</div>
+          <div class="cal-day-header">Jue</div><div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div><div class="cal-day-header">Dom</div>
+          
+          <div class="cal-day empty"></div>
+          <div class="cal-day empty"></div>
+          
+          @for (day of daysInMonth; track day) {
+            <div class="cal-day" [class]="'cal-status-' + getAttendanceStatus(day)">
+              <span class="day-number">{{ day }}</span>
+              @if (getAttendanceStatus(day) === 'absent') { <span class="day-tag tag-absent">Falta</span> }
+              @if (getAttendanceStatus(day) === 'leave') { <span class="day-tag tag-leave">Licencia</span> }
+            </div>
+          }
+        </div>
+      </div>
+    }
   }
+
+  <!-- ============================================== -->
+  <!-- TAB 2: GESTIÓN DE PERSONAL -->
+  <!-- ============================================== -->
+  @if (activeTab === 'gestion') {
+    <div class="action-bar">
+      <h2>Directorio de Empleados</h2>
+      <button class="btn-primary" (click)="openNewModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo Empleado
+      </button>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="employees-table crud-table">
+        <thead>
+          <tr>
+            <th>RUT</th>
+            <th>Nombre y Correo</th>
+            <th>Departamento</th>
+            <th>Estado</th>
+            <th class="center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (employees.length === 0) {
+            <tr><td colspan="5" class="center empty-state">No hay empleados registrados.</td></tr>
+          }
+          @for (employee of employees; track employee.id) {
+            <tr>
+              <td class="cell-rut">{{ employee.rut }}</td>
+              <td class="cell-nombre">
+                <div class="employee-info-detailed">
+                  <span class="employee-name">{{ employee.nombre }}</span>
+                  <span class="employee-subtext">{{ employee.correo }}</span>
+                </div>
+              </td>
+              <td class="cell-depto">{{ employee.departamento || 'Sin asignar' }}</td>
+              <td class="cell-estado">
+                <span class="status-badge" [class]="getStatusColor(employee.estado)">
+                  {{ getStatusLabel(employee.estado) }}
+                </span>
+              </td>
+              <td class="cell-actions center">
+                <button class="btn-action btn-view" (click)="viewFicha(employee)" title="Ver Ficha">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button class="btn-action btn-edit" (click)="openEditModal(employee)" title="Editar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn-action btn-delete" (click)="deleteEmployee(employee.id)" title="Eliminar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 3: FICHA DE EMPLEADO -->
+  <!-- ============================================== -->
+  @if (activeTab === 'ficha' && selectedEmployee) {
+    <div class="ficha-wrapper">
+      <div class="ficha-header">
+        <button class="btn-back" (click)="changeTab('gestion')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Volver
+        </button>
+        <button class="btn-primary" (click)="openEditModal(selectedEmployee)">Editar Datos</button>
+      </div>
+
+      <div class="ficha-card">
+        <div class="ficha-perfil">
+          <div class="ficha-avatar">{{ selectedEmployee.nombre.charAt(0) }}</div>
+          <div class="ficha-nombres">
+            <h2>{{ selectedEmployee.nombre }}</h2>
+            <p>{{ selectedEmployee.cargo }}</p>
+            <span class="status-badge" [class]="getStatusColor(selectedEmployee.estado)">
+              {{ getStatusLabel(selectedEmployee.estado) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="ficha-detalles">
+          <div class="detalle-grupo">
+            <label>RUT</label>
+            <p>{{ selectedEmployee.rut }}</p>
+          </div>
+          <div class="detalle-grupo">
+            <label>Correo Institucional</label>
+            <p>{{ selectedEmployee.correo }}</p>
+          </div>
+          <div class="detalle-grupo">
+            <label>Departamento</label>
+            <p>{{ selectedEmployee.departamento || 'Sin asignar' }}</p>
+          </div>
+          <div class="detalle-grupo">
+            <label>Fecha de Ingreso</label>
+            <p>{{ formatDate(selectedEmployee.fechaIngreso) }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- MODAL DE CREACIÓN / EDICIÓN                    -->
+  <!-- ============================================== -->
+  @if (showModal) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>{{ isEditing ? 'Editar Empleado' : 'Nuevo Empleado' }}</h2>
+          <button class="btn-close" (click)="closeModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <form [formGroup]="employeeForm" (ngSubmit)="saveEmployee()" class="crud-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>RUT</label>
+              <input type="text" formControlName="rut" placeholder="12345678-9" [class.error]="employeeForm.get('rut')?.invalid && employeeForm.get('rut')?.touched">
+            </div>
+            <div class="form-group">
+              <label>Fecha de Ingreso</label>
+              <input type="date" formControlName="fechaIngreso">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Nombre Completo</label>
+            <input type="text" formControlName="nombre" placeholder="Ej: Juan Pérez" [class.error]="employeeForm.get('nombre')?.invalid && employeeForm.get('nombre')?.touched">
+          </div>
+
+          <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" formControlName="correo" placeholder="usuario@liceo.cl" [class.error]="employeeForm.get('correo')?.invalid && employeeForm.get('correo')?.touched">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Cargo</label>
+              <input type="text" formControlName="cargo" placeholder="Ej: Profesor">
+            </div>
+            <div class="form-group">
+              <label>Departamento</label>
+              <select formControlName="departamento">
+                <option value="">Seleccione...</option>
+                <option value="Administración">Administración</option>
+                <option value="Docencia">Docencia</option>
+                <option value="Informática">Informática</option>
+                <option value="Operaciones">Operaciones</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Estado</label>
+            <select formControlName="estado">
+              <option value="activo">Activo</option>
+              <option value="inactivo">Inactivo</option>
+              <option value="licencia">En Licencia</option>
+            </select>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" (click)="closeModal()">Cancelar</button>
+            <button type="submit" class="btn-primary" [disabled]="employeeForm.invalid">
+              Guardar Datos
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
 </div>

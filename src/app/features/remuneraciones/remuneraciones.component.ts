@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 interface Payroll {
   id: number;
@@ -13,16 +14,34 @@ interface Payroll {
   periodo: string;
 }
 
+interface HorasExtraRecord {
+  id: number;
+  empleado: string;
+  sueldoBase: number;
+  horas: number;
+  recargo: number;
+  montoTotal: number;
+  fecha: Date;
+}
+
 @Component({
   selector: 'app-remuneraciones',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './remuneraciones.component.html',
   styleUrls: ['./remuneraciones.component.css']
 })
 export class RemuneracionesComponent {
   
-  // Mock: 5 registros de nómina
+  private fb = inject(FormBuilder);
+
+  // Tabs
+  activeTab: 'nomina' | 'horasExtra' = 'nomina';
+
+  // Formulario y datos
+  horasExtraForm: FormGroup;
+  historialHorasExtra: HorasExtraRecord[] = [];
+  // TODO: Reemplazar con llamada al servicio de nómina (backend pendiente)
   payrollData: Payroll[] = [
     {
       id: 1,
@@ -81,6 +100,61 @@ export class RemuneracionesComponent {
     }
   ];
   
+  constructor() {
+    this.horasExtraForm = this.fb.group({
+      empleadoId: ['', Validators.required],
+      horas: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
+      recargo: [50, Validators.required]
+    });
+  }
+
+  changeTab(tab: 'nomina' | 'horasExtra') {
+    this.activeTab = tab;
+  }
+
+  calcularHoraNormal(sueldoBase: number): number {
+    // Fórmula legal chilena: (Sueldo Base / 30) * 28 / Jornada Semanal
+    // Ley 21.561: Jornada de 42 horas semanales a partir de abril 2026
+    const valorHora = (sueldoBase / 30) * 28 / 42;
+    return valorHora;
+  }
+
+  calcularHorasExtra() {
+    if (this.horasExtraForm.invalid) return;
+
+    const formValues = this.horasExtraForm.value;
+    const empleado = this.payrollData.find(p => p.id === Number(formValues.empleadoId));
+    
+    if (!empleado) return;
+
+    const valorHoraNormal = this.calcularHoraNormal(empleado.sueldoBase);
+    const recargoMultiplicador = 1 + (formValues.recargo / 100);
+    const valorHoraExtra = valorHoraNormal * recargoMultiplicador;
+    const montoTotal = valorHoraExtra * formValues.horas;
+
+    const nuevoRegistro: HorasExtraRecord = {
+      id: Date.now(),
+      empleado: empleado.nombre,
+      sueldoBase: empleado.sueldoBase,
+      horas: formValues.horas,
+      recargo: formValues.recargo,
+      montoTotal: Math.round(montoTotal),
+      fecha: new Date()
+    };
+
+    this.historialHorasExtra.unshift(nuevoRegistro);
+    
+    alert(`Cálculo exitoso: $${this.formatCurrency(Math.round(montoTotal))} agregados al historial.`);
+    this.horasExtraForm.patchValue({ horas: 1 });
+  }
+
+  eliminarRegistro(id: number) {
+    this.historialHorasExtra = this.historialHorasExtra.filter(h => h.id !== id);
+  }
+
+  formatDate(date: Date): string {
+    return date.toLocaleDateString('es-CL');
+  }
   formatCurrency(value: number): string {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
@@ -96,9 +170,8 @@ export class RemuneracionesComponent {
   getTotalNeto(): number {
     return this.payrollData.reduce((sum, p) => sum + p.neto, 0);
   }
-
   descargarPDF(payroll: Payroll) {
-    alert(`Mock: Generando PDF de liquidación para ${payroll.nombre}...`);
-    // Aquí iría la lógica real usando librerías como jsPDF o llamadas al backend.
+    alert(`Generando liquidación para ${payroll.nombre}... (pendiente: integración de servicio PDF)`);
+    // TODO: Integrar jsPDF o servicio backend para exportación.
   }
 }

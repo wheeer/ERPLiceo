@@ -1,60 +1,166 @@
 <div class="remuneraciones-container">
-  <!-- HEADER -->
-  <div class="remuneraciones-header">
-    <h1 class="remuneraciones-title">Remuneraciones</h1>
-    <p class="remuneraciones-subtitle">Nómina y liquidaciones de sueldo — Abril 2026</p>
+  <!-- HEADER CON TABS -->
+  <div class="remuneraciones-header-row">
+    <div class="remuneraciones-header">
+      <h1 class="remuneraciones-title">Remuneraciones</h1>
+      <p class="remuneraciones-subtitle">Nómina y cálculo de honorarios — Ley 21.561</p>
+    </div>
+    
+    <!-- TABS DEL MÓDULO -->
+    <div class="module-tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'nomina'" (click)="changeTab('nomina')">
+        Resumen de Nómina
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'horasExtra'" (click)="changeTab('horasExtra')">
+        Cálculo Horas Extra
+      </button>
+    </div>
   </div>
 
-  <!-- TABLA DE NÓMINA -->
-  <div class="table-wrapper">
-    <table class="payroll-table">
-      <thead>
-        <tr>
-          <th>RUT</th>
-          <th>Nombre</th>
-          <th>Cargo</th>
-          <th class="amount">Sueldo Base</th>
-          <th class="amount">AFP</th>
-          <th class="amount">Descuentos</th>
-          <th class="amount total">Neto</th>
-          <th class="center">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (payroll of payrollData; track payroll.id) {
+  <!-- ============================================== -->
+  <!-- TAB 1: RESUMEN DE NÓMINA -->
+  <!-- ============================================== -->
+  @if (activeTab === 'nomina') {
+    <div class="table-wrapper">
+      <table class="payroll-table">
+        <thead>
           <tr>
-            <td class="cell-rut">{{ payroll.rut }}</td>
-            <td class="cell-nombre">{{ payroll.nombre }}</td>
-            <td class="cell-cargo">{{ payroll.cargo }}</td>
-            <td class="cell-amount">{{ formatCurrency(payroll.sueldoBase) }}</td>
-            <td class="cell-amount">{{ formatCurrency(payroll.afp) }}</td>
-            <td class="cell-amount">{{ formatCurrency(payroll.descuentos) }}</td>
-            <td class="cell-amount total-neto">{{ formatCurrency(payroll.neto) }}</td>
-            <td class="cell-actions center">
-              <button class="btn-pdf" (click)="descargarPDF(payroll)" title="Descargar Liquidación">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-                PDF
-              </button>
-            </td>
+            <th>RUT</th>
+            <th>Nombre</th>
+            <th>Cargo</th>
+            <th class="amount">Sueldo Base</th>
+            <th class="amount">AFP</th>
+            <th class="amount">Descuentos</th>
+            <th class="amount total">Neto</th>
+            <th class="center">Acciones</th>
           </tr>
-        }
-      </tbody>
-      <tfoot>
-        <tr class="totals-row">
-          <td colspan="3">TOTAL</td>
-          <td class="cell-amount">{{ formatCurrency(getTotalSueldo()) }}</td>
-          <td class="cell-amount">-</td>
-          <td class="cell-amount">-</td>
-          <td class="cell-amount total-neto">{{ formatCurrency(getTotalNeto()) }}</td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
+        </thead>
+        <tbody>
+          @for (payroll of payrollData; track payroll.id) {
+            <tr>
+              <td class="cell-rut">{{ payroll.rut }}</td>
+              <td class="cell-nombre">{{ payroll.nombre }}</td>
+              <td class="cell-cargo">{{ payroll.cargo }}</td>
+              <td class="cell-amount">{{ formatCurrency(payroll.sueldoBase) }}</td>
+              <td class="cell-amount">{{ formatCurrency(payroll.afp) }}</td>
+              <td class="cell-amount">{{ formatCurrency(payroll.descuentos) }}</td>
+              <td class="cell-amount total-neto">{{ formatCurrency(payroll.neto) }}</td>
+              <td class="cell-actions center">
+                <button class="btn-pdf" (click)="descargarPDF(payroll)" title="Descargar Liquidación">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+                  PDF
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr class="totals-row">
+            <td colspan="3">TOTAL</td>
+            <td class="cell-amount">{{ formatCurrency(getTotalSueldo()) }}</td>
+            <td class="cell-amount">-</td>
+            <td class="cell-amount">-</td>
+            <td class="cell-amount total-neto">{{ formatCurrency(getTotalNeto()) }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
 
-  <!-- INFO -->
-  <div class="remuneraciones-info">
-    <span class="info-badge">{{ payrollData.length }} empleados</span>
-    <span class="info-text">Período: {{ payrollData[0].periodo }}</span>
-  </div>
+    <div class="remuneraciones-info">
+      <span class="info-badge">{{ payrollData.length }} empleados</span>
+      <span class="info-text">Período: {{ payrollData[0].periodo }}</span>
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 2: HORAS EXTRA -->
+  <!-- ============================================== -->
+  @if (activeTab === 'horasExtra') {
+    <div class="he-layout">
+      
+      <!-- FORMULARIO DE CÁLCULO -->
+      <div class="he-form-card">
+        <h3>Calculadora de Horas Extra</h3>
+        <p class="he-legal-note">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Según Ley 21.561 (42 hrs semanales vigentes desde abril 2026).
+        </p>
+
+        <form [formGroup]="horasExtraForm" (ngSubmit)="calcularHorasExtra()" class="crud-form">
+          <div class="form-group">
+            <label>Empleado</label>
+            <select formControlName="empleadoId">
+              <option value="">Seleccione un empleado...</option>
+              @for (emp of payrollData; track emp.id) {
+                <option [value]="emp.id">{{ emp.nombre }} (Base: {{ formatCurrency(emp.sueldoBase) }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Cantidad de Horas (máx 10/sem)</label>
+              <input type="number" formControlName="horas" min="1" max="10">
+            </div>
+            
+            <div class="form-group">
+              <label>Recargo Legal/Pactado</label>
+              <select formControlName="recargo">
+                <option [value]="50">50% (Mínimo Legal Art. 32)</option>
+                <option [value]="100">100% (Pactado / Festivo especial)</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary w-full" [disabled]="horasExtraForm.invalid">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+            Calcular y Registrar Monto
+          </button>
+        </form>
+      </div>
+
+      <!-- TABLA HISTÓRICA -->
+      <div class="he-history">
+        <h3>Historial de Registros</h3>
+        <div class="table-wrapper">
+          <table class="employees-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Empleado</th>
+                <th class="center">Horas</th>
+                <th class="center">Recargo</th>
+                <th class="amount">Monto Total</th>
+                <th class="center"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (historialHorasExtra.length === 0) {
+                <tr><td colspan="6" class="center empty-state">Sin registros en este período.</td></tr>
+              }
+              @for (registro of historialHorasExtra; track registro.id) {
+                <tr>
+                  <td>{{ formatDate(registro.fecha) }}</td>
+                  <td>{{ registro.empleado }}</td>
+                  <td class="center">{{ registro.horas }} hrs</td>
+                  <td class="center">
+                    <span class="status-badge status-active">{{ registro.recargo }}%</span>
+                  </td>
+                  <td class="cell-amount fw-600">{{ formatCurrency(registro.montoTotal) }}</td>
+                  <td class="cell-actions center">
+                    <button class="btn-action btn-delete" (click)="eliminarRegistro(registro.id)" title="Eliminar registro">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  }
+
 </div>

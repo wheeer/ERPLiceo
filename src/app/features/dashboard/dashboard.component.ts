@@ -28,7 +28,7 @@ export class DashboardComponent {
     { title: 'Alertas Sistema', value: '3', icon: 'bell', color: 'purple', subtext: 'Sin leer' }
   ];
 
-  // Mock: Actividades recientes del sistema
+  // TODO: Reemplazar con llamada al servicio de auditoría (backend pendiente)
   activities: ActivityLog[] = [
     {
       id: 1,

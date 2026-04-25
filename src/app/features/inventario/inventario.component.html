@@ -1,64 +1,216 @@
 <div class="inventario-container">
-  <!-- HEADER -->
-  <div class="inventario-header">
-    <h1 class="inventario-title">Inventario</h1>
-    <p class="inventario-subtitle">Control de stock y ubicaciones de equipos y accesorios</p>
+  <!-- HEADER CON TABS -->
+  <div class="inventario-header-row">
+    <div class="inventario-header">
+      <h1 class="inventario-title">Inventario</h1>
+      <p class="inventario-subtitle">Control de stock y ubicaciones de equipos y accesorios</p>
+    </div>
+    
+    <!-- TABS DEL MÓDULO -->
+    <div class="module-tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'stock'" (click)="changeTab('stock')">
+        Vista de Stock
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'gestion'" (click)="changeTab('gestion')">
+        Gestión de Insumos
+      </button>
+    </div>
   </div>
 
-  <!-- TABLA DE INVENTARIO -->
-  <div class="table-wrapper">
-    <table class="inventory-table">
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Producto</th>
-          <th>Categoría</th>
-          <th class="amount">Stock</th>
-          <th>Ubicación</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (item of inventoryItems; track item.id) {
-          <tr [class.alert-row]="item.stock < item.stockCritico">
-            <td class="cell-codigo">
-              <span class="codigo-badge">{{ item.codigo }}</span>
-            </td>
-            <td class="cell-producto">{{ item.producto }}</td>
-            <td class="cell-categoria">
-              <span class="category-tag">{{ item.categoria }}</span>
-            </td>
-            <td class="cell-stock" [class]="item.stock === 0 ? 'zero-stock' : ''">
-              <div class="stock-wrapper">
-                <span>{{ item.stock }}</span>
-                @if (item.stock < item.stockCritico) {
-                  <span class="stock-alert-icon" title="Stock por debajo del nivel crítico ({{ item.stockCritico }})">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  </span>
-                }
-              </div>
-            </td>
-            <td class="cell-ubicacion">{{ item.ubicacion }}</td>
-            <td class="cell-estado">
-              <span class="status-badge" [class]="getStatusColor(item.estado)">
-                {{ getStatusLabel(item.estado) }}
-              </span>
-            </td>
+  <!-- ============================================== -->
+  <!-- TAB 1: VISTA DE STOCK -->
+  <!-- ============================================== -->
+  @if (activeTab === 'stock') {
+    <div class="table-wrapper">
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th class="amount">Stock</th>
+            <th>Ubicación</th>
+            <th>Estado</th>
           </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+        </thead>
+        <tbody>
+          @for (item of inventoryItems; track item.id) {
+            <tr [class.alert-row]="item.stock < item.stockCritico">
+              <td class="cell-codigo">
+                <span class="codigo-badge">{{ item.codigo }}</span>
+              </td>
+              <td class="cell-producto">{{ item.producto }}</td>
+              <td class="cell-categoria">
+                <span class="category-tag">{{ item.categoria }}</span>
+              </td>
+              <td class="cell-stock" [class]="item.stock === 0 ? 'zero-stock' : ''">
+                <div class="stock-wrapper">
+                  <span>{{ item.stock }}</span>
+                  @if (item.stock < item.stockCritico) {
+                    <span class="stock-alert-icon" title="Stock por debajo del nivel crítico ({{ item.stockCritico }})">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </span>
+                  }
+                </div>
+              </td>
+              <td class="cell-ubicacion">{{ item.ubicacion }}</td>
+              <td class="cell-estado">
+                <span class="status-badge" [class]="getStatusColor(item.estado)">
+                  {{ getStatusLabel(item.estado) }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
 
-  <!-- FOOTER CON ESTADÍSTICAS -->
-  <div class="inventario-footer">
-    <div class="stat">
-      <span class="stat-label">Total de artículos:</span>
-      <span class="stat-value">{{ getItemsCount() }}</span>
+    <div class="inventario-footer">
+      <div class="stat">
+        <span class="stat-label">Total de artículos:</span>
+        <span class="stat-value">{{ getItemsCount() }}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Unidades en stock:</span>
+        <span class="stat-value">{{ getTotalItems() }}</span>
+      </div>
     </div>
-    <div class="stat">
-      <span class="stat-label">Unidades en stock:</span>
-      <span class="stat-value">{{ getTotalItems() }}</span>
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 2: GESTIÓN DE INSUMOS -->
+  <!-- ============================================== -->
+  @if (activeTab === 'gestion') {
+    <div class="action-bar">
+      <h2>Catálogo de Productos e Insumos</h2>
+      <button class="btn-primary" (click)="openNewModal()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo Producto
+      </button>
     </div>
-  </div>
+
+    <div class="table-wrapper">
+      <table class="inventory-table crud-table">
+        <thead>
+          <tr>
+            <th>Código / Producto</th>
+            <th>Categoría</th>
+            <th class="amount">Ajuste de Stock</th>
+            <th>Ubicación</th>
+            <th class="center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (inventoryItems.length === 0) {
+            <tr><td colspan="5" class="center empty-state">No hay productos registrados.</td></tr>
+          }
+          @for (item of inventoryItems; track item.id) {
+            <tr>
+              <td class="cell-producto">
+                <div class="item-info-detailed">
+                  <span class="codigo-badge mini">{{ item.codigo }}</span>
+                  <span class="item-name">{{ item.producto }}</span>
+                </div>
+              </td>
+              <td class="cell-categoria">
+                <span class="category-tag">{{ item.categoria }}</span>
+              </td>
+              <td class="cell-stock-adjust">
+                <div class="stock-adjust-controls">
+                  <button class="btn-adjust minus" (click)="ajustarStock(item, -1)">-</button>
+                  <span class="current-stock" [class.alert]="item.stock < item.stockCritico">{{ item.stock }}</span>
+                  <button class="btn-adjust plus" (click)="ajustarStock(item, 1)">+</button>
+                </div>
+              </td>
+              <td class="cell-ubicacion">{{ item.ubicacion }}</td>
+              <td class="cell-actions center">
+                <button class="btn-action btn-edit" (click)="openEditModal(item)" title="Editar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn-action btn-delete" (click)="deleteItem(item.id)" title="Eliminar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- MODAL DE CREACIÓN / EDICIÓN                    -->
+  <!-- ============================================== -->
+  @if (showModal) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>{{ isEditing ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
+          <button class="btn-close" (click)="closeModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <form [formGroup]="inventoryForm" (ngSubmit)="saveItem()" class="crud-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Código SKU</label>
+              <input type="text" formControlName="codigo" placeholder="Ej: PNT-001" [class.error]="inventoryForm.get('codigo')?.invalid && inventoryForm.get('codigo')?.touched">
+            </div>
+            <div class="form-group">
+              <label>Categoría</label>
+              <select formControlName="categoria">
+                <option value="">Seleccione...</option>
+                <option value="Hardware">Hardware</option>
+                <option value="Componentes">Componentes</option>
+                <option value="Perifericos">Periféricos</option>
+                <option value="Cableria">Cablería</option>
+                <option value="Audiovisual">Audiovisual</option>
+                <option value="Accesorios">Accesorios</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Nombre del Producto</label>
+            <input type="text" formControlName="producto" placeholder="Ej: Pantalla LED 24''" [class.error]="inventoryForm.get('producto')?.invalid && inventoryForm.get('producto')?.touched">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Stock Inicial</label>
+              <input type="number" formControlName="stock" min="0">
+            </div>
+            <div class="form-group">
+              <label>Stock Crítico (Alerta)</label>
+              <input type="number" formControlName="stockCritico" min="1">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Ubicación Física</label>
+              <input type="text" formControlName="ubicacion" placeholder="Ej: Bodega A - Estante 1">
+            </div>
+            <div class="form-group">
+              <label>Estado</label>
+              <select formControlName="estado">
+                <option value="disponible">Disponible</option>
+                <option value="bajo-stock">Bajo Stock</option>
+                <option value="descontinuado">Descontinuado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" (click)="closeModal()">Cancelar</button>
+            <button type="submit" class="btn-primary" [disabled]="inventoryForm.invalid">
+              Guardar Producto
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
 </div>

@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 interface InventoryItem {
   id: number;
@@ -15,13 +16,23 @@ interface InventoryItem {
 @Component({
   selector: 'app-inventario',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './inventario.component.html',
   styleUrls: ['./inventario.component.css']
 })
 export class InventarioComponent {
   
-  // Mock: 10 items de inventario
+  private fb = inject(FormBuilder);
+
+  // Tabs
+  activeTab: 'stock' | 'gestion' = 'stock';
+
+  // Estado CRUD
+  showModal = false;
+  isEditing = false;
+  inventoryForm: FormGroup;
+  
+  // TODO: Reemplazar con llamada al servicio de inventario (backend pendiente)
   inventoryItems: InventoryItem[] = [
     {
       id: 1,
@@ -124,6 +135,19 @@ export class InventarioComponent {
       estado: 'bajo-stock'
     }
   ];
+
+  constructor() {
+    this.inventoryForm = this.fb.group({
+      id: [null],
+      codigo: ['', Validators.required],
+      producto: ['', Validators.required],
+      categoria: ['', Validators.required],
+      stock: [0, [Validators.required, Validators.min(0)]],
+      stockCritico: [5, [Validators.required, Validators.min(1)]],
+      ubicacion: ['', Validators.required],
+      estado: ['disponible', Validators.required]
+    });
+  }
   
   getStatusColor(status: InventoryItem['estado']): string {
     const colors: Record<InventoryItem['estado'], string> = {
@@ -149,5 +173,81 @@ export class InventarioComponent {
   
   getItemsCount(): number {
     return this.inventoryItems.length;
+  }
+
+  // ==========================================
+  // Métodos de navegación y gestión de estado
+  // ==========================================
+
+  changeTab(tab: 'stock' | 'gestion') {
+    this.activeTab = tab;
+  }
+
+  openNewModal() {
+    this.isEditing = false;
+    this.inventoryForm.reset({
+      stock: 0,
+      stockCritico: 5,
+      estado: 'disponible'
+    });
+    this.showModal = true;
+  }
+
+  openEditModal(item: InventoryItem) {
+    this.isEditing = true;
+    this.inventoryForm.patchValue(item);
+    this.showModal = true;
+  }
+
+  closeModal() {
+    this.showModal = false;
+  }
+
+  saveItem() {
+    if (this.inventoryForm.invalid) {
+      this.inventoryForm.markAllAsTouched();
+      return;
+    }
+
+    const formValue = this.inventoryForm.value;
+    
+    // Estado calculado dinámicamente según nivel de stock
+    if (formValue.stock === 0 && formValue.estado !== 'descontinuado') {
+      formValue.estado = 'bajo-stock';
+    } else if (formValue.stock <= formValue.stockCritico && formValue.estado === 'disponible') {
+      formValue.estado = 'bajo-stock';
+    } else if (formValue.stock > formValue.stockCritico && formValue.estado === 'bajo-stock') {
+      formValue.estado = 'disponible';
+    }
+
+    if (this.isEditing) {
+      const index = this.inventoryItems.findIndex(i => i.id === formValue.id);
+      if (index !== -1) {
+        this.inventoryItems[index] = formValue;
+      }
+    } else {
+      formValue.id = Math.max(0, ...this.inventoryItems.map(i => i.id)) + 1;
+      this.inventoryItems.unshift(formValue);
+    }
+    this.closeModal();
+  }
+
+  deleteItem(id: number) {
+    if (confirm('¿Está seguro de eliminar este producto del inventario?')) {
+      this.inventoryItems = this.inventoryItems.filter(i => i.id !== id);
+    }
+  }
+
+  ajustarStock(item: InventoryItem, cantidad: number) {
+    const nuevoStock = Math.max(0, item.stock + cantidad);
+    item.stock = nuevoStock;
+    
+    if (nuevoStock === 0 && item.estado !== 'descontinuado') {
+      item.estado = 'bajo-stock';
+    } else if (nuevoStock <= item.stockCritico && item.estado === 'disponible') {
+      item.estado = 'bajo-stock';
+    } else if (nuevoStock > item.stockCritico && item.estado === 'bajo-stock') {
+      item.estado = 'disponible';
+    }
   }
 }
