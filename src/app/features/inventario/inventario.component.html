@@ -117,9 +117,9 @@
               </td>
               <td class="cell-stock-adjust">
                 <div class="stock-adjust-controls">
-                  <button class="btn-adjust minus" (click)="ajustarStock(item, -1)">-</button>
+                  <button class="btn-adjust minus" (click)="ajustarStock(item, -1, $event)">-</button>
                   <span class="current-stock" [class.alert]="item.stock < item.stockCritico">{{ item.stock }}</span>
-                  <button class="btn-adjust plus" (click)="ajustarStock(item, 1)">+</button>
+                  <button class="btn-adjust plus" (click)="ajustarStock(item, 1, $event)">+</button>
                 </div>
               </td>
               <td class="cell-ubicacion">{{ item.ubicacion }}</td>

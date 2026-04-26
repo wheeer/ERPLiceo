@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Output, inject, OnInit, OnDestroy, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
 import { AuthService } from '../../services/auth.service';
@@ -19,6 +19,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
   private activatedRoute = inject(ActivatedRoute);
+  private elementRef = inject(ElementRef);
 
   pageTitle = 'Dashboard Principal';
   private routerSub!: Subscription;
@@ -55,6 +56,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   cerrarSesion() {
     this.authService.logout();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onClickOutside(event: MouseEvent) {
+    if (!this.elementRef.nativeElement.contains(event.target)) {
+      this.mostrarNotificaciones = false;
+      this.mostrarMenuUsuario = false;
+    }
   }
 
   ngOnInit() {

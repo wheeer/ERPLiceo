@@ -1,6 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ToastService } from '../../core/services/toast.service';
+import { ActivatedRoute } from '@angular/router';
 
 interface Payroll {
   id: number;
@@ -31,9 +33,11 @@ interface HorasExtraRecord {
   templateUrl: './remuneraciones.component.html',
   styleUrls: ['./remuneraciones.component.css']
 })
-export class RemuneracionesComponent {
+export class RemuneracionesComponent implements OnInit {
   
   private fb = inject(FormBuilder);
+  private toastService = inject(ToastService);
+  private route = inject(ActivatedRoute);
 
   // Tabs
   activeTab: 'nomina' | 'horasExtra' = 'nomina';
@@ -108,6 +112,17 @@ export class RemuneracionesComponent {
     });
   }
 
+  ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      if (params['tab']) {
+        const tab = params['tab'];
+        if (['nomina', 'horasExtra'].includes(tab)) {
+          this.activeTab = tab as any;
+        }
+      }
+    });
+  }
+
   changeTab(tab: 'nomina' | 'horasExtra') {
     this.activeTab = tab;
   }
@@ -144,12 +159,13 @@ export class RemuneracionesComponent {
 
     this.historialHorasExtra.unshift(nuevoRegistro);
     
-    alert(`Cálculo exitoso: $${this.formatCurrency(Math.round(montoTotal))} agregados al historial.`);
+    this.toastService.show(`Horas extra calculadas y registradas: $${this.formatCurrency(Math.round(montoTotal))}`, 'success');
     this.horasExtraForm.patchValue({ horas: 1 });
   }
 
   eliminarRegistro(id: number) {
     this.historialHorasExtra = this.historialHorasExtra.filter(h => h.id !== id);
+    this.toastService.show('Registro eliminado del historial.', 'warning');
   }
 
   formatDate(date: Date): string {
@@ -171,7 +187,7 @@ export class RemuneracionesComponent {
     return this.payrollData.reduce((sum, p) => sum + p.neto, 0);
   }
   descargarPDF(payroll: Payroll) {
-    alert(`Generando liquidación para ${payroll.nombre}... (pendiente: integración de servicio PDF)`);
+    this.toastService.show(`Generando liquidación para ${payroll.nombre}...`, 'info');
     // TODO: Integrar jsPDF o servicio backend para exportación.
   }
 }

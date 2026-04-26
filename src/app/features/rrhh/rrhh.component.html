@@ -26,83 +26,42 @@
   <!-- TAB 1: VISTA GENERAL -->
   <!-- ============================================== -->
   @if (activeTab === 'general') {
-    <div class="view-toggle-container">
-      <div class="view-toggle">
-        <button class="toggle-btn" [class.active]="viewMode === 'table'" (click)="viewMode = 'table'">
-          Resumen Empleados
-        </button>
-        <button class="toggle-btn" [class.active]="viewMode === 'calendar'" (click)="viewMode = 'calendar'">
-          Asistencia Mensual
-        </button>
-      </div>
-    </div>
-
-    @if (viewMode === 'table') {
-      <div class="table-wrapper">
-        <table class="employees-table">
-          <thead>
+    <div class="table-wrapper">
+      <table class="employees-table">
+        <thead>
+          <tr>
+            <th>RUT</th>
+            <th>Nombre</th>
+            <th>Cargo</th>
+            <th>Fecha Ingreso</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (employee of employees; track employee.id) {
             <tr>
-              <th>RUT</th>
-              <th>Nombre</th>
-              <th>Cargo</th>
-              <th>Fecha Ingreso</th>
-              <th>Estado</th>
+              <td class="cell-rut">{{ employee.rut }}</td>
+              <td class="cell-nombre">
+                <div class="employee-info">
+                  <span class="employee-avatar">{{ employee.nombre.charAt(0) }}</span>
+                  <span class="employee-name">{{ employee.nombre }}</span>
+                </div>
+              </td>
+              <td class="cell-cargo">{{ employee.cargo }}</td>
+              <td class="cell-fecha">{{ formatDate(employee.fechaIngreso) }}</td>
+              <td class="cell-estado">
+                <span class="status-badge" [class]="getStatusColor(employee.estado)">
+                  {{ getStatusLabel(employee.estado) }}
+                </span>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            @for (employee of employees; track employee.id) {
-              <tr>
-                <td class="cell-rut">{{ employee.rut }}</td>
-                <td class="cell-nombre">
-                  <div class="employee-info">
-                    <span class="employee-avatar">{{ employee.nombre.charAt(0) }}</span>
-                    <span class="employee-name">{{ employee.nombre }}</span>
-                  </div>
-                </td>
-                <td class="cell-cargo">{{ employee.cargo }}</td>
-                <td class="cell-fecha">{{ formatDate(employee.fechaIngreso) }}</td>
-                <td class="cell-estado">
-                  <span class="status-badge" [class]="getStatusColor(employee.estado)">
-                    {{ getStatusLabel(employee.estado) }}
-                  </span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      <div class="table-footer">
-        <span class="footer-info">Total de empleados: {{ employees.length }}</span>
-      </div>
-    } @else {
-      <!-- CALENDARIO DE ASISTENCIA -->
-      <div class="calendar-wrapper">
-        <div class="calendar-top">
-          <h3 class="calendar-month">Abril 2026 - Registro de Asistencia General</h3>
-          <div class="calendar-legend">
-            <span class="legend-item"><span class="dot present"></span> Presente</span>
-            <span class="legend-item"><span class="dot absent"></span> Ausente</span>
-            <span class="legend-item"><span class="dot leave"></span> Licencia</span>
-          </div>
-        </div>
-        
-        <div class="calendar-grid">
-          <div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div><div class="cal-day-header">Mié</div>
-          <div class="cal-day-header">Jue</div><div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div><div class="cal-day-header">Dom</div>
-          
-          <div class="cal-day empty"></div>
-          <div class="cal-day empty"></div>
-          
-          @for (day of daysInMonth; track day) {
-            <div class="cal-day" [class]="'cal-status-' + getAttendanceStatus(day)">
-              <span class="day-number">{{ day }}</span>
-              @if (getAttendanceStatus(day) === 'absent') { <span class="day-tag tag-absent">Falta</span> }
-              @if (getAttendanceStatus(day) === 'leave') { <span class="day-tag tag-leave">Licencia</span> }
-            </div>
           }
-        </div>
-      </div>
-    }
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <span class="footer-info">Total de empleados: {{ employees.length }}</span>
+    </div>
   }
 
   <!-- ============================================== -->
@@ -206,6 +165,34 @@
           <div class="detalle-grupo">
             <label>Fecha de Ingreso</label>
             <p>{{ formatDate(selectedEmployee.fechaIngreso) }}</p>
+          </div>
+        </div>
+
+        <!-- CALENDARIO DE ASISTENCIA INDIVIDUAL -->
+        <div class="calendar-wrapper" style="margin-top: 2rem;">
+          <div class="calendar-top">
+            <h3 class="calendar-month">Abril 2026 - Asistencia de {{ selectedEmployee.nombre }}</h3>
+            <div class="calendar-legend">
+              <span class="legend-item"><span class="dot present"></span> Presente</span>
+              <span class="legend-item"><span class="dot absent"></span> Ausente</span>
+              <span class="legend-item"><span class="dot leave"></span> Licencia</span>
+            </div>
+          </div>
+          
+          <div class="calendar-grid">
+            <div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div><div class="cal-day-header">Mié</div>
+            <div class="cal-day-header">Jue</div><div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div><div class="cal-day-header">Dom</div>
+            
+            <div class="cal-day empty"></div>
+            <div class="cal-day empty"></div>
+            
+            @for (day of daysInMonth; track day) {
+              <div class="cal-day" [class]="'cal-status-' + getAttendanceStatus(selectedEmployee.id, day)">
+                <span class="day-number">{{ day }}</span>
+                @if (getAttendanceStatus(selectedEmployee.id, day) === 'absent') { <span class="day-tag tag-absent">Falta</span> }
+                @if (getAttendanceStatus(selectedEmployee.id, day) === 'leave') { <span class="day-tag tag-leave">Licencia</span> }
+              </div>
+            }
           </div>
         </div>
       </div>

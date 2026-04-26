@@ -25,9 +25,11 @@
       <li class="nav-item">
         <a
           [routerLink]="item.ruta"
+          [queryParams]="item.subItems ? { tab: item.subItems[0].tab } : null"
           routerLinkActive="active"
           class="nav-link"
           [title]="isCollapsed ? item.label : ''"
+          (click)="toggleModule(item.id, $event)"
         >
           <span class="nav-icon">
             @switch (item.id) {
@@ -47,9 +49,26 @@
           </span>
           @if (!isCollapsed) {
             <span class="nav-label">{{ item.label }}</span>
+            @if (item.subItems) {
+              <span class="nav-chevron" [class.expanded]="expandedModuleId === item.id">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+            }
           }
           <span class="nav-active-bar"></span>
         </a>
+        
+        @if (!isCollapsed && item.subItems && expandedModuleId === item.id) {
+          <ul class="nav-sub-list">
+            @for (sub of item.subItems; track sub.tab) {
+              <li>
+                <a [routerLink]="item.ruta" [queryParams]="{ tab: sub.tab }" routerLinkActive="active-sub" class="nav-sub-link">
+                  {{ sub.label }}
+                </a>
+              </li>
+            }
+          </ul>
+        }
       </li>
     }
   </ul>

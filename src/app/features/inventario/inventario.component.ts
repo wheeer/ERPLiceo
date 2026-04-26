@@ -1,6 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ToastService } from '../../core/services/toast.service';
+import { ActivatedRoute } from '@angular/router';
 
 interface InventoryItem {
   id: number;
@@ -20,9 +22,11 @@ interface InventoryItem {
   templateUrl: './inventario.component.html',
   styleUrls: ['./inventario.component.css']
 })
-export class InventarioComponent {
+export class InventarioComponent implements OnInit {
   
   private fb = inject(FormBuilder);
+  private toastService = inject(ToastService);
+  private route = inject(ActivatedRoute);
 
   // Tabs
   activeTab: 'stock' | 'gestion' = 'stock';
@@ -148,6 +152,17 @@ export class InventarioComponent {
       estado: ['disponible', Validators.required]
     });
   }
+
+  ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      if (params['tab']) {
+        const tab = params['tab'];
+        if (['stock', 'gestion'].includes(tab)) {
+          this.activeTab = tab as any;
+        }
+      }
+    });
+  }
   
   getStatusColor(status: InventoryItem['estado']): string {
     const colors: Record<InventoryItem['estado'], string> = {
@@ -224,10 +239,12 @@ export class InventarioComponent {
       const index = this.inventoryItems.findIndex(i => i.id === formValue.id);
       if (index !== -1) {
         this.inventoryItems[index] = formValue;
+        this.toastService.show('Información del producto actualizada.', 'success');
       }
     } else {
       formValue.id = Math.max(0, ...this.inventoryItems.map(i => i.id)) + 1;
       this.inventoryItems.unshift(formValue);
+      this.toastService.show('Producto añadido al inventario.', 'success');
     }
     this.closeModal();
   }
@@ -235,10 +252,11 @@ export class InventarioComponent {
   deleteItem(id: number) {
     if (confirm('¿Está seguro de eliminar este producto del inventario?')) {
       this.inventoryItems = this.inventoryItems.filter(i => i.id !== id);
+      this.toastService.show('Producto eliminado del inventario.', 'warning');
     }
   }
 
-  ajustarStock(item: InventoryItem, cantidad: number) {
+  ajustarStock(item: InventoryItem, cantidad: number, event: Event) {
     const nuevoStock = Math.max(0, item.stock + cantidad);
     item.stock = nuevoStock;
     
@@ -248,6 +266,27 @@ export class InventarioComponent {
       item.estado = 'bajo-stock';
     } else if (nuevoStock > item.stockCritico && item.estado === 'bajo-stock') {
       item.estado = 'disponible';
+    }
+    
+    this.toastService.show(`Stock actualizado: ${nuevoStock} unidades.`, 'info');
+    
+    // Feedback visual usando Web Animations API (100% confiable y sin conflictos con Angular)
+    const target = event.target as HTMLElement;
+    const tr = target.closest('tr');
+    
+    if (tr) {
+      // Color aurora cian/azul para sumar (+), color ámbar/rojo sutil para restar (-)
+      const flashColor = cantidad > 0 
+        ? 'rgba(0, 217, 255, 0.25)' 
+        : 'rgba(239, 68, 68, 0.25)';
+        
+      tr.animate([
+        { backgroundColor: flashColor },
+        { backgroundColor: 'transparent' }
+      ], {
+        duration: 800,
+        easing: 'ease-out'
+      });
     }
   }
 }

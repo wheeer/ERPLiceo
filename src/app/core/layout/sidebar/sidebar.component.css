@@ -185,3 +185,62 @@
   background: #22c55e;
   box-shadow: 0 0 6px #22c55e;
 }
+
+/* ==========================================================================
+   SUBMENÚS (BLOQUE D)
+   ========================================================================== */
+.nav-chevron {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+  color: var(--text-sidebar-muted, #94a3b8);
+}
+
+.nav-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.nav-sub-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 3.25rem; /* Indentación alineada con el texto del padre */
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out forwards;
+}
+
+.nav-sub-link {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-sidebar-muted, #94a3b8);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.nav-sub-link:hover {
+  color: var(--text-sidebar, #f8fafc);
+  background: var(--bg-sidebar-hover, rgba(255,255,255,0.05));
+}
+
+.nav-sub-link.active-sub {
+  color: var(--accent, #60a5fa);
+  background: var(--bg-sidebar-hover, rgba(255,255,255,0.05));
+  font-weight: 500;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

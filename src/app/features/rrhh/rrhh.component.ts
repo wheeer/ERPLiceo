@@ -1,6 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ToastService } from '../../core/services/toast.service';
+import { ActivatedRoute } from '@angular/router';
 
 interface Employee {
   id: number;
@@ -20,17 +22,17 @@ interface Employee {
   templateUrl: './rrhh.component.html',
   styleUrls: ['./rrhh.component.css']
 })
-export class RrhhComponent {
+export class RrhhComponent implements OnInit {
   
   // Dependencias
   private fb = inject(FormBuilder);
+  private toastService = inject(ToastService);
+  private route = inject(ActivatedRoute);
 
   // Tabs
   activeTab: 'general' | 'gestion' | 'ficha' = 'general';
   
-  // Vistas (General)
-  viewMode: 'table' | 'calendar' = 'table';
-  
+
   // Estado CRUD
   showModal = false;
   isEditing = false;
@@ -40,14 +42,18 @@ export class RrhhComponent {
   // Configuración base del calendario de asistencia (Abril 2026)
   daysInMonth = Array.from({length: 30}, (_, i) => i + 1);
   
-  getAttendanceStatus(day: number): 'present' | 'absent' | 'leave' | 'weekend' {
+  getAttendanceStatus(employeeId: number, day: number): 'present' | 'absent' | 'leave' | 'weekend' {
+    // TODO: El backend debe devolver la asistencia filtrada por employeeId
     const weekends = [4, 5, 11, 12, 18, 19, 25, 26];
     if (weekends.includes(day)) return 'weekend';
     
-    const absences = [3, 14, 22];
+    // Simulación de datos variados por empleado (mock)
+    if (employeeId === 4 && day >= 10) return 'leave'; // Francisca (Licencia)
+    
+    const absences = employeeId % 2 === 0 ? [3, 14] : [22];
     if (absences.includes(day)) return 'absent';
     
-    const leaves = [8, 9, 10];
+    const leaves = employeeId % 3 === 0 ? [8, 9, 10] : [];
     if (leaves.includes(day)) return 'leave';
     
     return 'present';
@@ -117,6 +123,17 @@ export class RrhhComponent {
       departamento: ['', Validators.required],
       fechaIngreso: [new Date().toISOString().split('T')[0], Validators.required],
       estado: ['activo', Validators.required]
+    });
+  }
+
+  ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      if (params['tab']) {
+        const tab = params['tab'];
+        if (['general', 'gestion', 'ficha'].includes(tab)) {
+          this.activeTab = tab as any;
+        }
+      }
     });
   }
   
@@ -200,10 +217,12 @@ export class RrhhComponent {
       const index = this.employees.findIndex(e => e.id === newEmployee.id);
       if (index !== -1) {
         this.employees[index] = newEmployee;
+        this.toastService.show('Datos actualizados correctamente.', 'success');
       }
     } else {
       newEmployee.id = Math.max(0, ...this.employees.map(e => e.id)) + 1;
       this.employees.push(newEmployee);
+      this.toastService.show('Empleado registrado exitosamente.', 'success');
     }
     this.closeModal();
   }
@@ -211,6 +230,7 @@ export class RrhhComponent {
   deleteEmployee(id: number) {
     if (confirm('¿Está seguro de eliminar este empleado?')) {
       this.employees = this.employees.filter(e => e.id !== id);
+      this.toastService.show('Registro de empleado eliminado.', 'warning');
     }
   }
 }

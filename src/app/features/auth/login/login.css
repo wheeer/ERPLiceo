@@ -688,13 +688,17 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
+  background: var(--accent);
+  animation: dot-pulse 1.4s infinite ease-in-out both;
 }
 
-.loader-progress-dot.active {
-  background: var(--accent);
-  transform: scale(1.2);
+.loader-progress-dot:nth-child(1) { animation-delay: -0.32s; }
+.loader-progress-dot:nth-child(2) { animation-delay: -0.16s; }
+.loader-progress-dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes dot-pulse {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
 }
 
 /* Alert Error - Contenedor de errores */

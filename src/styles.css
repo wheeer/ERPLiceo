@@ -113,4 +113,10 @@ body {
 
 /* UTILIDADES */
 .text-accent { color: var(--accent); }
+
+/* FORZAR ESTILOS DE LISTAS DESPLEGABLES (OPTION) */
+select option {
+  background-color: var(--bg-surface-main);
+  color: var(--text-primary);
+}
 .bg-glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
