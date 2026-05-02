@@ -21,10 +21,11 @@ Este proyecto forma parte de la evaluación **EPE2**, enfocándose en la creaci�
 - **Feedback Interactivo**: Iluminación dinámica (Glow) según el foco del usuario y estados de carga progresivos.
 
 ### Módulos Integrados (MVP)
-1.  **Dashboard Central**: Panel de control con métricas clave y accesos directos.
-2.  **Recursos Humanos (RRHH)**: Gestión de personal, mantenedor de funcionarios y visualización de asistencia.
-3.  **Remuneraciones**: Liquidación de sueldos, cálculo de bonos, descuentos y generación de documentos.
-4.  **Inventario**: Control de stock crítico, trazabilidad de insumos y sistema de alertas.
+1.  **Dashboard Central**: Panel de control adaptativo con métricas y actividades filtradas dinámicamente según el rol.
+2.  **Mi Perfil**: Gestión segura de credenciales, cambio de contraseñas cruzado con base de datos y visualización de datos de empleado.
+3.  **Recursos Humanos (RRHH)**: Gestión de personal, mantenedor de funcionarios y visualización de asistencia.
+4.  **Remuneraciones**: Liquidación de sueldos, cálculo de bonos, descuentos y generación de documentos.
+5.  **Inventario**: Control de stock crítico, trazabilidad de insumos y sistema de alertas.
 
 ---
 
@@ -40,19 +41,26 @@ El sistema ha sido auditado bajo las **10 Heurísticas de Jakob Nielsen**, prior
 
 ## Stack Tecnológico
 
-- **Frontend**: Angular 21
-- **Estilos**: CSS3 (Vanilla) con Sistema de Design Tokens
+**Frontend (Interfaz de Usuario)**
+- **Framework**: Angular 21
+- **Estilos**: CSS3 (Vanilla) con Sistema de Design Tokens dinámicos (Dark/Light Mode)
 - **Iconografía**: SVG Inline / Lucide Icons
 - **Tipografía**: Inter (Google Fonts) para máxima legibilidad
 
+**Backend & Base de Datos**
+- **Framework**: Django (Python) para la lógica de API Rest.
+- **Base de Datos**: MongoDB Atlas (NoSQL) centralizado.
+- **Seguridad**: JWT (JSON Web Tokens) y encriptación con Bcrypt.
+
 ---
 
-## Seguridad y Protocolos (Consideraciones)
+## Seguridad y Arquitectura (Nivel Enterprise)
 
-Aunque el proyecto se encuentra en fase de mockup, se han diseñado las interfaces considerando:
-- **Validación de RUT**: Implementación de algoritmo Módulo 11 para validación chilena.
-- **Protección de Datos**: Alineación con la Ley 21.096 de Protección de Datos Personales.
-- **Roles de Usuario**: Diferenciación de accesos para Administrativos, Directivos y Docentes.
+El sistema ha superado la fase de mockup estático, implementando una arquitectura de seguridad real:
+- **Autenticación Robusta**: Tokens JWT (JSON Web Tokens) inyectados vía Interceptors en Angular.
+- **Protección de Datos (Backend)**: Contraseñas hasheadas en base de datos mediante `bcrypt` con Salt dinámico.
+- **Control de Acceso por Roles (RBAC)**: Enrutamiento bloqueado mediante `Guards` de Angular. Cada módulo (RRHH, Inventario, Remuneraciones) es inaccesible si el token del usuario no contiene el rol específico requerido.
+- **Separación de Lógica de Negocio**: Diferenciación a nivel de base de datos entre credenciales de acceso (Colección `usuarios`) e información personal (Colección `empleados`), respetando el paradigma clásico de los sistemas ERP.
 
 ---
 
