@@ -1,13 +1,13 @@
 <div class="dashboard-container">
   <!-- HEADER -->
   <div class="dashboard-header">
-    <h1 class="dashboard-title">Actividad Reciente</h1>
-    <p class="dashboard-subtitle">Timeline de cambios y operaciones en el sistema</p>
+    <h1 class="dashboard-title">Dashboard de {{ getRoleDisplayName() }}</h1>
+    <p class="dashboard-subtitle">Resumen de operaciones y estado actual del sistema</p>
   </div>
 
   <!-- METRICAS MVP -->
   <div class="metrics-grid">
-    @for (metric of metrics; track metric.title) {
+    @for (metric of filteredMetrics; track metric.title) {
       <div class="metric-card" [class]="'metric-card--' + metric.color">
         <div class="metric-icon-wrapper">
           @switch (metric.icon) {
@@ -42,7 +42,7 @@
 
   <!-- TIMELINE DE ACTIVIDADES -->
   <div class="activity-timeline">
-    @for (activity of activities; track activity.id; let last = $last) {
+    @for (activity of filteredActivities; track activity.id; let last = $last) {
       <div class="timeline-item" [class]="'timeline-item--' + activity.module">
         
         <!-- CONECTOR (Línea vertical) -->

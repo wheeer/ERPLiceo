@@ -24,12 +24,18 @@ export class HeaderComponent implements OnInit, OnDestroy {
   pageTitle = 'Dashboard Principal';
   private routerSub!: Subscription;
 
-  // Datos del usuario (Cargados desde localStorage o AuthService)
+  // Datos del usuario cargados desde el AuthService
   usuario = {
-    nombre: localStorage.getItem('user_name') || 'Usuario Demo',
-    rol: 'Administrativo',
-    iniciales: 'UD'
+    nombre: localStorage.getItem('user_display_name') || 'Usuario',
+    cargo: localStorage.getItem('user_cargo') || 'Sin cargo',
+    iniciales: this.calcularIniciales(localStorage.getItem('user_display_name') || 'U')
   };
+
+  private calcularIniciales(nombre: string): string {
+    const partes = nombre.trim().split(' ');
+    if (partes.length === 1) return partes[0].charAt(0).toUpperCase();
+    return (partes[0].charAt(0) + partes[partes.length - 1].charAt(0)).toUpperCase();
+  }
 
   notificaciones = [
     { texto: 'Inventario: 3 ítems bajo stock mínimo', leida: false },
@@ -56,6 +62,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   cerrarSesion() {
     this.authService.logout();
+  }
+
+  irAPerfil() {
+    this.mostrarMenuUsuario = false;
+    this.router.navigate(['/app/perfil']);
   }
 
   @HostListener('document:click', ['$event'])

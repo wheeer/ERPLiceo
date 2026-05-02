@@ -1,0 +1,316 @@
+/* ─── Variables de tema ─────────────────────────────────────────── */
+:host {
+  --perfil-bg: var(--bg-body, #f8fafc);
+  --card-bg: var(--bg-surface-main, #ffffff);
+  --card-border: var(--border-color, #e2e8f0);
+  --text-primary: var(--text-primary, #0f172a);
+  --text-secondary: var(--text-muted, #64748b);
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --danger: #ef4444;
+  --success: #22c55e;
+}
+
+/* ─── Layout principal ─────────────────────────────────────────── */
+.perfil-container {
+  padding: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Encabezado ────────────────────────────────────────────────── */
+.perfil-header {
+  margin-bottom: 2rem;
+}
+
+.btn-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: 1px solid var(--card-border);
+  color: var(--text-secondary);
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: all 0.2s;
+}
+
+.btn-volver:hover {
+  background: var(--card-border);
+  color: var(--text-primary);
+}
+
+.perfil-titulo {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.perfil-subtitulo {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ─── Grid de dos columnas ──────────────────────────────────────── */
+.perfil-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .perfil-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Sidebar Avatar ────────────────────────────────────────────── */
+.avatar-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.avatar-circulo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  color: white;
+  font-size: 2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+}
+
+.avatar-nombre {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.avatar-cargo {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.avatar-rol-badge {
+  display: inline-block;
+  background: rgba(79, 70, 229, 0.1);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+/* ─── Secciones ─────────────────────────────────────────────────── */
+.perfil-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.perfil-seccion {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1.75rem;
+}
+
+.seccion-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.seccion-titulo svg {
+  color: var(--accent);
+}
+
+.seccion-nota {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0 0 1.25rem;
+  padding-left: 1.6rem;
+}
+
+/* ─── Grid de datos ─────────────────────────────────────────────── */
+.datos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.dato-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dato-item--full {
+  grid-column: 1 / -1;
+}
+
+.dato-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dato-valor {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.estado-activo {
+  color: var(--success);
+}
+
+/* ─── Formulario de clave ───────────────────────────────────────── */
+.clave-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 480px;
+}
+
+.campo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.campo-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.campo-input {
+  width: 100%;
+  padding: 0.65rem 2.5rem 0.65rem 0.85rem;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--perfil-bg);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.campo-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.campo-input.input-error {
+  border-color: var(--danger);
+}
+
+.btn-toggle-pass {
+  position: absolute;
+  right: 0.7rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.btn-toggle-pass:hover {
+  color: var(--accent);
+}
+
+.campo-error {
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+
+/* ─── Botón guardar ─────────────────────────────────────────────── */
+.btn-guardar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  align-self: flex-start;
+  margin-top: 0.25rem;
+}
+
+.btn-guardar:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.btn-guardar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─── Alertas ───────────────────────────────────────────────────── */
+.alerta {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.alerta-exito {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #15803d;
+}
+
+.alerta-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #b91c1c;
+}

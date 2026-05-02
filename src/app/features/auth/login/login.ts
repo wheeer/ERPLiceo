@@ -22,29 +22,29 @@ export class Login implements OnDestroy {
   
   // Estado del UI
   cargando = false;
-  mostrarFormulario = true; // Control para evitar el flash (Corrección #1)
+  mostrarFormulario = true;
   error = '';
   isFocused = false;
   showPassword = false;
 
-  // Loader (Heurística H1)
+  // Loader
   private readonly loaderMessages = [
     "Sincronizando con el servidor central...",
     "Verificando permisos institucionales...",
     "Validando identidad...",
     "Preparando su espacio de trabajo..."
   ];
-  loadingMessage = this.loaderMessages[0]; // Inicializado para evitar parpadeo (Corrección #5)
+  loadingMessage = this.loaderMessages[0];
   private loaderSubscription?: Subscription;
 
   constructor() {
     this.loginForm = this.fb.group({
-      rut: ['', [Validators.required, this.validarRutChileno]], // Validador real (Corrección #6)
+      rut: ['', [Validators.required, this.validarRutChileno]],
       password: ['', [Validators.required]]
     });
   }
 
-  // Algoritmo de Módulo 11 para RUT Chileno (Corrección #6)
+  // Algoritmo de Módulo 11 para RUT Chileno
   private validarRutChileno(control: AbstractControl): ValidationErrors | null {
     const value = control.value?.replace(/\./g, '').replace(/-/g, '').toUpperCase();
     if (!value || value.length < 8) return { rutInvalido: true };
@@ -75,7 +75,7 @@ export class Login implements OnDestroy {
   iniciarSesion(event?: Event) {
     if (event) event.preventDefault();
     
-    // Evitar múltiples envíos (Corrección #8)
+    // Evitar múltiples envíos
     if (this.cargando || this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
@@ -83,34 +83,48 @@ export class Login implements OnDestroy {
 
     this.error = '';
     this.cargando = true;
-    this.mostrarFormulario = false; // Cambio instantáneo para evitar confusión
+    this.mostrarFormulario = false;
     this.cdr.detectChanges();
 
-    // Ciclo de mensajes (Honestos con el proceso de simulación)
+    // Ciclo de mensajes de carga
     this.loaderSubscription = interval(1000).subscribe(val => {
       this.loadingMessage = this.loaderMessages[(val + 1) % this.loaderMessages.length];
       this.cdr.detectChanges();
     });
 
-    // Simulación de latencia de red
-    setTimeout(() => {
-      this.loaderSubscription?.unsubscribe();
-      this.cargando = false;
-      this.cdr.detectChanges();
-      
-      const rutValue = this.loginForm.value.rut;
+    // Llamada al Backend a través del AuthService
+    const rutValue = this.loginForm.value.rut;
+    const passwordValue = this.loginForm.value.password;
 
-      // Usamos el AuthService real (Corrección #10)
-      if (rutValue !== '0-0') { // Simulamos que todos los RUT válidos entran excepto este de prueba
-        this.authService.login(rutValue);
+    // Retraso por UX para permitir lectura del loader
+    setTimeout(() => {
+      this.authService.login(rutValue, passwordValue).subscribe({
+      next: (respuesta) => {
+        // El servidor dijo "200 OK"
+        this.loaderSubscription?.unsubscribe();
+        this.cargando = false;
+        
+        // Redirigir al Dashboard
         this.router.navigate(['/app/dashboard']);
-      } else {
-        this.error = 'Credenciales no reconocidas en la base de datos institucional.';
+      },
+      error: (errorRespuesta) => {
+        // El servidor dijo "401 Error" o "404 No encontrado"
+        this.loaderSubscription?.unsubscribe();
+        this.cargando = false;
+        
+        // Extraer el mensaje de error de Django si existe
+        if (errorRespuesta.error && errorRespuesta.error.error) {
+          this.error = errorRespuesta.error.error;
+        } else {
+          this.error = 'Error de conexión con el servidor.';
+        }
+        
         this.mostrarFormulario = true;
-        this.loginForm.controls['password'].reset(); // Reset silencioso pero con feedback de error (Corrección #9)
+        this.loginForm.controls['password'].reset(); // Obligar a escribir la clave de nuevo
         this.cdr.detectChanges();
       }
-    }, 3500); 
+    });
+    }, 2500); // 2.5 segundos de carga garantizada
   }
 
   ngOnDestroy() {

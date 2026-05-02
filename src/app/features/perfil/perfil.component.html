@@ -1,0 +1,172 @@
+<div class="perfil-container">
+
+  <!-- ENCABEZADO -->
+  <div class="perfil-header">
+    <button class="btn-volver" (click)="volver()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Volver
+    </button>
+    <h1 class="perfil-titulo">Mi Perfil</h1>
+    <p class="perfil-subtitulo">Información personal y configuración de acceso</p>
+  </div>
+
+  <div class="perfil-grid">
+
+    <!-- COLUMNA IZQUIERDA: Avatar + identidad -->
+    <aside class="perfil-sidebar">
+      <div class="avatar-card">
+        <div class="avatar-circulo">{{ iniciales }}</div>
+        <h2 class="avatar-nombre">{{ perfil.nombre_completo }}</h2>
+        <span class="avatar-cargo">{{ perfil.cargo }}</span>
+        <span class="avatar-rol-badge">{{ getRolLabel() }}</span>
+      </div>
+    </aside>
+
+    <!-- COLUMNA DERECHA: Secciones -->
+    <main class="perfil-main">
+
+      <!-- SECCIÓN 1: Datos Personales -->
+      <section class="perfil-seccion">
+        <h2 class="seccion-titulo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Datos Personales
+        </h2>
+        <p class="seccion-nota">Esta información es administrada por el área de Recursos Humanos.</p>
+        <div class="datos-grid">
+          <div class="dato-item">
+            <span class="dato-label">Nombre Completo</span>
+            <span class="dato-valor">{{ perfil.nombre_completo }}</span>
+          </div>
+          <div class="dato-item">
+            <span class="dato-label">RUT</span>
+            <span class="dato-valor">{{ perfil.rut }}</span>
+          </div>
+          <div class="dato-item">
+            <span class="dato-label">Cargo</span>
+            <span class="dato-valor">{{ perfil.cargo }}</span>
+          </div>
+          <div class="dato-item">
+            <span class="dato-label">Tipo de Contrato</span>
+            <span class="dato-valor">{{ perfil.tipo_contrato }}</span>
+          </div>
+          <div class="dato-item">
+            <span class="dato-label">Fecha de Ingreso</span>
+            <span class="dato-valor">{{ perfil.fecha_ingreso }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 2: Acceso al Sistema -->
+      <section class="perfil-seccion">
+        <h2 class="seccion-titulo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Acceso al Sistema
+        </h2>
+        <div class="datos-grid">
+          <div class="dato-item">
+            <span class="dato-label">Rol en el Sistema</span>
+            <span class="dato-valor">{{ getRolLabel() }}</span>
+          </div>
+          <div class="dato-item">
+            <span class="dato-label">Estado de Cuenta</span>
+            <span class="dato-valor estado-activo">● Activo</span>
+          </div>
+          <div class="dato-item dato-item--full">
+            <span class="dato-label">Último Acceso</span>
+            <span class="dato-valor">{{ perfil.ultimo_acceso }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 3: Cambio de Contraseña -->
+      <section class="perfil-seccion">
+        <h2 class="seccion-titulo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Seguridad
+        </h2>
+        <p class="seccion-nota">La nueva contraseña debe tener al menos 8 caracteres.</p>
+
+        @if (mensajeExito) {
+          <div class="alerta alerta-exito">{{ mensajeExito }}</div>
+        }
+        @if (mensajeError) {
+          <div class="alerta alerta-error">{{ mensajeError }}</div>
+        }
+
+        <form [formGroup]="claveForm" (ngSubmit)="guardarClave()" class="clave-form" novalidate>
+
+          <!-- Contraseña Actual -->
+          <div class="campo-grupo">
+            <label class="campo-label">Contraseña Actual</label>
+            <div class="input-wrapper">
+              <input
+                [type]="mostrarClaveActual ? 'text' : 'password'"
+                formControlName="clave_actual"
+                class="campo-input"
+                [class.input-error]="claveForm.get('clave_actual')?.invalid && claveForm.get('clave_actual')?.touched"
+                placeholder="Ingresa tu contraseña actual"
+              />
+              <button type="button" class="btn-toggle-pass" (click)="toggleCampo('actual')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            @if (claveForm.get('clave_actual')?.invalid && claveForm.get('clave_actual')?.touched) {
+              <span class="campo-error">Este campo es requerido.</span>
+            }
+          </div>
+
+          <!-- Nueva Contraseña -->
+          <div class="campo-grupo">
+            <label class="campo-label">Nueva Contraseña</label>
+            <div class="input-wrapper">
+              <input
+                [type]="mostrarNuevaClave ? 'text' : 'password'"
+                formControlName="nueva_clave"
+                class="campo-input"
+                [class.input-error]="claveForm.get('nueva_clave')?.invalid && claveForm.get('nueva_clave')?.touched"
+                placeholder="Mínimo 8 caracteres"
+              />
+              <button type="button" class="btn-toggle-pass" (click)="toggleCampo('nueva')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            @if (claveForm.get('nueva_clave')?.errors?.['minlength'] && claveForm.get('nueva_clave')?.touched) {
+              <span class="campo-error">Mínimo 8 caracteres.</span>
+            }
+          </div>
+
+          <!-- Confirmar Contraseña -->
+          <div class="campo-grupo">
+            <label class="campo-label">Confirmar Nueva Contraseña</label>
+            <div class="input-wrapper">
+              <input
+                [type]="mostrarConfirmar ? 'text' : 'password'"
+                formControlName="confirmar_clave"
+                class="campo-input"
+                [class.input-error]="claveForm.errors?.['noCoinciden'] && claveForm.get('confirmar_clave')?.touched"
+                placeholder="Repite la nueva contraseña"
+              />
+              <button type="button" class="btn-toggle-pass" (click)="toggleCampo('confirmar')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            @if (claveForm.errors?.['noCoinciden'] && claveForm.get('confirmar_clave')?.touched) {
+              <span class="campo-error">Las contraseñas no coinciden.</span>
+            }
+          </div>
+
+          <button type="submit" class="btn-guardar" [disabled]="guardando">
+            @if (guardando) {
+              <span>Actualizando...</span>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Guardar Contraseña</span>
+            }
+          </button>
+
+        </form>
+      </section>
+
+    </main>
+  </div>
+</div>

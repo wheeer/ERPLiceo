@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../core/services/auth.service';
 
 interface ActivityLog {
   id: number;
@@ -18,7 +19,9 @@ interface ActivityLog {
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
+  private authService = inject(AuthService);
+  userRole: string | null = null;
   
   // Métricas MVP (Propuesta de valor)
   metrics = [
@@ -85,6 +88,39 @@ export class DashboardComponent {
       timestamp: new Date(Date.now() - 1 * 86400000) // Hace 1 día
     }
   ];
+
+  filteredMetrics: any[] = [];
+  filteredActivities: ActivityLog[] = [];
+
+  ngOnInit() {
+    this.userRole = this.authService.getUserRole();
+    this.applyRoleFilters();
+  }
+
+  private applyRoleFilters() {
+    if (this.userRole === 'Administrador_General') {
+      this.filteredMetrics = [...this.metrics];
+      this.filteredActivities = [...this.activities];
+    } else if (this.userRole === 'Encargado_RRHH') {
+      this.filteredMetrics = this.metrics.filter(m => m.icon === 'users' || m.icon === 'bell');
+      this.filteredActivities = this.activities.filter(a => a.module === 'rrhh' || a.module === 'auth');
+    } else if (this.userRole === 'Encargado_Remuneraciones') {
+      this.filteredMetrics = this.metrics.filter(m => m.icon === 'file' || m.icon === 'bell');
+      this.filteredActivities = this.activities.filter(a => a.module === 'remuneraciones' || a.module === 'auth');
+    } else if (this.userRole === 'Encargado_Bodega') {
+      this.filteredMetrics = this.metrics.filter(m => m.icon === 'alert' || m.icon === 'bell');
+      this.filteredActivities = this.activities.filter(a => a.module === 'inventario' || a.module === 'auth');
+    } else {
+      this.filteredMetrics = [];
+      this.filteredActivities = [];
+    }
+  }
+
+  getRoleDisplayName(): string {
+    if (!this.userRole) return 'Usuario';
+    const cleanRole = this.userRole.replace('Encargado_', '').replace('Administrador_', 'Administrador ');
+    return cleanRole;
+  }
   
   getIconByType(type: ActivityLog['type']): string {
     const icons: Record<ActivityLog['type'], string> = {

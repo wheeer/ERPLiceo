@@ -5,7 +5,9 @@ import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { RrhhComponent } from './features/rrhh/rrhh.component';
 import { RemuneracionesComponent } from './features/remuneraciones/remuneraciones.component';
 import { InventarioComponent } from './features/inventario/inventario.component';
+import { PerfilComponent } from './features/perfil/perfil.component';
 import { authGuard } from './core/guards/auth.guard';
+import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -13,12 +15,31 @@ export const routes: Routes = [
   {
     path: 'app',
     component: MainLayoutComponent,
-    canActivate: [authGuard],
+    canActivate: [authGuard], // Primer filtro: ¿está logueado?
     children: [
       { path: 'dashboard', component: DashboardComponent, data: { title: 'Dashboard Principal' } },
-      { path: 'rrhh', component: RrhhComponent, data: { title: 'Recursos Humanos' } },
-      { path: 'remuneraciones', component: RemuneracionesComponent, data: { title: 'Remuneraciones' } },
-      { path: 'inventario', component: InventarioComponent, data: { title: 'Inventario y Stock' } },
+      
+      // Módulos protegidos por Rol
+      { 
+        path: 'rrhh', 
+        component: RrhhComponent, 
+        canActivate: [roleGuard],
+        data: { title: 'Recursos Humanos', roles: ['Encargado_RRHH'] } 
+      },
+      { 
+        path: 'remuneraciones', 
+        component: RemuneracionesComponent, 
+        canActivate: [roleGuard],
+        data: { title: 'Remuneraciones', roles: ['Encargado_Remuneraciones'] } 
+      },
+      { 
+        path: 'inventario', 
+        component: InventarioComponent, 
+        canActivate: [roleGuard],
+        data: { title: 'Inventario y Stock', roles: ['Encargado_Bodega'] } 
+      },
+      { path: 'perfil', component: PerfilComponent, data: { title: 'Mi Perfil' } },
+      
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },
