@@ -59,7 +59,7 @@ def login_view(request):
         if not bcrypt.checkpw(password.encode('utf-8'), stored_hash):
             return JsonResponse({"error": "Contraseña incorrecta"}, status=401)
 
-        # Login exitoso: cruzar datos con la colección de empleados (Opción C)
+        # Login exitoso: cruzar datos con la colección de empleados
         empleado = col_empleados.find_one({"rut": rut_limpio})
         nombre_completo = empleado.get("nombre_completo") if empleado else rut_limpio
         cargo = empleado.get("cargo") if empleado else "Sin cargo"
