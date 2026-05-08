@@ -1,0 +1,26 @@
+<div class="contenedor-resumen">
+  <h2>Resumen del Mes (Consumo Remuneraciones)</h2>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>RUT</th>
+        <th>Días Trabajados</th>
+        <th>Ausencias</th>
+        <th>Tardanzas</th>
+        <th>Licencias</th>
+        <th>Horas Extra Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let empleado of resumenDatos">
+        <td>{{ empleado.rut }}</td>
+        <td>{{ empleado.dias_trabajados }}</td>
+        <td>{{ empleado.ausencias }}</td>
+        <td>{{ empleado.tardanzas }}</td>
+        <td>{{ empleado.licencias }}</td>
+        <td>{{ empleado.horas_extra_total }} hrs</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

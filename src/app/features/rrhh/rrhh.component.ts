@@ -1,7 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute } from '@angular/router';
 
 interface Employee {
@@ -12,54 +11,32 @@ interface Employee {
   cargo: string;
   fechaIngreso: Date;
   estado: 'activo' | 'inactivo' | 'licencia';
-  departamento?: string;
+  departamento: string;
+  contrato?: string;
 }
 
 @Component({
   selector: 'app-rrhh',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule,ReactiveFormsModule],
   templateUrl: './rrhh.component.html',
   styleUrls: ['./rrhh.component.css']
 })
 export class RrhhComponent implements OnInit {
   
-  // Dependencias
   private fb = inject(FormBuilder);
-  private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
 
-  // Tabs
-  activeTab: 'general' | 'gestion' | 'ficha' = 'general';
-  
+  // CORRECCIÓN 1: Se agregó 'ficha' a las opciones permitidas
+  activeTab: 'general' | 'gestion' | 'asistencia' | 'ficha' = 'general';
 
-  // Estado CRUD
   showModal = false;
   isEditing = false;
   selectedEmployee: Employee | null = null;
   employeeForm: FormGroup;
   
-  // Configuración base del calendario de asistencia (Abril 2026)
   daysInMonth = Array.from({length: 30}, (_, i) => i + 1);
-  
-  getAttendanceStatus(employeeId: number, day: number): 'present' | 'absent' | 'leave' | 'weekend' {
-    // TODO: El backend debe devolver la asistencia filtrada por employeeId
-    const weekends = [4, 5, 11, 12, 18, 19, 25, 26];
-    if (weekends.includes(day)) return 'weekend';
-    
-    // Simulación de datos variados por empleado (mock)
-    if (employeeId === 4 && day >= 10) return 'leave'; // Francisca (Licencia)
-    
-    const absences = employeeId % 2 === 0 ? [3, 14] : [22];
-    if (absences.includes(day)) return 'absent';
-    
-    const leaves = employeeId % 3 === 0 ? [8, 9, 10] : [];
-    if (leaves.includes(day)) return 'leave';
-    
-    return 'present';
-  }
 
-  // TODO: Reemplazar con llamada al servicio de empleados (backend pendiente)
   employees: Employee[] = [
     {
       id: 1,
@@ -69,7 +46,8 @@ export class RrhhComponent implements OnInit {
       cargo: 'Profesor de Programación',
       fechaIngreso: new Date('2021-03-15'),
       estado: 'activo',
-      departamento: 'Informática'
+      departamento: 'Informática',
+      contrato: 'Indefinido'
     },
     {
       id: 2,
@@ -79,7 +57,8 @@ export class RrhhComponent implements OnInit {
       cargo: 'Jefa de Recursos Humanos',
       fechaIngreso: new Date('2019-07-01'),
       estado: 'activo',
-      departamento: 'Administración'
+      departamento: 'Administración',
+      contrato: 'Plazo Fijo'
     },
     {
       id: 3,
@@ -89,101 +68,80 @@ export class RrhhComponent implements OnInit {
       cargo: 'Encargado de Mantenimiento',
       fechaIngreso: new Date('2020-01-20'),
       estado: 'activo',
-      departamento: 'Operaciones'
+      departamento: 'Operaciones',
+      contrato: 'Indefinido'
     },
     {
       id: 4,
-      rut: '45678901-2',
-      nombre: 'Francisca Martínez Díaz',
-      correo: 'francisca.martinez@liceo.cl',
-      cargo: 'Secretaria Administrativa',
-      fechaIngreso: new Date('2022-11-10'),
+      rut: '11223344-5',
+      nombre: 'Pedro Silva',
+      cargo: 'Docente Electromecánica',
+      correo: 'p.silva@liceo.cl',
+      fechaIngreso: new Date('2023-05-10'),
       estado: 'licencia',
-      departamento: 'Administración'
-    },
-    {
-      id: 5,
-      rut: '56789012-3',
-      nombre: 'Carlos Rodríguez Fuentes',
-      correo: 'carlos.rodriguez@liceo.cl',
-      cargo: 'Profesor de Electricidad',
-      fechaIngreso: new Date('2018-05-03'),
-      estado: 'activo',
-      departamento: 'Electromecánica'
+      departamento: 'Electromecánica',
+      contrato: 'Honorarios'
     }
   ];
 
   constructor() {
     this.employeeForm = this.fb.group({
       id: [null],
-      rut: ['', Validators.required],
-      nombre: ['', Validators.required],
+      rut: ['', [Validators.required]],
+      nombre: ['', [Validators.required]],
       correo: ['', [Validators.required, Validators.email]],
-      cargo: ['', Validators.required],
-      departamento: ['', Validators.required],
-      fechaIngreso: [new Date().toISOString().split('T')[0], Validators.required],
-      estado: ['activo', Validators.required]
+      cargo: ['', [Validators.required]],
+      departamento: ['', [Validators.required]],
+      fechaIngreso: [new Date().toISOString().split('T')[0], [Validators.required]],
+      estado: ['activo', [Validators.required]],
+      contrato: ['Indefinido']
     });
   }
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
-      if (params['tab']) {
-        const tab = params['tab'];
-        if (['general', 'gestion', 'ficha'].includes(tab)) {
-          this.activeTab = tab as any;
-        }
+      if (params['tab'] && ['general', 'gestion', 'asistencia', 'ficha'].includes(params['tab'])) {
+        this.activeTab = params['tab'] as any;
       }
     });
   }
-  
-  getStatusColor(status: Employee['estado']): string {
-    const colors: Record<Employee['estado'], string> = {
-      'activo': 'status-active',
-      'inactivo': 'status-inactive',
-      'licencia': 'status-leave'
-    };
-    return colors[status];
-  }
-  
-  getStatusLabel(status: Employee['estado']): string {
-    const labels: Record<Employee['estado'], string> = {
-      'activo': 'Activo',
-      'inactivo': 'Inactivo',
-      'licencia': 'En Licencia'
-    };
-    return labels[status];
-  }
-  
-  formatDate(date: Date): string {
-    return new Date(date).toLocaleDateString('es-CL', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  }
 
-  // ==========================================
-  // Métodos de navegación y gestión de estado
-  // ==========================================
-  
-  changeTab(tab: 'general' | 'gestion' | 'ficha') {
+  // CORRECCIÓN 2: Se incluyó 'ficha' como parámetro válido
+  changeTab(tab: 'general' | 'gestion' | 'asistencia' | 'ficha') {
     this.activeTab = tab;
     if (tab !== 'ficha') {
       this.selectedEmployee = null;
     }
   }
 
+  // CORRECCIÓN 3: Función para ver la ficha
   viewFicha(employee: Employee) {
     this.selectedEmployee = employee;
     this.activeTab = 'ficha';
+  }
+
+  // CORRECCIÓN 4: Función para cerrar el modal
+  closeModal() {
+    this.showModal = false;
+  }
+
+  marcarAsistencia(employee: Employee, estadoAsistencia: string) {
+    alert(`Asistencia registrada: ${employee.nombre} ha sido marcado como ${estadoAsistencia}.`);
+  }
+
+  getAttendanceStatus(employeeId: number, day: number): 'present' | 'absent' | 'leave' | 'weekend' {
+    const weekends = [4, 5, 11, 12, 18, 19, 25, 26]; 
+    if (weekends.includes(day)) return 'weekend';
+    if (employeeId === 4 && day >= 10) return 'leave'; 
+    return (day + employeeId) % 7 === 0 ? 'absent' : 'present'; 
   }
 
   openNewModal() {
     this.isEditing = false;
     this.employeeForm.reset({
       estado: 'activo',
-      fechaIngreso: new Date().toISOString().split('T')[0]
+      fechaIngreso: new Date().toISOString().split('T')[0],
+      contrato: 'Indefinido'
     });
     this.showModal = true;
   }
@@ -197,40 +155,47 @@ export class RrhhComponent implements OnInit {
     this.showModal = true;
   }
 
-  closeModal() {
-    this.showModal = false;
-  }
-
   saveEmployee() {
-    if (this.employeeForm.invalid) {
-      this.employeeForm.markAllAsTouched();
-      return;
-    }
+    if (this.employeeForm.invalid) return;
 
     const formValue = this.employeeForm.value;
-    const newEmployee: Employee = {
+    const employeeData: Employee = {
       ...formValue,
       fechaIngreso: new Date(formValue.fechaIngreso)
     };
 
     if (this.isEditing) {
-      const index = this.employees.findIndex(e => e.id === newEmployee.id);
-      if (index !== -1) {
-        this.employees[index] = newEmployee;
-        this.toastService.show('Datos actualizados correctamente.', 'success');
-      }
+      const index = this.employees.findIndex(e => e.id === employeeData.id);
+      if (index !== -1) this.employees[index] = employeeData;
     } else {
-      newEmployee.id = Math.max(0, ...this.employees.map(e => e.id)) + 1;
-      this.employees.push(newEmployee);
-      this.toastService.show('Empleado registrado exitosamente.', 'success');
+      employeeData.id = Math.max(0, ...this.employees.map(e => e.id)) + 1;
+      this.employees.push(employeeData);
     }
-    this.closeModal();
+    this.showModal = false;
   }
 
   deleteEmployee(id: number) {
-    if (confirm('¿Está seguro de eliminar este empleado?')) {
+    if (confirm('¿Está seguro de eliminar este registro?')) {
       this.employees = this.employees.filter(e => e.id !== id);
-      this.toastService.show('Registro de empleado eliminado.', 'warning');
     }
+  }
+
+  // CORRECCIÓN 5: Función para gestionar los colores de estado
+  getStatusColor(status: string): string {
+    const colors: any = {
+      'activo': 'status-active',
+      'inactivo': 'status-inactive',
+      'licencia': 'status-leave'
+    };
+    return colors[status] || '';
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: any = { 'activo': 'Activo', 'inactivo': 'Inactivo', 'licencia': 'Licencia' };
+    return labels[status] || status;
+  }
+
+  formatDate(date: Date): string {
+    return new Date(date).toLocaleDateString('es-CL');
   }
 }

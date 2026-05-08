@@ -17,9 +17,18 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+# Agregamos esta línea para que Django encuentre tu receta (vista) en la carpeta core
+from core import views 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     
     # Todas las rutas de nuestro ERP empezarán con /api/
     path('api/', include('core.urls')),
+    
+    # ... aquí habrá otras rutas de tus compañeros ...
+    # path('inventario/algo', views.otra_cosa),
+    
+    # --- RUTA RRHH TICKET #22 ---
+    path('api/asistencia/resumen/<int:mes>/<int:anio>/', views.resumen_mensual_asistencia),
 ]

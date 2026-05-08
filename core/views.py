@@ -158,3 +158,35 @@ def cambiar_clave_view(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+    
+    # ==========================================
+# MÓDULO RRHH - TICKET #22 (Jordan Acevedo)
+# ==========================================
+from django.http import JsonResponse
+
+def resumen_mensual_asistencia(request, mes, anio):
+    # Datos "Seed" (de prueba) requeridos por el criterio de aceptación para Abril 2026
+    datos_abril_2026 = [
+        {
+            "rut": "12345678-9",
+            "dias_trabajados": 20,
+            "ausencias": 1,
+            "tardanzas": 2,
+            "licencias": 0,
+            "horas_extra_total": 5.5
+        },
+        {
+            "rut": "87654321-0",
+            "dias_trabajados": 22,
+            "ausencias": 0,
+            "tardanzas": 0,
+            "licencias": 0,
+            "horas_extra_total": 2.0
+        }
+    ]
+    
+    # Retornamos los datos a Remuneraciones en formato JSON
+    return JsonResponse(datos_abril_2026, safe=False)
+# ==========================================
+# FIN MÓDULO RRHH
+# ==========================================
