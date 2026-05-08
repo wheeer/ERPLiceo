@@ -1,0 +1,48 @@
+<div class="contenedor-asistencia">
+  <h2>Asistencia del día: {{ fechaHoy }}</h2>
+
+  <div *ngIf="mensajeError" class="alerta error">{{ mensajeError }}</div>
+  <div *ngIf="mensajeConfirmacion" class="alerta exito">{{ mensajeConfirmacion }}</div>
+
+  <table class="tabla-erp">
+    <thead>
+      <tr>
+        <th>RUT</th>
+        <th>Nombre Completo</th>
+        <th>Estado de Asistencia</th>
+        <th>Detalle Horas Extra</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let empleado of empleadosActivos">
+        <td>{{ empleado.rut }}</td>
+        <td>{{ empleado.nombre_completo }}</td>
+        <td>
+          <select [(ngModel)]="empleado.estadoAsistencia" [disabled]="diaCerrado">
+            <option value="" disabled selected>Seleccione...</option>
+            <option *ngFor="let estado of estadosPosibles" [value]="estado">
+              {{ estado }}
+            </option>
+          </select>
+        </td>
+        <td>
+          <input 
+            *ngIf="empleado.estadoAsistencia === 'Horas Extra'" 
+            type="number" 
+            min="1" 
+            max="2" 
+            [(ngModel)]="empleado.horasExtra" 
+            placeholder="Cant. (1-2)"
+            [disabled]="diaCerrado"
+          >
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <button *ngIf="!diaCerrado" class="btn-guardar" (click)="guardarTodo()">Guardar Todo</button>
+  
+  <button *ngIf="diaCerrado" class="btn-guardar" style="background-color: #f39c12; margin-top: 15px;" (click)="reabrirDia()">
+    🔓 Reabrir Día para Corregir
+  </button>
+</div>
