@@ -2,6 +2,8 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+
+// IMPORTACIÓN DEL COMPONENTE DE ASISTENCIA
 import { AsistenciaComponent } from './asistencia/asistencia.component';
 
 interface Employee {
@@ -19,18 +21,16 @@ interface Employee {
 @Component({
   selector: 'app-rrhh',
   standalone: true,
-  // Aquí añadimos RouterModule y AsistenciaComponent
+  // AQUÍ ESTÁN ROUTERMODULE Y ASISTENCIACOMPONENT INCLUIDOS
   imports: [CommonModule, ReactiveFormsModule, RouterModule, AsistenciaComponent],
   templateUrl: './rrhh.component.html',
   styleUrls: ['./rrhh.component.css']
 })
-
 export class RrhhComponent implements OnInit {
   
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
 
-  // CORRECCIÓN 1: Se agregó 'ficha' a las opciones permitidas
   activeTab: 'general' | 'gestion' | 'asistencia' | 'ficha' = 'general';
 
   showModal = false;
@@ -109,7 +109,6 @@ export class RrhhComponent implements OnInit {
     });
   }
 
-  // CORRECCIÓN 2: Se incluyó 'ficha' como parámetro válido
   changeTab(tab: 'general' | 'gestion' | 'asistencia' | 'ficha') {
     this.activeTab = tab;
     if (tab !== 'ficha') {
@@ -117,19 +116,13 @@ export class RrhhComponent implements OnInit {
     }
   }
 
-  // CORRECCIÓN 3: Función para ver la ficha
   viewFicha(employee: Employee) {
     this.selectedEmployee = employee;
     this.activeTab = 'ficha';
   }
 
-  // CORRECCIÓN 4: Función para cerrar el modal
   closeModal() {
     this.showModal = false;
-  }
-
-  marcarAsistencia(employee: Employee, estadoAsistencia: string) {
-    alert(`Asistencia registrada: ${employee.nombre} ha sido marcado como ${estadoAsistencia}.`);
   }
 
   getAttendanceStatus(employeeId: number, day: number): 'present' | 'absent' | 'leave' | 'weekend' {
@@ -183,7 +176,6 @@ export class RrhhComponent implements OnInit {
     }
   }
 
-  // CORRECCIÓN 5: Función para gestionar los colores de estado
   getStatusColor(status: string): string {
     const colors: any = {
       'activo': 'status-active',
