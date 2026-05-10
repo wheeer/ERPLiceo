@@ -1,27 +1,27 @@
 <div class="contenedor-asistencia">
-  <h2>Asistencia del día: {{ fechaHoy }}</h2>
+  <h2>📅 Asistencia del día: {{ fechaHoy }}</h2>
 
-  <div *ngIf="mensajeError" class="alerta error">{{ mensajeError }}</div>
-  <div *ngIf="mensajeConfirmacion" class="alerta exito">{{ mensajeConfirmacion }}</div>
+  <div *ngIf="mensajeError" class="alerta error">⚠️ {{ mensajeError }}</div>
+  <div *ngIf="mensajeConfirmacion" class="alerta exito">✅ {{ mensajeConfirmacion }}</div>
 
-  <table class="tabla-erp">
+  <table class="tabla-erp"> 
     <thead>
       <tr>
         <th>RUT</th>
         <th>Nombre Completo</th>
         <th>Estado de Asistencia</th>
-        <th>Detalle Horas Extra</th>
+        <th>Horas Extra (Opcional)</th>
       </tr>
     </thead>
     <tbody>
       <tr *ngFor="let empleado of empleadosActivos">
-        <td>{{ empleado.rut }}</td>
-        <td>{{ empleado.nombre_completo }}</td>
+        <td style="font-family: monospace; color: #94a3b8;">{{ empleado.rut }}</td>
+        <td style="font-weight: bold; color: white;">{{ empleado.nombre_completo }}</td>
         <td>
           <select [(ngModel)]="empleado.estadoAsistencia" [disabled]="diaCerrado">
-            <option value="" disabled selected>Seleccione...</option>
+            <option value="" disabled selected>Seleccione estado...</option>
             <option *ngFor="let estado of estadosPosibles" [value]="estado">
-              {{ estado }}
+              {{ estado === 'Presente' ? '✅' : estado === 'Ausente' ? '❌' : estado === 'Tardanza' ? '⏰' : estado === 'Licencia' ? '⚕️' : '⏱️' }} {{ estado }}
             </option>
           </select>
         </td>
@@ -29,20 +29,22 @@
           <input 
             *ngIf="empleado.estadoAsistencia === 'Horas Extra'" 
             type="number" 
-            min="1" 
-            max="2" 
+            min="1" max="2" 
             [(ngModel)]="empleado.horasExtra" 
-            placeholder="Cant. (1-2)"
+            placeholder="Máx 2 hrs"
             [disabled]="diaCerrado"
           >
+          <span *ngIf="empleado.estadoAsistencia !== 'Horas Extra'" style="color: #64748b; font-size: 0.8rem;">No aplica</span>
         </td>
       </tr>
     </tbody>
   </table>
 
-  <button *ngIf="!diaCerrado" class="btn-guardar" (click)="guardarTodo()">Guardar Todo</button>
+  <button *ngIf="!diaCerrado" class="btn-guardar" (click)="guardarTodo()">
+    💾 Guardar Asistencia de Hoy
+  </button>
   
-  <button *ngIf="diaCerrado" class="btn-guardar" style="background-color: #f39c12; margin-top: 15px;" (click)="reabrirDia()">
-    🔓 Reabrir Día para Corregir
+  <button *ngIf="diaCerrado" class="btn-guardar" style="background-color: #facc15;" (click)="reabrirDia()">
+    🔓 Reabrir Día para Corregir Errores
   </button>
 </div>

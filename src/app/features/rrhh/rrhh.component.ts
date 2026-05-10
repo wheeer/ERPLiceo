@@ -21,7 +21,6 @@ interface Employee {
 @Component({
   selector: 'app-rrhh',
   standalone: true,
-  // AQUÍ ESTÁN ROUTERMODULE Y ASISTENCIACOMPONENT INCLUIDOS
   imports: [CommonModule, ReactiveFormsModule, RouterModule, AsistenciaComponent],
   templateUrl: './rrhh.component.html',
   styleUrls: ['./rrhh.component.css']
@@ -31,7 +30,8 @@ export class RrhhComponent implements OnInit {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
 
-  activeTab: 'general' | 'gestion' | 'asistencia' | 'ficha' = 'general';
+  // AÑADIMOS LA PESTAÑA 'resumen' PARA QUE NO TE SAQUE AL LOGIN
+  activeTab: 'general' | 'gestion' | 'asistencia' | 'ficha' | 'resumen' = 'general';
 
   showModal = false;
   isEditing = false;
@@ -41,50 +41,10 @@ export class RrhhComponent implements OnInit {
   daysInMonth = Array.from({length: 30}, (_, i) => i + 1);
 
   employees: Employee[] = [
-    {
-      id: 1,
-      rut: '12345678-9',
-      nombre: 'Juan Carlos Pérez',
-      correo: 'juan.perez@liceo.cl',
-      cargo: 'Profesor de Programación',
-      fechaIngreso: new Date('2021-03-15'),
-      estado: 'activo',
-      departamento: 'Informática',
-      contrato: 'Indefinido'
-    },
-    {
-      id: 2,
-      rut: '23456789-0',
-      nombre: 'María González Ruiz',
-      correo: 'maria.gonzalez@liceo.cl',
-      cargo: 'Jefa de Recursos Humanos',
-      fechaIngreso: new Date('2019-07-01'),
-      estado: 'activo',
-      departamento: 'Administración',
-      contrato: 'Plazo Fijo'
-    },
-    {
-      id: 3,
-      rut: '34567890-1',
-      nombre: 'Roberto López Silva',
-      correo: 'roberto.lopez@liceo.cl',
-      cargo: 'Encargado de Mantenimiento',
-      fechaIngreso: new Date('2020-01-20'),
-      estado: 'activo',
-      departamento: 'Operaciones',
-      contrato: 'Indefinido'
-    },
-    {
-      id: 4,
-      rut: '11223344-5',
-      nombre: 'Pedro Silva',
-      cargo: 'Docente Electromecánica',
-      correo: 'p.silva@liceo.cl',
-      fechaIngreso: new Date('2023-05-10'),
-      estado: 'licencia',
-      departamento: 'Electromecánica',
-      contrato: 'Honorarios'
-    }
+    { id: 1, rut: '12345678-9', nombre: 'Juan Carlos Pérez', correo: 'juan.perez@liceo.cl', cargo: 'Profesor de Programación', fechaIngreso: new Date('2021-03-15'), estado: 'activo', departamento: 'Informática', contrato: 'Indefinido' },
+    { id: 2, rut: '23456789-0', nombre: 'María González Ruiz', correo: 'maria.gonzalez@liceo.cl', cargo: 'Jefa de Recursos Humanos', fechaIngreso: new Date('2019-07-01'), estado: 'activo', departamento: 'Administración', contrato: 'Plazo Fijo' },
+    { id: 3, rut: '34567890-1', nombre: 'Roberto López Silva', correo: 'roberto.lopez@liceo.cl', cargo: 'Encargado de Mantenimiento', fechaIngreso: new Date('2020-01-20'), estado: 'activo', departamento: 'Operaciones', contrato: 'Indefinido' },
+    { id: 4, rut: '11223344-5', nombre: 'Pedro Silva', cargo: 'Docente Electromecánica', correo: 'p.silva@liceo.cl', fechaIngreso: new Date('2023-05-10'), estado: 'licencia', departamento: 'Electromecánica', contrato: 'Honorarios' }
   ];
 
   constructor() {
@@ -103,13 +63,13 @@ export class RrhhComponent implements OnInit {
 
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
-      if (params['tab'] && ['general', 'gestion', 'asistencia', 'ficha'].includes(params['tab'])) {
+      if (params['tab'] && ['general', 'gestion', 'asistencia', 'ficha', 'resumen'].includes(params['tab'])) {
         this.activeTab = params['tab'] as any;
       }
     });
   }
 
-  changeTab(tab: 'general' | 'gestion' | 'asistencia' | 'ficha') {
+  changeTab(tab: 'general' | 'gestion' | 'asistencia' | 'ficha' | 'resumen') {
     this.activeTab = tab;
     if (tab !== 'ficha') {
       this.selectedEmployee = null;
@@ -134,31 +94,20 @@ export class RrhhComponent implements OnInit {
 
   openNewModal() {
     this.isEditing = false;
-    this.employeeForm.reset({
-      estado: 'activo',
-      fechaIngreso: new Date().toISOString().split('T')[0],
-      contrato: 'Indefinido'
-    });
+    this.employeeForm.reset({ estado: 'activo', fechaIngreso: new Date().toISOString().split('T')[0], contrato: 'Indefinido' });
     this.showModal = true;
   }
 
   openEditModal(employee: Employee) {
     this.isEditing = true;
-    this.employeeForm.patchValue({
-      ...employee,
-      fechaIngreso: new Date(employee.fechaIngreso).toISOString().split('T')[0]
-    });
+    this.employeeForm.patchValue({ ...employee, fechaIngreso: new Date(employee.fechaIngreso).toISOString().split('T')[0] });
     this.showModal = true;
   }
 
   saveEmployee() {
     if (this.employeeForm.invalid) return;
-
     const formValue = this.employeeForm.value;
-    const employeeData: Employee = {
-      ...formValue,
-      fechaIngreso: new Date(formValue.fechaIngreso)
-    };
+    const employeeData: Employee = { ...formValue, fechaIngreso: new Date(formValue.fechaIngreso) };
 
     if (this.isEditing) {
       const index = this.employees.findIndex(e => e.id === employeeData.id);
@@ -177,11 +126,7 @@ export class RrhhComponent implements OnInit {
   }
 
   getStatusColor(status: string): string {
-    const colors: any = {
-      'activo': 'status-active',
-      'inactivo': 'status-inactive',
-      'licencia': 'status-leave'
-    };
+    const colors: any = { 'activo': 'status-active', 'inactivo': 'status-inactive', 'licencia': 'status-leave' };
     return colors[status] || '';
   }
 
