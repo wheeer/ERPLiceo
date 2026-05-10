@@ -4,8 +4,14 @@
       <h1 class="rrhh-title">Recursos Humanos</h1>
       <p class="rrhh-subtitle">Gestión de personal y datos laborales</p>
     </div>
+
+    <div>
+      <a routerLink="resumen-mensual" class="btn-primary" style="text-decoration: none; display: inline-flex;">
+        📊 Ver Resumen Mensual
+      </a>
+    </div>
   
-    <div class="module-tabs">
+    <div class="module-tabs" style="width: 100%;">
       <button class="tab-btn" [class.active]="activeTab === 'general'" (click)="changeTab('general')">
         Vista General
       </button>
@@ -127,24 +133,7 @@
   </ng-container>
 
   <ng-container *ngIf="activeTab === 'asistencia'">
-    <div class="action-bar" style="margin-bottom: 20px;">
-      <h2>Control de Asistencia Diario</h2>
-      <p style="color: #94a3b8;">Seleccione el estado de hoy para cada trabajador:</p>
-    </div>
-    
-    <div class="lista-asistencia">
-      <div *ngFor="let employee of employees" class="fila-asistencia" style="display: flex; justify-content: space-between; align-items: center; background-color: #1e293b; padding: 15px; margin-bottom: 10px; border-radius: 8px;">
-        <div class="info-empleado">
-          <strong style="font-size: 16px;">{{ employee.nombre }}</strong> <br>
-          <small style="color: #94a3b8;">{{ employee.cargo }}</small>
-        </div>
-        <div class="acciones-asistencia">
-          <button class="btn-presente" (click)="marcarAsistencia(employee, 'Presente')" style="background-color: #16a34a; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 10px;">Presente</button>
-          <button class="btn-ausente" (click)="marcarAsistencia(employee, 'Ausente')" style="background-color: #dc2626; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 10px;">Ausente</button>
-          <button class="btn-licencia" (click)="marcarAsistencia(employee, 'Licencia')" style="background-color: #ca8a04; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 10px;">Licencia</button>
-        </div>
-      </div>
-    </div>
+    <app-asistencia></app-asistencia>
   </ng-container>
 
   <ng-container *ngIf="activeTab === 'ficha' && selectedEmployee">
