@@ -1,0 +1,149 @@
+.contenedor-resumen {
+  padding: 20px;
+  color: #e2e8f0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #0f172a; /* Fondo oscuro estilo Aurora */
+  border-radius: 8px;
+  min-height: calc(100vh - 100px);
+}
+
+/* Títulos principales */
+h2 {
+  color: #ffffff;
+  font-size: 26px;
+  margin-bottom: 25px;
+  font-weight: 600;
+  border-bottom: 2px solid #1e293b;
+  padding-bottom: 12px;
+}
+
+/* Tarjetas superiores de métricas (Cards) */
+.tarjetas-metricas {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.tarjeta {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 20px;
+  flex: 1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease;
+}
+
+.tarjeta:hover {
+  transform: translateY(-2px);
+}
+
+.tarjeta h3 {
+  color: #94a3b8;
+  font-size: 14px;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tarjeta .valor {
+  font-size: 32px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+/* Sección de Filtros (Mes / Año) */
+.filtros {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.filtros select, .filtros input[type="month"] {
+  padding: 10px 15px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background-color: #0f172a;
+  color: #f8fafc;
+  outline: none;
+  font-size: 15px;
+}
+
+.filtros select:focus, .filtros input:focus {
+  border-color: #3b82f6; /* Borde azul al hacer clic */
+}
+
+/* Tabla ERP Estándar (Consistente con Asistencia) */
+.tabla-erp {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1e293b;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.tabla-erp th, .tabla-erp td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #334155;
+}
+
+.tabla-erp th {
+  background-color: #0f172a;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.tabla-erp td {
+  color: #e2e8f0;
+  font-size: 15px;
+}
+
+.tabla-erp tr:hover td {
+  background-color: #283548; /* Efecto hover en las filas */
+}
+
+/* Botón de Exportar o Generar Reporte */
+.btn-exportar {
+  background-color: #3b82f6; /* Azul primario */
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-exportar:hover {
+  background-color: #2563eb;
+}
+
+/* Etiquetas de Estado en la tabla */
+.badge-estado {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-completado {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #10b981; /* Verde */
+}
+
+.badge-pendiente {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #f59e0b; /* Naranja */
+}

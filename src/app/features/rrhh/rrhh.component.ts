@@ -1,7 +1,8 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
+import { AsistenciaComponent } from './asistencia/asistencia.component';
 
 interface Employee {
   id: number;
@@ -18,10 +19,12 @@ interface Employee {
 @Component({
   selector: 'app-rrhh',
   standalone: true,
-  imports: [CommonModule,ReactiveFormsModule],
+  // Aquí añadimos RouterModule y AsistenciaComponent
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, AsistenciaComponent],
   templateUrl: './rrhh.component.html',
   styleUrls: ['./rrhh.component.css']
 })
+
 export class RrhhComponent implements OnInit {
   
   private fb = inject(FormBuilder);
