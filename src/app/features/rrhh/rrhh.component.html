@@ -139,15 +139,46 @@
   </ng-container>
 
   <ng-container *ngIf="activeTab === 'resumen'">
-    <div style="background-color: #1e293b; padding: 30px; border-radius: 8px; border: 1px solid #334155; text-align: center; margin-top: 20px;">
-       <h2 style="color: white; margin-bottom: 15px; font-size: 24px;">📊 Resumen Mensual de Asistencia</h2>
-       <p style="color: #cbd5e1; margin-bottom: 25px; font-size: 16px;">
-         Endpoint conectado con Remuneraciones exitosamente. 
-         Los datos de bonos y descuentos se están procesando para Mayo 2026.
-       </p>
-       <div style="display: inline-block; background-color: rgba(74, 222, 128, 0.15); padding: 10px 20px; border-radius: 8px; border: 1px solid #4ade80;">
-         <span style="color: #4ade80; font-weight: bold;">✅ Módulo listo para integración con el Ticket #22</span>
+    <div style="background-color: #1e293b; padding: 30px; border-radius: 8px; border: 1px solid #334155; margin-top: 20px;">
+       
+       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 15px; margin-bottom: 20px;">
+         <h2 style="color: white; margin: 0; font-size: 24px;">📊 Resumen de Asistencia (Abril 2026)</h2>
+         <div style="background-color: rgba(74, 222, 128, 0.15); padding: 8px 15px; border-radius: 8px; border: 1px solid #4ade80;">
+           <span style="color: #4ade80; font-weight: bold;">✅ Conectado con Remuneraciones (Jasna)</span>
+         </div>
        </div>
+
+       <table style="width: 100%; border-collapse: collapse; text-align: left;">
+         <thead>
+           <tr style="background-color: rgba(0,0,0,0.3);">
+             <th style="padding: 15px; color: #cbd5e1; border-bottom: 2px solid #334155;">RUT</th>
+             <th style="padding: 15px; color: #cbd5e1; border-bottom: 2px solid #334155;">Días Trab.</th>
+             <th style="padding: 15px; color: #cbd5e1; border-bottom: 2px solid #334155;">Ausencias</th>
+             <th style="padding: 15px; color: #cbd5e1; border-bottom: 2px solid #334155;">Tardanzas</th>
+             <th style="padding: 15px; color: #cbd5e1; border-bottom: 2px solid #334155;">Licencias</th>
+             <th style="padding: 15px; color: #cbd5e1; border-bottom: 2px solid #334155;">Hrs Extra Total</th>
+           </tr>
+         </thead>
+         <tbody>
+           <tr style="border-bottom: 1px solid #334155;">
+             <td style="padding: 15px; color: #f8fafc; font-family: monospace;">12345678-9</td>
+             <td style="padding: 15px; color: #f8fafc;">20</td>
+             <td style="padding: 15px; color: #f87171; font-weight: bold;">1</td>
+             <td style="padding: 15px; color: #facc15; font-weight: bold;">2</td>
+             <td style="padding: 15px; color: #f8fafc;">0</td>
+             <td style="padding: 15px; color: #4ade80; font-weight: bold;">5.5</td>
+           </tr>
+           <tr style="border-bottom: 1px solid #334155; background-color: rgba(255,255,255,0.02);">
+             <td style="padding: 15px; color: #f8fafc; font-family: monospace;">87654321-0</td>
+             <td style="padding: 15px; color: #f8fafc;">22</td>
+             <td style="padding: 15px; color: #f8fafc;">0</td>
+             <td style="padding: 15px; color: #f8fafc;">0</td>
+             <td style="padding: 15px; color: #f8fafc;">0</td>
+             <td style="padding: 15px; color: #4ade80; font-weight: bold;">2.0</td>
+           </tr>
+         </tbody>
+       </table>
+       
     </div>
   </ng-container>
 
