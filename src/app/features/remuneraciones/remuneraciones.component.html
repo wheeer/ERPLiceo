@@ -21,29 +21,58 @@
   <!-- TAB 1: RESUMEN DE NÓMINA -->
   <!-- ============================================== -->
   @if (activeTab === 'nomina') {
+    <div class="action-bar-simple">
+      <input type="text" class="search-input" placeholder="Buscar por nombre, RUT o cargo..." (keyup)="onSearch($event)">
+    </div>
     <div class="table-wrapper">
       <table class="payroll-table">
         <thead>
           <tr>
             <th>RUT</th>
-            <th>Nombre</th>
-            <th>Cargo</th>
+            <th>Nombre / Cargo</th>
             <th class="amount">Sueldo Base</th>
-            <th class="amount">AFP</th>
-            <th class="amount">Descuentos</th>
+            <th class="amount hide-mobile">Gratif. Legal</th>
+            <th class="amount hide-mobile">No Imponible</th>
+            <th class="amount hide-mobile">Total Haberes</th>
+            <th class="amount hide-mobile">AFP</th>
+            <th class="amount hide-mobile">Salud</th>
+            <th class="amount">Dcto. Asist.</th>
             <th class="amount total">Neto</th>
-            <th class="center">Acciones</th>
+            <th class="center">PDF</th>
           </tr>
         </thead>
         <tbody>
-          @for (payroll of payrollData; track payroll.id) {
+          @if (filteredPayrollData.length === 0) {
+            <tr><td colspan="11" class="center empty-state">No se encontraron registros de nómina.</td></tr>
+          }
+          @for (payroll of filteredPayrollData; track payroll.id) {
             <tr>
               <td class="cell-rut">{{ payroll.rut }}</td>
-              <td class="cell-nombre">{{ payroll.nombre }}</td>
-              <td class="cell-cargo">{{ payroll.cargo }}</td>
+              <td class="cell-nombre">
+                <div class="employee-info-detailed">
+                  <span class="employee-name">{{ payroll.nombre }}</span>
+                  <span class="employee-role">{{ payroll.cargo }}</span>
+                </div>
+              </td>
               <td class="cell-amount">{{ formatCurrency(payroll.sueldoBase) }}</td>
-              <td class="cell-amount">{{ formatCurrency(payroll.afp) }}</td>
-              <td class="cell-amount">{{ formatCurrency(payroll.descuentos) }}</td>
+              <td class="cell-amount hide-mobile">{{ formatCurrency(payroll.gratificacion) }}</td>
+              <td class="cell-amount hide-mobile">
+                <span title="Movilización: {{ formatCurrency(payroll.movilizacion) }} / Colación: {{ formatCurrency(payroll.colacion) }}">
+                  {{ formatCurrency(payroll.movilizacion + payroll.colacion) }}
+                </span>
+              </td>
+              <td class="cell-amount fw-600 hide-mobile">{{ formatCurrency(payroll.totalHaberes) }}</td>
+              <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.afp) }}</td>
+              <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.salud) }}</td>
+              <td class="cell-amount">
+                @if (payroll.descuento_asistencia > 0) {
+                  <span class="badge-danger" title="Días trabajados: {{ payroll.dias_trabajados }}/30">
+                    -{{ formatCurrency(payroll.descuento_asistencia) }}
+                  </span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
               <td class="cell-amount total-neto">{{ formatCurrency(payroll.neto) }}</td>
               <td class="cell-actions center">
                 <button class="btn-pdf" (click)="descargarPDF(payroll)" title="Descargar Liquidación">
@@ -56,9 +85,12 @@
         </tbody>
         <tfoot>
           <tr class="totals-row">
-            <td colspan="3">TOTAL</td>
-            <td class="cell-amount">{{ formatCurrency(getTotalSueldo()) }}</td>
-            <td class="cell-amount">-</td>
+            <td colspan="3">TOTALES</td>
+            <td class="cell-amount hide-mobile">-</td>
+            <td class="cell-amount hide-mobile">-</td>
+            <td class="cell-amount fw-600 hide-mobile">{{ formatCurrency(getTotalSueldo()) }}</td>
+            <td class="cell-amount hide-mobile">-</td>
+            <td class="cell-amount hide-mobile">-</td>
             <td class="cell-amount">-</td>
             <td class="cell-amount total-neto">{{ formatCurrency(getTotalNeto()) }}</td>
             <td></td>
@@ -73,89 +105,84 @@
     </div>
   }
 
+
   <!-- ============================================== -->
   <!-- TAB 2: HORAS EXTRA -->
   <!-- ============================================== -->
   @if (activeTab === 'horasExtra') {
     <div class="he-layout">
-      
-      <!-- FORMULARIO DE CÁLCULO -->
-      <div class="he-form-card">
-        <h3>Calculadora de Horas Extra</h3>
-        <p class="he-legal-note">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          Según Ley 21.561 (42 hrs semanales vigentes desde abril 2026).
-        </p>
 
-        <form [formGroup]="horasExtraForm" (ngSubmit)="calcularHorasExtra()" class="crud-form">
-          <div class="form-group">
-            <label>Empleado</label>
-            <select formControlName="empleadoId">
-              <option value="">Seleccione un empleado...</option>
-              @for (emp of payrollData; track emp.id) {
-                <option [value]="emp.id">{{ emp.nombre }} (Base: {{ formatCurrency(emp.sueldoBase) }})</option>
-              }
-            </select>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Cantidad de Horas (máx 10/sem)</label>
-              <input type="number" formControlName="horas" min="1" max="10">
-            </div>
-            
-            <div class="form-group">
-              <label>Recargo Legal/Pactado</label>
-              <select formControlName="recargo">
-                <option [value]="50">50% (Mínimo Legal Art. 32)</option>
-                <option [value]="100">100% (Pactado / Festivo especial)</option>
-              </select>
-            </div>
-          </div>
-
-          <button type="submit" class="btn-primary w-full" [disabled]="horasExtraForm.invalid">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
-            Calcular y Registrar Monto
-          </button>
-        </form>
+      <!-- CARD RESUMEN MENSUAL -->
+      <div class="he-summary-card">
+        <div class="summary-item">
+          <span class="summary-label">Registros del Mes</span>
+          <span class="summary-value">{{ historialHorasExtra.length }}</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-label">Total Horas Autorizadas</span>
+          <span class="summary-value">{{ getTotalHorasMes() }} hrs</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item accent">
+          <span class="summary-label">Total a Pagar este Mes</span>
+          <span class="summary-value">{{ formatCurrency(getTotalHorasExtraMes()) }}</span>
+        </div>
       </div>
 
-      <!-- TABLA HISTÓRICA -->
+      <!-- TABLA DE REVISIÓN (CON MONTOS) -->
       <div class="he-history">
-        <h3>Historial de Registros</h3>
+        <h3>Revisión de Registros — Abril 2026</h3>
+        <p class="he-info-note">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Los registros son ingresados por RRHH. Desde aquí solo se revisan y validan para la liquidación del mes.
+        </p>
         <div class="table-wrapper">
-          <table class="employees-table">
+          <table class="payroll-table">
             <thead>
               <tr>
                 <th>Fecha</th>
                 <th>Empleado</th>
+                <th class="center">Tipo de Día</th>
                 <th class="center">Horas</th>
-                <th class="center">Recargo</th>
-                <th class="amount">Monto Total</th>
-                <th class="center"></th>
+                <th class="center hide-mobile">Recargo</th>
+                <th class="amount">Monto</th>
+                <th class="hide-mobile">Autorizado Por</th>
               </tr>
             </thead>
             <tbody>
               @if (historialHorasExtra.length === 0) {
-                <tr><td colspan="6" class="center empty-state">Sin registros en este período.</td></tr>
+                <tr><td colspan="7" class="center empty-state">Sin registros de RRHH en este período.</td></tr>
               }
               @for (registro of historialHorasExtra; track registro.id) {
                 <tr>
                   <td>{{ formatDate(registro.fecha) }}</td>
-                  <td>{{ registro.empleado }}</td>
-                  <td class="center">{{ registro.horas }} hrs</td>
+                  <td class="cell-nombre">{{ registro.empleado }}</td>
                   <td class="center">
+                    @if (registro.tipoDia === 'laboral') {
+                      <span class="badge-tipo-laboral">Laboral</span>
+                    } @else {
+                      <span class="badge-tipo-finde">Fin de Semana</span>
+                    }
+                  </td>
+                  <td class="center"><strong>{{ registro.horas }}</strong> hrs</td>
+                  <td class="center hide-mobile">
                     <span class="status-badge status-active">{{ registro.recargo }}%</span>
                   </td>
                   <td class="cell-amount fw-600">{{ formatCurrency(registro.montoTotal) }}</td>
-                  <td class="cell-actions center">
-                    <button class="btn-action btn-delete" (click)="eliminarRegistro(registro.id)" title="Eliminar registro">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    </button>
-                  </td>
+                  <td class="cell-cargo hide-mobile">{{ registro.autorizadoPor }}</td>
                 </tr>
               }
             </tbody>
+            @if (historialHorasExtra.length > 0) {
+              <tfoot>
+                <tr class="totals-row">
+                  <td colspan="5">TOTAL HORAS EXTRA</td>
+                  <td class="cell-amount total-neto">{{ formatCurrency(getTotalHorasExtraMes()) }}</td>
+                  <td class="hide-mobile"></td>
+                </tr>
+              </tfoot>
+            }
           </table>
         </div>
       </div>

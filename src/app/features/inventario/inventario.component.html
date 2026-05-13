@@ -28,14 +28,19 @@
             <th>Código</th>
             <th>Producto</th>
             <th>Categoría</th>
-            <th class="amount">Stock</th>
+            <th class="amount">Disponible</th>
+            <th class="amount">Reparación</th>
+            <th class="amount">Baja</th>
             <th>Ubicación</th>
-            <th>Estado</th>
+            <th class="center">Incidencias</th>
           </tr>
         </thead>
         <tbody>
-          @for (item of inventoryItems; track item.id) {
-            <tr [class.alert-row]="item.stock < item.stockCritico">
+          @if (filteredItems.length === 0) {
+            <tr><td colspan="8" class="center empty-state">No se encontraron productos.</td></tr>
+          }
+          @for (item of filteredItems; track item.id) {
+            <tr [class.alert-row]="item.stock_disponible <= item.stock_minimo">
               <td class="cell-codigo">
                 <span class="codigo-badge">{{ item.codigo }}</span>
               </td>
@@ -43,21 +48,41 @@
               <td class="cell-categoria">
                 <span class="category-tag">{{ item.categoria }}</span>
               </td>
-              <td class="cell-stock" [class]="item.stock === 0 ? 'zero-stock' : ''">
+              <td class="cell-stock" [class.zero-stock]="item.stock_disponible === 0">
                 <div class="stock-wrapper">
-                  <span>{{ item.stock }}</span>
-                  @if (item.stock < item.stockCritico) {
-                    <span class="stock-alert-icon" title="Stock por debajo del nivel crítico ({{ item.stockCritico }})">
+                  <span [class.text-danger]="item.stock_disponible <= item.stock_minimo" [class.text-success]="item.stock_disponible > item.stock_minimo">
+                    {{ item.stock_disponible }}
+                  </span>
+                  @if (item.stock_disponible <= item.stock_minimo) {
+                    <span class="stock-alert-icon" title="Stock por debajo del mínimo ({{ item.stock_minimo }})">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     </span>
                   }
                 </div>
               </td>
+              <td class="cell-stock amount">
+                @if (item.stock_reparacion > 0) {
+                  <span class="badge-reparacion">{{ item.stock_reparacion }}</span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+              <td class="cell-stock amount">
+                @if (item.stock_baja > 0) {
+                  <span class="badge-baja">{{ item.stock_baja }}</span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
               <td class="cell-ubicacion">{{ item.ubicacion }}</td>
-              <td class="cell-estado">
-                <span class="status-badge" [class]="getStatusColor(item.estado)">
-                  {{ getStatusLabel(item.estado) }}
-                </span>
+              <td class="center">
+                @if (item.incidencias.length > 0) {
+                  <button class="btn-incidencias" (click)="openIncidenciasModal(item)" title="Ver historial de incidencias">
+                    {{ item.incidencias.length }} incid.
+                  </button>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
               </td>
             </tr>
           }
@@ -71,8 +96,8 @@
         <span class="stat-value">{{ getItemsCount() }}</span>
       </div>
       <div class="stat">
-        <span class="stat-label">Unidades en stock:</span>
-        <span class="stat-value">{{ getTotalItems() }}</span>
+        <span class="stat-label">Unidades disponibles:</span>
+        <span class="stat-value">{{ getTotalDisponible() }}</span>
       </div>
     </div>
   }
@@ -82,7 +107,10 @@
   <!-- ============================================== -->
   @if (activeTab === 'gestion') {
     <div class="action-bar">
-      <h2>Catálogo de Productos e Insumos</h2>
+      <div class="bar-left">
+        <h2>Catálogo de Productos e Insumos</h2>
+        <input type="text" class="search-input" placeholder="Buscar por código o nombre..." (keyup)="onSearch($event)">
+      </div>
       <button class="btn-primary" (click)="openNewModal()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nuevo Producto
@@ -94,17 +122,17 @@
         <thead>
           <tr>
             <th>Código / Producto</th>
-            <th>Categoría</th>
-            <th class="amount">Ajuste de Stock</th>
-            <th>Ubicación</th>
+            <th class="hide-mobile">Categoría</th>
+            <th class="amount">Ajuste Disponible</th>
+            <th class="hide-mobile">Ubicación</th>
             <th class="center">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          @if (inventoryItems.length === 0) {
-            <tr><td colspan="5" class="center empty-state">No hay productos registrados.</td></tr>
+          @if (filteredItems.length === 0) {
+            <tr><td colspan="5" class="center empty-state">No hay productos registrados o no coinciden con la búsqueda.</td></tr>
           }
-          @for (item of inventoryItems; track item.id) {
+          @for (item of filteredItems; track item.id) {
             <tr>
               <td class="cell-producto">
                 <div class="item-info-detailed">
@@ -118,11 +146,11 @@
               <td class="cell-stock-adjust">
                 <div class="stock-adjust-controls">
                   <button class="btn-adjust minus" (click)="ajustarStock(item, -1, $event)">-</button>
-                  <span class="current-stock" [class.alert]="item.stock < item.stockCritico">{{ item.stock }}</span>
+                  <span class="current-stock" [class.alert]="item.stock_disponible <= item.stock_minimo">{{ item.stock_disponible }}</span>
                   <button class="btn-adjust plus" (click)="ajustarStock(item, 1, $event)">+</button>
                 </div>
               </td>
-              <td class="cell-ubicacion">{{ item.ubicacion }}</td>
+              <td class="cell-ubicacion hide-mobile">{{ item.ubicacion }}</td>
               <td class="cell-actions center">
                 <button class="btn-action btn-edit" (click)="openEditModal(item)" title="Editar">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -178,27 +206,34 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label>Stock Inicial</label>
-              <input type="number" formControlName="stock" min="0">
+              <label>Stock Total</label>
+              <input type="number" formControlName="stock_total" min="0">
             </div>
             <div class="form-group">
-              <label>Stock Crítico (Alerta)</label>
-              <input type="number" formControlName="stockCritico" min="1">
+              <label>Stock Disponible</label>
+              <input type="number" formControlName="stock_disponible" min="0">
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label>Ubicación Física</label>
-              <input type="text" formControlName="ubicacion" placeholder="Ej: Bodega A - Estante 1">
+              <label>En Reparación</label>
+              <input type="number" formControlName="stock_reparacion" min="0">
             </div>
             <div class="form-group">
-              <label>Estado</label>
-              <select formControlName="estado">
-                <option value="disponible">Disponible</option>
-                <option value="bajo-stock">Bajo Stock</option>
-                <option value="descontinuado">Descontinuado</option>
-              </select>
+              <label>Baja Definitiva</label>
+              <input type="number" formControlName="stock_baja" min="0">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Stock Mínimo (Alerta)</label>
+              <input type="number" formControlName="stock_minimo" min="1">
+            </div>
+            <div class="form-group">
+              <label>Costo Unitario ($)</label>
+              <input type="number" formControlName="costo_unitario" min="0">
             </div>
           </div>
 
@@ -209,6 +244,41 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- MODAL DE INCIDENCIAS                           -->
+  <!-- ============================================== -->
+  @if (showIncidenciasModal && selectedItem) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Historial de Incidencias</h2>
+          <button class="btn-close" (click)="closeIncidenciasModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-subheader">
+          <p><strong>{{ selectedItem.codigo }}</strong> — {{ selectedItem.producto }}</p>
+          <p>Stock Total: {{ selectedItem.stock_total }} | Disponible: {{ selectedItem.stock_disponible }} | Reparación: {{ selectedItem.stock_reparacion }} | Baja: {{ selectedItem.stock_baja }}</p>
+        </div>
+        <div class="incidencias-list">
+          @for (inc of selectedItem.incidencias; track inc.fecha) {
+            <div class="incidencia-item" [class.tipo-reparacion]="inc.tipo === 'Reparación'" [class.tipo-baja]="inc.tipo === 'Baja'">
+              <div class="inc-header">
+                <span class="inc-tipo">{{ inc.tipo }}</span>
+                <span class="inc-cantidad">{{ inc.cantidad }} unidad(es)</span>
+                <span class="inc-fecha">{{ inc.fecha }}</span>
+              </div>
+              <p class="inc-detalle">{{ inc.detalle }}</p>
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeIncidenciasModal()">Cerrar</button>
+        </div>
       </div>
     </div>
   }
