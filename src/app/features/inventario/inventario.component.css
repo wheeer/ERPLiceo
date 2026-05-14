@@ -263,7 +263,7 @@
   .inventory-table thead th, .inventory-table tbody td {
     padding: 0.75rem 0.85rem;
   }
-  .cell-ubicacion { display: none; }
+  .hide-mobile { display: none; }
 }
 
 @media (max-width: 480px) {
@@ -282,7 +282,7 @@
     padding: 0.6rem 0.5rem;
   }
   .cell-producto { max-width: 120px; }
-  .cell-ubicacion { display: none; }
+  .cell-ubicacion, .hide-mobile { display: none; }
   .cell-categoria { font-size: 0.75rem; }
   .status-badge { padding: 0.3rem 0.5rem; font-size: 0.6rem; }
   .inventario-footer {
@@ -304,50 +304,30 @@
   margin-bottom: 1.5rem;
 }
 
-.module-tabs {
+
+
+.bar-left {
   display: flex;
-  gap: 0.5rem;
-  border-bottom: 2px solid var(--border-color);
-  flex-wrap: wrap;
-}
-
-.tab-btn {
-  background: none;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: all 0.3s ease;
-}
-
-.tab-btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.tab-btn.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-/* ACTION BAR */
-.action-bar {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
-  gap: 1rem;
 }
 
-.action-bar h2 {
-  font-size: 1.2rem;
+.search-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
   color: var(--text-primary);
-  margin: 0;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  min-width: 250px;
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .btn-primary {
@@ -567,5 +547,119 @@
 
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ============================================================
+   ESTILOS STOCK AGRUPADO E INCIDENCIAS
+   ============================================================ */
+
+.badge-reparacion {
+  display: inline-block;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.badge-baja {
+  display: inline-block;
+  background: rgba(107, 114, 128, 0.15);
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.2);
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.btn-incidencias {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 0.3rem 0.7rem;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-incidencias:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.text-danger { color: #ef4444 !important; font-weight: 700; }
+.text-success { color: #22c55e !important; font-weight: 700; }
+.text-muted { color: var(--text-muted); }
+
+.modal-subheader {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.modal-subheader p {
+  margin: 0.2rem 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.incidencias-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.incidencia-item {
+  background: rgba(255,255,255,0.02);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid transparent;
+}
+
+.tipo-reparacion { border-left-color: #f59e0b; }
+.tipo-baja { border-left-color: #6b7280; }
+
+.inc-header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.inc-tipo {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.inc-cantidad {
+  background: rgba(255,255,255,0.05);
+  padding: 0.1rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.inc-fecha {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-family: 'Monaco', monospace;
+  color: var(--text-muted);
+}
+
+.inc-detalle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
 
 

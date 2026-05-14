@@ -9,12 +9,27 @@ interface Payroll {
   rut: string;
   nombre: string;
   cargo: string;
+  // Haberes imponibles
   sueldoBase: number;
+  gratificacion: number;        // 25% del sueldo base (gratificación legal)
+  // Haberes no imponibles
+  movilizacion: number;
+  colacion: number;
+  // Totales
+  totalHaberes: number;
+  // Descuentos legales
   afp: number;
-  descuentos: number;
+  salud: number;
+  seguro_cesantia: number;
+  // Descuentos asistencia
+  descuento_asistencia: number;
+  dias_trabajados: number;
+  // Resultado
   neto: number;
   periodo: string;
 }
+
+
 
 interface HorasExtraRecord {
   id: number;
@@ -24,7 +39,10 @@ interface HorasExtraRecord {
   recargo: number;
   montoTotal: number;
   fecha: Date;
+  tipoDia: 'laboral' | 'finde' | 'festivo';
+  autorizadoPor: string;
 }
+
 
 @Component({
   selector: 'app-remuneraciones',
@@ -48,62 +66,39 @@ export class RemuneracionesComponent implements OnInit {
   // TODO: Reemplazar con llamada al servicio de nómina (backend pendiente)
   payrollData: Payroll[] = [
     {
-      id: 1,
-      rut: '12345678-9',
-      nombre: 'Juan Carlos Pérez',
-      cargo: 'Profesor de Programación',
-      sueldoBase: 2500000,
-      afp: 206250,
-      descuentos: 75000,
-      neto: 2218750,
-      periodo: 'Abril 2026'
+      id: 1, rut: '12345678-9', nombre: 'Juan Carlos Pérez', cargo: 'Profesor de Programación',
+      sueldoBase: 2500000, gratificacion: 625000, movilizacion: 50000, colacion: 55000,
+      totalHaberes: 3230000, afp: 358688, salud: 218750, seguro_cesantia: 18750,
+      descuento_asistencia: 0, dias_trabajados: 30, neto: 2633812, periodo: 'Abril 2026'
     },
     {
-      id: 2,
-      rut: '23456789-0',
-      nombre: 'María González Ruiz',
-      cargo: 'Jefa de Recursos Humanos',
-      sueldoBase: 2800000,
-      afp: 231000,
-      descuentos: 84000,
-      neto: 2485000,
-      periodo: 'Abril 2026'
+      id: 2, rut: '23456789-0', nombre: 'María González Ruiz', cargo: 'Jefa de Recursos Humanos',
+      sueldoBase: 2800000, gratificacion: 700000, movilizacion: 45000, colacion: 50000,
+      totalHaberes: 3595000, afp: 401200, salud: 245000, seguro_cesantia: 21000,
+      descuento_asistencia: 186667, dias_trabajados: 28, neto: 2741133, periodo: 'Abril 2026'
     },
     {
-      id: 3,
-      rut: '34567890-1',
-      nombre: 'Roberto López Silva',
-      cargo: 'Encargado de Mantenimiento',
-      sueldoBase: 1800000,
-      afp: 148500,
-      descuentos: 54000,
-      neto: 1597500,
-      periodo: 'Abril 2026'
+      id: 3, rut: '34567890-1', nombre: 'Roberto López Silva', cargo: 'Encargado de Mantenimiento',
+      sueldoBase: 1800000, gratificacion: 450000, movilizacion: 40000, colacion: 45000,
+      totalHaberes: 2335000, afp: 258278, salud: 157500, seguro_cesantia: 13500,
+      descuento_asistencia: 0, dias_trabajados: 30, neto: 1905722, periodo: 'Abril 2026'
     },
     {
-      id: 4,
-      rut: '45678901-2',
-      nombre: 'Francisca Martínez Díaz',
-      cargo: 'Secretaria Administrativa',
-      sueldoBase: 1900000,
-      afp: 156750,
-      descuentos: 57000,
-      neto: 1686250,
-      periodo: 'Abril 2026'
+      id: 4, rut: '45678901-2', nombre: 'Francisca Martínez Díaz', cargo: 'Secretaria Administrativa',
+      sueldoBase: 1900000, gratificacion: 475000, movilizacion: 40000, colacion: 50000,
+      totalHaberes: 2465000, afp: 272794, salud: 166250, seguro_cesantia: 14250,
+      descuento_asistencia: 0, dias_trabajados: 30, neto: 2011706, periodo: 'Abril 2026'
     },
     {
-      id: 5,
-      rut: '56789012-3',
-      nombre: 'Carlos Rodríguez Fuentes',
-      cargo: 'Profesor de Electricidad',
-      sueldoBase: 2600000,
-      afp: 214500,
-      descuentos: 78000,
-      neto: 2307500,
-      periodo: 'Abril 2026'
+      id: 5, rut: '56789012-3', nombre: 'Carlos Rodríguez Fuentes', cargo: 'Profesor de Electricidad',
+      sueldoBase: 2600000, gratificacion: 650000, movilizacion: 42000, colacion: 48000,
+      totalHaberes: 3340000, afp: 379288, salud: 227500, seguro_cesantia: 19500,
+      descuento_asistencia: 260000, dias_trabajados: 27, neto: 2453712, periodo: 'Abril 2026'
     }
   ];
   
+  filteredPayrollData: Payroll[] = [];
+
   constructor() {
     this.horasExtraForm = this.fb.group({
       empleadoId: ['', Validators.required],
@@ -113,6 +108,7 @@ export class RemuneracionesComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.filteredPayrollData = [...this.payrollData];
     this.route.queryParams.subscribe(params => {
       if (params['tab']) {
         const tab = params['tab'];
@@ -154,7 +150,9 @@ export class RemuneracionesComponent implements OnInit {
       horas: formValues.horas,
       recargo: formValues.recargo,
       montoTotal: Math.round(montoTotal),
-      fecha: new Date()
+      fecha: new Date(),
+      tipoDia: 'laboral',
+      autorizadoPor: 'Registrado en Remuneraciones'
     };
 
     this.historialHorasExtra.unshift(nuevoRegistro);
@@ -180,11 +178,28 @@ export class RemuneracionesComponent implements OnInit {
   }
   
   getTotalSueldo(): number {
-    return this.payrollData.reduce((sum, p) => sum + p.sueldoBase, 0);
+    return this.filteredPayrollData.reduce((sum, p) => sum + p.totalHaberes, 0);
   }
   
   getTotalNeto(): number {
-    return this.payrollData.reduce((sum, p) => sum + p.neto, 0);
+    return this.filteredPayrollData.reduce((sum, p) => sum + p.neto, 0);
+  }
+
+  onSearch(event: Event) {
+    const query = (event.target as HTMLInputElement).value.toLowerCase();
+    this.filteredPayrollData = this.payrollData.filter(item => 
+      item.nombre.toLowerCase().includes(query) || 
+      item.rut.toLowerCase().includes(query) ||
+      item.cargo.toLowerCase().includes(query)
+    );
+  }
+
+  getTotalHorasMes(): number {
+    return this.historialHorasExtra.reduce((sum, h) => sum + h.horas, 0);
+  }
+
+  getTotalHorasExtraMes(): number {
+    return this.historialHorasExtra.reduce((sum, h) => sum + h.montoTotal, 0);
   }
   descargarPDF(payroll: Payroll) {
     this.toastService.show(`Generando liquidación para ${payroll.nombre}...`, 'info');

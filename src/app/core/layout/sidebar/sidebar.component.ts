@@ -44,7 +44,9 @@ export class SidebarComponent {
       roles: ['Encargado_RRHH'],
       subItems: [
         { label: 'Vista General', tab: 'general' },
-        { label: 'Gestión de Personal', tab: 'gestion' }
+        { label: 'Gestión de Personal', tab: 'gestion' },
+        { label: 'Control de Asistencia', tab: 'asistencia' },
+        { label: 'Horas Extra', tab: 'horasExtra' }
       ]
     },
     {
