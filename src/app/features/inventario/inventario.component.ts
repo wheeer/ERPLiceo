@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
@@ -31,14 +31,17 @@ export class InventarioComponent implements OnInit {
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
+  private cdr = inject(ChangeDetectorRef);
 
   // Tabs
   activeTab: 'stock' | 'gestion' = 'stock';
+  isLoading = true;
 
   // Estado CRUD
   showModal = false;
   isEditing = false;
   inventoryForm: FormGroup;
+  isSaving = false;
   
   // TODO: Reemplazar con llamada al servicio de inventario (backend pendiente)
   inventoryItems: InventoryItem[] = [
@@ -92,6 +95,11 @@ export class InventarioComponent implements OnInit {
   }
 
   ngOnInit() {
+    setTimeout(() => {
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    }, 1000);
+
     this.filteredItems = [...this.inventoryItems];
     this.route.queryParams.subscribe(params => {
       if (params['tab']) {
@@ -158,27 +166,32 @@ export class InventarioComponent implements OnInit {
   }
 
   saveItem() {
-    if (this.inventoryForm.invalid) {
-      this.inventoryForm.markAllAsTouched();
-      return;
-    }
-
-    const formValue = this.inventoryForm.value;
-    formValue.incidencias = [];
-
-    if (this.isEditing) {
-      const index = this.inventoryItems.findIndex(i => i.id === formValue.id);
-      if (index !== -1) {
-        this.inventoryItems[index] = { ...this.inventoryItems[index], ...formValue };
-        this.toastService.show('Información del producto actualizada.', 'success');
+    if (this.inventoryForm.invalid) return;
+    
+    this.isSaving = true;
+    
+    setTimeout(() => {
+      if (this.isEditing) {
+        const index = this.inventoryItems.findIndex(i => i.id === this.inventoryForm.value.id);
+        if (index > -1) {
+          this.inventoryItems[index] = { ...this.inventoryItems[index], ...this.inventoryForm.value };
+        }
+        this.toastService.show('Producto actualizado correctamente', 'success');
+      } else {
+        const newItem = {
+          ...this.inventoryForm.value,
+          id: Math.max(...this.inventoryItems.map(i => i.id)) + 1,
+          incidencias: []
+        };
+        this.inventoryItems.push(newItem);
+        this.toastService.show('Producto registrado correctamente', 'success');
       }
-    } else {
-      formValue.id = Math.max(0, ...this.inventoryItems.map(i => i.id)) + 1;
-      this.inventoryItems.unshift(formValue);
+      
+      this.isSaving = false;
+      this.closeModal();
       this.filteredItems = [...this.inventoryItems];
-      this.toastService.show('Producto añadido al inventario.', 'success');
-    }
-    this.closeModal();
+      this.cdr.detectChanges();
+    }, 1500);
   }
 
   deleteItem(id: number) {
