@@ -211,71 +211,7 @@
   .cell-amount { font-size: 0.75rem; }
 }
 
-/* ============================================================
-   Estilos de componentes de interfaz: tabs y formularios
-   ============================================================ */
 
-/* HEADER Y TABS */
-.remuneraciones-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.module-tabs {
-  display: flex;
-  gap: 0.5rem;
-  border-bottom: 2px solid var(--border-color);
-  flex-wrap: wrap;
-}
-
-.tab-btn {
-  background: none;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: all 0.3s ease;
-}
-
-.tab-btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.tab-btn.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-/* BUSCADOR */
-.action-bar-simple {
-  margin-bottom: 1.5rem;
-}
-
-.search-input {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  min-width: 300px;
-  transition: all 0.2s;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.05);
-}
 
 /* BADGES */
 .badge-danger {
@@ -292,6 +228,94 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
+}
+
+.he-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg-surface-main);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  text-align: center;
+}
+
+.summary-item.accent .summary-value {
+  color: var(--accent);
+}
+
+.summary-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.summary-divider {
+  width: 1px;
+  height: 3rem;
+  background: var(--border-color);
+  margin: 0 1.5rem;
+}
+
+.he-history h3 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.he-info-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.badge-tipo-laboral {
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-tipo-finde {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .he-summary-card {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .summary-divider {
+    width: 100%;
+    height: 1px;
+    margin: 0;
+  }
 }
 
 .he-summary-card {
