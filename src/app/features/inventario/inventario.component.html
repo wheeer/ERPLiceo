@@ -370,4 +370,39 @@
     </div>
   }
 
+  <!-- ============================================== -->
+  <!-- MODAL DE INCIDENCIAS                           -->
+  <!-- ============================================== -->
+  @if (showIncidenciasModal && selectedItem) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Historial de Incidencias</h2>
+          <button class="btn-close" (click)="closeIncidenciasModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-subheader">
+          <p><strong>{{ selectedItem.codigo }}</strong> — {{ selectedItem.producto }}</p>
+          <p>Stock Total: {{ selectedItem.stock_total }} | Disponible: {{ selectedItem.stock_disponible }} | Reparación: {{ selectedItem.stock_reparacion }} | Baja: {{ selectedItem.stock_baja }}</p>
+        </div>
+        <div class="incidencias-list">
+          @for (inc of selectedItem.incidencias; track inc.fecha) {
+            <div class="incidencia-item" [class.tipo-reparacion]="inc.tipo === 'Reparación'" [class.tipo-baja]="inc.tipo === 'Baja'">
+              <div class="inc-header">
+                <span class="inc-tipo">{{ inc.tipo }}</span>
+                <span class="inc-cantidad">{{ inc.cantidad }} unidad(es)</span>
+                <span class="inc-fecha">{{ inc.fecha }}</span>
+              </div>
+              <p class="inc-detalle">{{ inc.detalle }}</p>
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeIncidenciasModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+
 </div>
