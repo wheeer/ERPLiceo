@@ -13,6 +13,14 @@
   background: var(--bg-body);
 }
 
+.remuneraciones-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
 .remuneraciones-header {
   text-align: left;
 }

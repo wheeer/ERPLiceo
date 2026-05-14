@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
@@ -51,16 +51,19 @@ export class RrhhComponent implements OnInit {
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
+  private cdr = inject(ChangeDetectorRef);
 
   // Tabs
   activeTab: 'general' | 'gestion' | 'ficha' | 'asistencia' | 'horasExtra' = 'general';
-  
+  isLoading = true;
+
 
   // Estado CRUD
-  showModal = false;
+  viewingForm = false;
   isEditing = false;
   selectedEmployee: Employee | null = null;
   employeeForm: FormGroup;
+  isSaving = false;
   
   // Estado Asistencia Diaria
   fechaHoy: Date = new Date();
@@ -188,7 +191,7 @@ export class RrhhComponent implements OnInit {
       // config_remuneracion — campos de la ficha remuneracional
       sueldo_base: [0, [Validators.required, Validators.min(500000)]],
       afp: ['', Validators.required],
-      salud: ['Fonasa', Validators.required],
+      salud: ['', Validators.required],
       movilizacion: [0, Validators.required],
       colacion: [0, Validators.required]
     });
@@ -209,6 +212,11 @@ export class RrhhComponent implements OnInit {
   }
 
   ngOnInit() {
+    setTimeout(() => {
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    }, 1500);
+
     this.filteredEmployees = [...this.employees];
     this.filteredAsistenciaList = [...this.asistenciaList];
     this.route.queryParams.subscribe(params => {
@@ -264,6 +272,7 @@ export class RrhhComponent implements OnInit {
   
   changeTab(tab: 'general' | 'gestion' | 'ficha' | 'asistencia' | 'horasExtra') {
     this.activeTab = tab;
+    
     if (tab !== 'ficha') {
       this.selectedEmployee = null;
     }
@@ -278,49 +287,61 @@ export class RrhhComponent implements OnInit {
     this.isEditing = false;
     this.employeeForm.reset({
       estado: 'activo',
+      tipo_contrato: 'Indefinido',
+      departamento: '',
+      afp: '',
+      salud: '',
+      sueldo_base: null,
+      movilizacion: null,
+      colacion: null,
       fechaIngreso: new Date().toISOString().split('T')[0]
     });
-    this.showModal = true;
+    this.viewingForm = true;
   }
 
   openEditModal(employee: Employee) {
     this.isEditing = true;
+    this.selectedEmployee = employee;
     this.employeeForm.patchValue({
       ...employee,
-      fechaIngreso: new Date(employee.fechaIngreso).toISOString().split('T')[0]
+      fechaIngreso: employee.fechaIngreso.toISOString().split('T')[0]
     });
-    this.showModal = true;
+    this.viewingForm = true;
   }
 
-  closeModal() {
-    this.showModal = false;
+  closeForm() {
+    this.viewingForm = false;
   }
 
   saveEmployee() {
-    if (this.employeeForm.invalid) {
-      this.employeeForm.markAllAsTouched();
-      return;
-    }
-
-    const formValue = this.employeeForm.value;
-    const newEmployee: Employee = {
-      ...formValue,
-      fechaIngreso: new Date(formValue.fechaIngreso)
-    };
-
-    if (this.isEditing) {
-      const index = this.employees.findIndex(e => e.id === newEmployee.id);
-      if (index !== -1) {
-        this.employees[index] = newEmployee;
-        this.toastService.show('Datos actualizados correctamente.', 'success');
+    if (this.employeeForm.invalid) return;
+    
+    this.isSaving = true;
+    
+    // Simular latencia de red
+    setTimeout(() => {
+      if (this.isEditing) {
+        // Actualizar existente
+        const index = this.employees.findIndex(e => e.id === this.employeeForm.value.id);
+        if (index > -1) {
+          this.employees[index] = { ...this.employees[index], ...this.employeeForm.value };
+        }
+        this.toastService.show('Empleado actualizado correctamente', 'success');
+      } else {
+        // Crear nuevo
+        const newEmp = {
+          ...this.employeeForm.value,
+          id: Math.max(...this.employees.map(e => e.id)) + 1
+        };
+        this.employees.push(newEmp);
+        this.toastService.show('Empleado registrado correctamente', 'success');
       }
-    } else {
-      newEmployee.id = Math.max(0, ...this.employees.map(e => e.id)) + 1;
-      this.employees.push(newEmployee);
-      this.toastService.show('Empleado registrado exitosamente.', 'success');
-    }
-    this.filteredEmployees = [...this.employees];
-    this.closeModal();
+      
+      this.isSaving = false;
+      this.closeForm();
+      this.filteredEmployees = [...this.employees];
+      this.cdr.detectChanges();
+    }, 1500);
   }
 
   deleteEmployee(id: number) {
@@ -353,53 +374,41 @@ export class RrhhComponent implements OnInit {
   // ==========================================
 
   registrarHorasExtra() {
-    if (this.horasExtraForm.invalid) {
-      this.horasExtraForm.markAllAsTouched();
-      return;
-    }
-
-    const formValues = this.horasExtraForm.value;
-    const empleado = this.employees.find(e => e.id === Number(formValues.empleadoId));
+    if (this.horasExtraForm.invalid) return;
     
-    if (!empleado) return;
-
-    // Detectar tipo de día
-    const fechaObj = new Date(formValues.fecha);
-    const dayOfWeek = fechaObj.getUTCDay(); // 0 = Domingo, 6 = Sábado
-    // Simplificación: asume 0 o 6 como finde, el resto laboral. Festivos requieren API.
-    const tipoDia = (dayOfWeek === 0 || dayOfWeek === 6) ? 'finde' : 'laboral';
-    const recargo = tipoDia === 'laboral' ? 50 : 100;
+    this.isSaving = true;
     
-    // Cálculo (Sueldo base simulado, en entorno real viene del backend/nómina)
-    const sueldoBaseMoc = empleado.cargo.includes('Jefa') ? 2800000 : 2500000;
-    const valorHoraNormal = (sueldoBaseMoc / 30) * 28 / 42;
-    const recargoMultiplicador = 1 + (recargo / 100);
-    const valorHoraExtra = valorHoraNormal * recargoMultiplicador;
-    const montoTotal = valorHoraExtra * formValues.horas;
-
-    const nuevoRegistro: RegistroHorasExtra = {
-      id: Date.now(),
-      empleadoId: empleado.id,
-      empleado: empleado.nombre,
-      cargo: empleado.cargo,
-      rut: empleado.rut,
-      sueldoBase: sueldoBaseMoc,
-      fecha: formValues.fecha,
-      tipoDia: tipoDia,
-      horas: formValues.horas,
-      recargo: recargo,
-      montoTotal: Math.round(montoTotal),
-      autorizadoPor: formValues.autorizadoPor
-    };
-
-    this.historialHorasExtra.unshift(nuevoRegistro);
-    this.toastService.show('Registro de horas extra guardado con éxito.', 'success');
-    
-    this.horasExtraForm.patchValue({ 
-      horas: 1, 
-      autorizadoPor: '' 
-    });
-    this.horasExtraForm.markAsUntouched();
+    setTimeout(() => {
+      const data = this.horasExtraForm.value;
+      const empleado = this.employees.find(e => e.id == data.empleadoId);
+      
+      if (empleado) {
+        this.historialHorasExtra.unshift({
+          id: Date.now(),
+          fecha: data.fecha,
+          empleadoId: empleado.id,
+          empleado: empleado.nombre,
+          cargo: empleado.cargo,
+          rut: empleado.rut,
+          sueldoBase: empleado.config_remuneracion.sueldo_base,
+          tipoDia: 'laboral',
+          horas: data.horas,
+          recargo: 50,
+          montoTotal: 0,
+          autorizadoPor: data.autorizadoPor
+        });
+        
+        this.toastService.show(`Se han registrado ${data.horas} hrs para ${empleado.nombre}`, 'success');
+        
+        this.horasExtraForm.reset({
+          fecha: new Date().toISOString().split('T')[0],
+          horas: 1
+        });
+      }
+      
+      this.isSaving = false;
+      this.cdr.detectChanges();
+    }, 1500);
   }
 
   eliminarRegistroHE(id: number) {
@@ -430,31 +439,39 @@ export class RrhhComponent implements OnInit {
   saveExcepcion() {
     if (this.excepcionForm.invalid) return;
     
-    const formValue = this.excepcionForm.value;
-    const emp = this.selectedAsistencia;
-    const tipo = formValue.tipoExcepcion;
+    this.isSaving = true;
     
-    const estadosMap: Record<string, string> = {
-      'atraso': 'Atraso',
-      'ausente': 'Ausente Injustificado',
-      'licencia': 'Licencia Médica',
-      'vacaciones': 'Vacaciones',
-      'sin_goce': 'Permiso S/Goce'
-    };
-    
-    emp.estado = estadosMap[tipo];
-    
-    if (tipo === 'atraso') {
-      emp.entrada = formValue.horaEntradaReal;
-      this.toastService.show(`Atraso de ${this.excepcionForm.get('minutosAtraso')?.value} min registrado para ${emp.nombre}`, 'warning');
-    } else if (tipo === 'vacaciones') {
-      emp.diasVacaciones = Math.max(0, emp.diasVacaciones - 1);
-      this.toastService.show(`Día de vacaciones descontado a ${emp.nombre}. Saldo: ${emp.diasVacaciones}`, 'info');
-    } else {
-      emp.inasistenciasInjustificadas += 1;
-      this.toastService.show(`Excepción ${estadosMap[tipo]} registrada.`, 'info');
-    }
-    
-    this.closeExcepcionModal();
+    setTimeout(() => {
+      const formValue = this.excepcionForm.getRawValue();
+      const emp = this.selectedAsistencia;
+      if (!emp) return;
+      
+      const tipo = formValue.tipoExcepcion;
+      
+      const estadosMap: Record<string, string> = {
+        'atraso': 'Atraso',
+        'ausente': 'Ausente Injustificado',
+        'licencia': 'Licencia Médica',
+        'vacaciones': 'Vacaciones',
+        'sin_goce': 'Permiso S/Goce'
+      };
+      
+      emp.estado = estadosMap[tipo];
+      
+      if (tipo === 'atraso') {
+        emp.entrada = formValue.horaEntradaReal;
+        this.toastService.show(`Atraso de ${formValue.minutosAtraso} min registrado para ${emp.nombre}`, 'warning');
+      } else if (tipo === 'vacaciones') {
+        emp.diasVacaciones = Math.max(0, emp.diasVacaciones - 1);
+        this.toastService.show(`Día de vacaciones descontado a ${emp.nombre}. Saldo: ${emp.diasVacaciones}`, 'info');
+      } else {
+        emp.inasistenciasInjustificadas += 1;
+        this.toastService.show(`Excepción ${estadosMap[tipo]} registrada.`, 'info');
+      }
+      
+      this.isSaving = false;
+      this.closeExcepcionModal();
+      this.cdr.detectChanges();
+    }, 1200);
   }
 }

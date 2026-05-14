@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
@@ -56,9 +56,11 @@ export class RemuneracionesComponent implements OnInit {
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
+  private cdr = inject(ChangeDetectorRef);
 
   // Tabs
   activeTab: 'nomina' | 'horasExtra' = 'nomina';
+  isLoading = true;
 
   // Formulario y datos
   horasExtraForm: FormGroup;
@@ -108,6 +110,11 @@ export class RemuneracionesComponent implements OnInit {
   }
 
   ngOnInit() {
+    setTimeout(() => {
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    }, 1200);
+
     this.filteredPayrollData = [...this.payrollData];
     this.route.queryParams.subscribe(params => {
       if (params['tab']) {
