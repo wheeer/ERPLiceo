@@ -3,17 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute } from '@angular/router';
-
-interface InventoryItem {
-  id: number;
-  codigo: string;
-  producto: string;
-  categoria: string;
-  stock: number;
-  stockCritico: number;
-  ubicacion: string;
-  estado: 'disponible' | 'bajo-stock' | 'descontinuado';
-}
+import { InventarioService, ArticuloInventario } from './inventario.service';
 
 @Component({
   selector: 'app-inventario',
@@ -27,6 +17,7 @@ export class InventarioComponent implements OnInit {
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
+  private inventarioService = inject(InventarioService);
 
   // Tabs
   activeTab: 'stock' | 'gestion' = 'stock';
@@ -35,121 +26,19 @@ export class InventarioComponent implements OnInit {
   showModal = false;
   isEditing = false;
   inventoryForm: FormGroup;
+  isLoading = true;
   
-  // TODO: Reemplazar con llamada al servicio de inventario (backend pendiente)
-  inventoryItems: InventoryItem[] = [
-    {
-      id: 1,
-      codigo: 'MON-001',
-      producto: 'Monitor Dell 24 pulgadas FHD',
-      categoria: 'Hardware',
-      stock: 12,
-      stockCritico: 5,
-      ubicacion: 'Bodega A - Estante 1',
-      estado: 'disponible'
-    },
-    {
-      id: 2,
-      codigo: 'KEY-002',
-      producto: 'Teclado Mecánico RGB',
-      categoria: 'Perifericos',
-      stock: 3,
-      stockCritico: 5,
-      ubicacion: 'Bodega B - Estante 3',
-      estado: 'bajo-stock'
-    },
-    {
-      id: 3,
-      codigo: 'RAM-003',
-      producto: 'Memoria RAM DDR4 8GB',
-      categoria: 'Componentes',
-      stock: 25,
-      stockCritico: 10,
-      ubicacion: 'Bodega A - Estante 2',
-      estado: 'disponible'
-    },
-    {
-      id: 4,
-      codigo: 'SSD-004',
-      producto: 'SSD Samsung 256GB NVMe',
-      categoria: 'Almacenamiento',
-      stock: 0,
-      stockCritico: 2,
-      ubicacion: 'Bodega C - Estante 1',
-      estado: 'descontinuado'
-    },
-    {
-      id: 5,
-      codigo: 'MOU-005',
-      producto: 'Mouse Láser inalámbrico',
-      categoria: 'Perifericos',
-      stock: 18,
-      stockCritico: 5,
-      ubicacion: 'Bodega B - Estante 2',
-      estado: 'disponible'
-    },
-    {
-      id: 6,
-      codigo: 'USH-006',
-      producto: 'Hub USB 7 puertos',
-      categoria: 'Accesorios',
-      stock: 8,
-      stockCritico: 3,
-      ubicacion: 'Bodega A - Estante 4',
-      estado: 'disponible'
-    },
-    {
-      id: 7,
-      codigo: 'CAB-007',
-      producto: 'Cable HDMI Premium 2m',
-      categoria: 'Cableria',
-      stock: 42,
-      stockCritico: 15,
-      ubicacion: 'Bodega D - Estante 1',
-      estado: 'disponible'
-    },
-    {
-      id: 8,
-      codigo: 'PRJ-008',
-      producto: 'Proyector Epson 3000 lúmenes',
-      categoria: 'Audiovisual',
-      stock: 2,
-      stockCritico: 3,
-      ubicacion: 'Bodega C - Estante 3',
-      estado: 'bajo-stock'
-    },
-    {
-      id: 9,
-      codigo: 'PAN-009',
-      producto: 'Pantalla Interactiva 65"',
-      categoria: 'Audiovisual',
-      stock: 5,
-      stockCritico: 2,
-      ubicacion: 'Bodega C - Estante 2',
-      estado: 'disponible'
-    },
-    {
-      id: 10,
-      codigo: 'PSU-010',
-      producto: 'Fuente de Poder 550W 80+',
-      categoria: 'Componentes',
-      stock: 1,
-      stockCritico: 3,
-      ubicacion: 'Bodega A - Estante 3',
-      estado: 'bajo-stock'
-    }
-  ];
+  inventoryItems: ArticuloInventario[] = [];
 
   constructor() {
     this.inventoryForm = this.fb.group({
-      id: [null],
       codigo: ['', Validators.required],
-      producto: ['', Validators.required],
+      nombre: ['', Validators.required],
       categoria: ['', Validators.required],
-      stock: [0, [Validators.required, Validators.min(0)]],
-      stockCritico: [5, [Validators.required, Validators.min(1)]],
+      cantidad: [0, [Validators.required, Validators.min(0)]],
+      stock_minimo: [5, [Validators.required, Validators.min(1)]],
       ubicacion: ['', Validators.required],
-      estado: ['disponible', Validators.required]
+      estado: ['Disponible', Validators.required]
     });
   }
 
@@ -162,28 +51,43 @@ export class InventarioComponent implements OnInit {
         }
       }
     });
+
+    this.cargarInventario();
+  }
+
+  cargarInventario() {
+    this.isLoading = true;
+    this.inventarioService.getInventario().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.inventoryItems = response.data;
+        } else {
+          this.toastService.show(response.message || 'Error al cargar inventario', 'error');
+        }
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.toastService.show('Error de conexión con el servidor', 'error');
+        this.isLoading = false;
+        console.error(err);
+      }
+    });
   }
   
-  getStatusColor(status: InventoryItem['estado']): string {
-    const colors: Record<InventoryItem['estado'], string> = {
-      'disponible': 'status-available',
-      'bajo-stock': 'status-lowstock',
-      'descontinuado': 'status-discontinued'
-    };
-    return colors[status];
+  getStatusColor(status: string): string {
+    const statusLower = status?.toLowerCase() || '';
+    if (statusLower === 'disponible') return 'status-available';
+    if (statusLower === 'crítico' || statusLower === 'critico') return 'status-critical';
+    if (statusLower === 'en reparación' || statusLower === 'en reparacion') return 'status-repair';
+    return 'status-discontinued'; // default
   }
   
-  getStatusLabel(status: InventoryItem['estado']): string {
-    const labels: Record<InventoryItem['estado'], string> = {
-      'disponible': 'Disponible',
-      'bajo-stock': 'Bajo Stock',
-      'descontinuado': 'Descontinuado'
-    };
-    return labels[status];
+  getStatusLabel(status: string): string {
+    return status || 'Desconocido';
   }
   
   getTotalItems(): number {
-    return this.inventoryItems.reduce((sum, item) => sum + item.stock, 0);
+    return this.inventoryItems.reduce((sum, item) => sum + (item.cantidad || 0), 0);
   }
   
   getItemsCount(): number {
@@ -201,14 +105,14 @@ export class InventarioComponent implements OnInit {
   openNewModal() {
     this.isEditing = false;
     this.inventoryForm.reset({
-      stock: 0,
-      stockCritico: 5,
-      estado: 'disponible'
+      cantidad: 0,
+      stock_minimo: 5,
+      estado: 'Disponible'
     });
     this.showModal = true;
   }
 
-  openEditModal(item: InventoryItem) {
+  openEditModal(item: ArticuloInventario) {
     this.isEditing = true;
     this.inventoryForm.patchValue(item);
     this.showModal = true;
@@ -227,56 +131,52 @@ export class InventarioComponent implements OnInit {
     const formValue = this.inventoryForm.value;
     
     // Estado calculado dinámicamente según nivel de stock
-    if (formValue.stock === 0 && formValue.estado !== 'descontinuado') {
-      formValue.estado = 'bajo-stock';
-    } else if (formValue.stock <= formValue.stockCritico && formValue.estado === 'disponible') {
-      formValue.estado = 'bajo-stock';
-    } else if (formValue.stock > formValue.stockCritico && formValue.estado === 'bajo-stock') {
-      formValue.estado = 'disponible';
+    if (formValue.cantidad <= formValue.stock_minimo) {
+      formValue.estado = 'Crítico';
+    } else if (formValue.cantidad > formValue.stock_minimo && formValue.estado === 'Crítico') {
+      formValue.estado = 'Disponible';
     }
 
+    // Pendiente: Integrar con backend POST/PUT (Tarea #14)
     if (this.isEditing) {
-      const index = this.inventoryItems.findIndex(i => i.id === formValue.id);
+      const index = this.inventoryItems.findIndex(i => i.codigo === formValue.codigo);
       if (index !== -1) {
-        this.inventoryItems[index] = formValue;
+        this.inventoryItems[index] = { ...this.inventoryItems[index], ...formValue };
         this.toastService.show('Información del producto actualizada.', 'success');
       }
     } else {
-      formValue.id = Math.max(0, ...this.inventoryItems.map(i => i.id)) + 1;
       this.inventoryItems.unshift(formValue);
       this.toastService.show('Producto añadido al inventario.', 'success');
     }
     this.closeModal();
   }
 
-  deleteItem(id: number) {
+  deleteItem(codigo: string) {
     if (confirm('¿Está seguro de eliminar este producto del inventario?')) {
-      this.inventoryItems = this.inventoryItems.filter(i => i.id !== id);
+      // Pendiente: Integrar con backend DELETE (Tarea #14)
+      this.inventoryItems = this.inventoryItems.filter(i => i.codigo !== codigo);
       this.toastService.show('Producto eliminado del inventario.', 'warning');
     }
   }
 
-  ajustarStock(item: InventoryItem, cantidad: number, event: Event) {
-    const nuevoStock = Math.max(0, item.stock + cantidad);
-    item.stock = nuevoStock;
+  ajustarStock(item: ArticuloInventario, cantidadAjuste: number, event: Event) {
+    const nuevoStock = Math.max(0, item.cantidad + cantidadAjuste);
+    item.cantidad = nuevoStock;
     
-    if (nuevoStock === 0 && item.estado !== 'descontinuado') {
-      item.estado = 'bajo-stock';
-    } else if (nuevoStock <= item.stockCritico && item.estado === 'disponible') {
-      item.estado = 'bajo-stock';
-    } else if (nuevoStock > item.stockCritico && item.estado === 'bajo-stock') {
-      item.estado = 'disponible';
+    if (nuevoStock <= item.stock_minimo) {
+      item.estado = 'Crítico';
+    } else if (nuevoStock > item.stock_minimo && item.estado === 'Crítico') {
+      item.estado = 'Disponible';
     }
     
     this.toastService.show(`Stock actualizado: ${nuevoStock} unidades.`, 'info');
     
-    // Feedback visual usando Web Animations API (100% confiable y sin conflictos con Angular)
+    // Feedback visual usando Web Animations API
     const target = event.target as HTMLElement;
     const tr = target.closest('tr');
     
     if (tr) {
-      // Color aurora cian/azul para sumar (+), color ámbar/rojo sutil para restar (-)
-      const flashColor = cantidad > 0 
+      const flashColor = cantidadAjuste > 0 
         ? 'rgba(0, 217, 255, 0.25)' 
         : 'rgba(239, 68, 68, 0.25)';
         
