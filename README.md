@@ -1,66 +1,59 @@
 # ERP EMTP — Sistema de Gestión Centralizado
 
-![Estado del Proyecto](https://img.shields.io/badge/Estado-Mockup_Navegable_(EPE2)-blue?style=for-the-badge)
+![Estado del Proyecto](https://img.shields.io/badge/Estado-MVP_Funcional-success?style=for-the-badge)
 ![Angular](https://img.shields.io/badge/Angular_21-DD0031?style=for-the-badge&logo=angular&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 
-## Descripción del Proyecto
+## 🎯 Visión del Proyecto
 
-**ERP EMTP** es una solución integral de planificación de recursos diseñada específicamente para Liceos Técnicos Profesionales (EMTP) en Chile. El sistema centraliza la gestión administrativa, docente y de inventario, resolviendo la fragmentación de datos y optimizando los procesos operativos de la institución.
-
-Este proyecto forma parte de la evaluación **EPE2**, enfocándose en la creación de un mockup navegable de alta fidelidad con una experiencia de usuario (UX) madura y profesional.
+**ERP EMTP** es una solución de planificación de recursos diseñada específicamente para **Liceos Técnicos Profesionales (EMTP)** en Chile. El sistema centraliza la gestión administrativa, docente e institucional, resolviendo la fragmentación de datos y optimizando los procesos operativos mediante una plataforma única e integrada.
 
 ---
 
-## Características Principales
+## 🔒 Experiencia de Usuario: Login Aurora
 
-### Login Aurora (Experiencia de Usuario Premium)
-- **Diseño Estético y Minimalista**: Inspirado en la sobriedad y elegancia corporativa.
-- **Atmósfera Dinámica**: Fondo de aurora boreal en un cielo nocturno con montañas y animaciones sutiles.
-- **Glassmorphism**: Interfaz de tarjeta flotante con textura mate y efectos de profundidad.
-- **Feedback Interactivo**: Iluminación dinámica (Glow) según el foco del usuario y estados de carga progresivos.
+El sistema mantiene su característica **Experiencia de Usuario Premium** en el acceso principal:
+- **Atmósfera Dinámica**: Fondo de aurora boreal con animaciones sutiles para una bienvenida profesional.
+- **Glassmorphism**: Interfaz de tarjeta flotante con efectos de profundidad y textura mate.
+- **Feedback Interactivo**: Sistema de iluminación dinámica (Glow) y estados de carga progresivos.
 
-### Módulos Integrados (MVP)
-1.  **Dashboard Central**: Panel de control adaptativo con métricas y actividades filtradas dinámicamente según el rol.
-2.  **Mi Perfil**: Gestión segura de credenciales, cambio de contraseñas cruzado con base de datos y visualización de datos de empleado.
-3.  **Recursos Humanos (RRHH)**: Gestión de personal, mantenedor de funcionarios y visualización de asistencia.
-4.  **Remuneraciones**: Liquidación de sueldos, cálculo de bonos, descuentos y generación de documentos.
-5.  **Inventario**: Control de stock crítico, trazabilidad de insumos y sistema de alertas.
+---
+
+## 🖥️ Arquitectura de Módulos: Pantalla Completa
+
+Para garantizar la máxima eficiencia operativa y resolver problemas de visualización en monitores de alta resolución, los módulos principales han evolucionado:
+- **Adiós a los Modales**: Transición de diálogos restrictivos a una **Arquitectura de Pantalla Completa**, permitiendo una gestión de datos más robusta y clara.
+- **Flujos Continuos**: Navegación fluida entre el listado de registros y los formularios de edición/creación.
+- **Diseño Adaptativo**: Optimización del espacio de trabajo para tareas complejas en los módulos de RRHH, Remuneraciones e Inventario.
+
+---
+
+## 📦 Módulos Integrados (MVP)
+
+1.  **Recursos Humanos (RRHH)**: Gestión de funcionarios, mantenedores de personal y sistema visual de asistencia.
+2.  **Remuneraciones**: Automatización de cálculos basada en asistencia, gestión de bonos y generación de liquidaciones en PDF.
+3.  **Inventario**: Control de stock con alertas de estado crítico y trazabilidad total de insumos.
+4.  **Dashboard de Gestión**: Panel con métricas clave para la toma de decisiones por parte de Directivos y Administrativos.
 
 ---
 
 ## Filosofía de Diseño y Usabilidad
 
-El sistema ha sido auditado bajo las **10 Heurísticas de Jakob Nielsen**, priorizando:
-- **Visibilidad del estado del sistema**: Feedback inmediato en cada acción del usuario.
-- **Consistencia y estándares**: Sistema de diseño unificado en todos los módulos operativos.
-- **Prevención de errores**: Validaciones visuales y mensajes claros con soluciones sugeridas.
-- **Diseño estético y funcional**: Eliminación de ruidos visuales para centrarse en la eficiencia del dato.
+El diseño se rige por las heurísticas de Jakob Nielsen, priorizando:
+- **Visibilidad del estado**: Feedback inmediato en cada transacción.
+- **Consistencia y estándares**: Una gramática visual coherente entre todos los módulos.
+- **Prevención de errores**: Validaciones en tiempo real en formularios de pantalla completa.
+- **Eficiencia de uso**: Acceso rápido a las funciones críticas de cada rol (Administrativo, Directivo, Docente).
 
 ---
 
-## Stack Tecnológico
+## 🛠️ Stack Tecnológico (Nivel Enterprise)
 
-**Frontend (Interfaz de Usuario)**
-- **Framework**: Angular 21
-- **Estilos**: CSS3 (Vanilla) con Sistema de Design Tokens dinámicos (Dark/Light Mode)
-- **Iconografía**: SVG Inline / Lucide Icons
-- **Tipografía**: Inter (Google Fonts) para máxima legibilidad
-
-**Backend & Base de Datos**
-- **Framework**: Django (Python) para la lógica de API Rest.
-- **Base de Datos**: MongoDB Atlas (NoSQL) centralizado.
-- **Seguridad**: JWT (JSON Web Tokens) y encriptación con Bcrypt.
-
----
-
-## Seguridad y Arquitectura (Nivel Enterprise)
-
-El sistema ha superado la fase de mockup estático, implementando una arquitectura de seguridad real:
-- **Autenticación Robusta**: Tokens JWT (JSON Web Tokens) inyectados vía Interceptors en Angular.
-- **Protección de Datos (Backend)**: Contraseñas hasheadas en base de datos mediante `bcrypt` con Salt dinámico.
-- **Control de Acceso por Roles (RBAC)**: Enrutamiento bloqueado mediante `Guards` de Angular. Cada módulo (RRHH, Inventario, Remuneraciones) es inaccesible si el token del usuario no contiene el rol específico requerido.
-- **Separación de Lógica de Negocio**: Diferenciación a nivel de base de datos entre credenciales de acceso (Colección `usuarios`) e información personal (Colección `empleados`), respetando el paradigma clásico de los sistemas ERP.
+- **Frontend**: Angular 21 con CSS3 Vanilla (Design Tokens dinámicos).
+- **Backend**: Django REST Framework (Python) para una lógica de negocio segura y escalable.
+- **Base de Datos**: MongoDB Atlas (NoSQL) para una gestión de datos flexible.
+- **Seguridad**: Autenticación JWT y protección de rutas mediante Guards de Angular.
 
 ---
 
@@ -69,4 +62,4 @@ El sistema ha superado la fase de mockup estático, implementando una arquitectu
 
 ---
 
-**Versión**: 1.0.0 — Abril 2026
+**Versión**: 1.2.0 — Mayo 2026
