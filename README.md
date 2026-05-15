@@ -1,17 +1,17 @@
 # ERP EMTP — Sistema de Gestión Centralizado
 
-![Estado del Proyecto](https://img.shields.io/badge/Estado-MVP_Funcional-success?style=for-the-badge)
+![Estado del Proyecto](https://img.shields.io/badge/Estado-MVP_en_Desarrollo-yellow?style=for-the-badge)
 ![Angular](https://img.shields.io/badge/Angular_21-DD0031?style=for-the-badge&logo=angular&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 
-## 🎯 Visión del Proyecto
+## Visión del Proyecto
 
 **ERP EMTP** es una solución de planificación de recursos diseñada específicamente para **Liceos Técnicos Profesionales (EMTP)** en Chile. El sistema centraliza la gestión administrativa, docente e institucional, resolviendo la fragmentación de datos y optimizando los procesos operativos mediante una plataforma única e integrada.
 
 ---
 
-## 🔒 Experiencia de Usuario: Login Aurora
+## Experiencia de Usuario: Login Aurora
 
 El sistema mantiene su característica **Experiencia de Usuario Premium** en el acceso principal:
 - **Atmósfera Dinámica**: Fondo de aurora boreal con animaciones sutiles para una bienvenida profesional.
@@ -20,7 +20,7 @@ El sistema mantiene su característica **Experiencia de Usuario Premium** en el 
 
 ---
 
-## 🖥️ Arquitectura de Módulos: Pantalla Completa
+## Arquitectura de Módulos: Pantalla Completa
 
 Para garantizar la máxima eficiencia operativa y resolver problemas de visualización en monitores de alta resolución, los módulos principales han evolucionado:
 - **Adiós a los Modales**: Transición de diálogos restrictivos a una **Arquitectura de Pantalla Completa**, permitiendo una gestión de datos más robusta y clara.
@@ -29,7 +29,7 @@ Para garantizar la máxima eficiencia operativa y resolver problemas de visualiz
 
 ---
 
-## 📦 Módulos Integrados (MVP)
+## Módulos en Desarrollo (MVP)
 
 1.  **Recursos Humanos (RRHH)**: Gestión de funcionarios, mantenedores de personal y sistema visual de asistencia.
 2.  **Remuneraciones**: Automatización de cálculos basada en asistencia, gestión de bonos y generación de liquidaciones en PDF.
@@ -48,7 +48,7 @@ El diseño se rige por las heurísticas de Jakob Nielsen, priorizando:
 
 ---
 
-## 🛠️ Stack Tecnológico (Nivel Enterprise)
+## Stack Tecnológico
 
 - **Frontend**: Angular 21 con CSS3 Vanilla (Design Tokens dinámicos).
 - **Backend**: Django REST Framework (Python) para una lógica de negocio segura y escalable.
@@ -62,4 +62,4 @@ El diseño se rige por las heurísticas de Jakob Nielsen, priorizando:
 
 ---
 
-**Versión**: 1.2.0 — Mayo 2026
+**Versión**: 1.2.1 — Mayo 2026
