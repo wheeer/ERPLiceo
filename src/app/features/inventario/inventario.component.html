@@ -21,6 +21,10 @@
   <!-- TAB 1: VISTA DE STOCK -->
   <!-- ============================================== -->
   @if (activeTab === 'stock') {
+    <div class="action-bar-simple">
+      <input type="text" class="search-input" placeholder="Buscar por código, producto o categoría..." (keyup)="onSearch($event)">
+    </div>
+
     @if (isLoading) {
       <div class="table-wrapper">
         <table class="inventory-table">
@@ -162,7 +166,7 @@
             <tr>
               <th>Código / Producto</th>
               <th class="hide-mobile">Categoría</th>
-              <th class="amount">Ajuste Disponible</th>
+              <th class="center">Ajuste Disponible</th>
               <th class="hide-mobile">Ubicación</th>
               <th class="center">Acciones</th>
             </tr>
@@ -188,7 +192,7 @@
               <tr>
                 <th>Código / Producto</th>
                 <th class="hide-mobile">Categoría</th>
-                <th class="amount">Ajuste Disponible</th>
+                <th class="center">Ajuste Disponible</th>
                 <th class="hide-mobile">Ubicación</th>
                 <th class="center">Acciones</th>
               </tr>

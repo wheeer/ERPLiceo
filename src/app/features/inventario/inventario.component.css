@@ -351,6 +351,10 @@
 }
 
 /* STOCK ADJUST CONTROLS */
+.cell-stock-adjust {
+  text-align: center;
+}
+
 .stock-adjust-controls {
   display: inline-flex;
   align-items: center;

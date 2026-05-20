@@ -515,3 +515,34 @@
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.75rem;
 }
+
+/* ============================================================
+   RESPONSIVIDAD Y DENSIDAD DE DATOS (Escala 150% y Notebooks)
+   ============================================================ */
+@media (max-width: 1366px) {
+  /* Reducir los padding en las celdas de las tablas para ganar espacio vertical */
+  .inventory-table thead th,
+  .inventory-table tbody td,
+  .payroll-table thead th,
+  .payroll-table tbody td,
+  .crud-table thead th,
+  .crud-table tbody td {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.85rem;
+  }
+  
+  /* Compactar ligeramente los títulos principales de los módulos */
+  .rrhh-title,
+  .remuneraciones-title,
+  .inventario-title {
+    font-size: 1.8rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  /* Reducir un poco los gaps de los contenedores modulares */
+  .rrhh-container, 
+  .remuneraciones-container, 
+  .inventario-container {
+    gap: 1rem;
+  }
+}
