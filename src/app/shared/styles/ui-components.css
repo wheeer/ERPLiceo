@@ -26,6 +26,48 @@
   min-height: 0;
 }
 
+/* ============================================================
+   ESTILO "EXCEL" GLOBAL PARA TODAS LAS TABLAS DEL ERP
+   ============================================================ */
+.table-wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.table-wrapper th,
+.table-wrapper td {
+  padding: 0.45rem 0.75rem; /* Alta densidad */
+  text-align: left;
+  border: 1px solid var(--border-color); /* Separadores verticales y horizontales */
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.table-wrapper th {
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.table-wrapper tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table-wrapper tbody tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.02); /* Zebra striping sutil */
+}
+
+.table-wrapper tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
 .empty-state {
   color: var(--text-muted);
   font-style: italic;

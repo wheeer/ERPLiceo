@@ -41,49 +41,6 @@
   min-height: 0;
 }
 
-.payroll-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.payroll-table thead {
-  background: linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(16,185,129,0.02) 100%);
-  border-bottom: 2px solid var(--border-color);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.payroll-table thead th {
-  padding: 1rem 1.25rem;
-  text-align: left;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-}
-
-.payroll-table thead th.amount {
-  text-align: right;
-}
-
-.payroll-table tbody tr {
-  border-bottom: 1px solid var(--border-color);
-  transition: all 0.2s ease;
-}
-
-.payroll-table tbody tr:hover {
-  background: rgba(16,185,129,0.03);
-}
-
-.payroll-table tbody td {
-  padding: 0.9rem 1.25rem;
-  color: var(--text-primary);
-  vertical-align: middle;
-}
-
 .cell-rut {
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.85rem;
