@@ -2,6 +2,21 @@
    UI COMPONENTS GLOBALES (Extraídos para Consistencia)
    ============================================================ */
 
+/* CONTENEDOR MODULAR (Aplica a todos los módulos para evitar repetición y hacer el padding fluido) */
+.rrhh-container, 
+.remuneraciones-container, 
+.inventario-container {
+  width: 100%;
+  height: 100%;
+  /* Padding dinámico: Se ajusta orgánicamente entre 1rem (pequeño) y 2.5rem (grande) según el viewport */
+  padding: clamp(1rem, 3vw, 2.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2vw, 1.5rem);
+  overflow-y: auto;
+  background: var(--bg-body);
+}
+
 /* TABLE WRAPPER & GENERIC TABLES */
 .table-wrapper {
   background: var(--bg-surface-main);
@@ -247,6 +262,7 @@
 .crud-form .form-row {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .crud-form .form-row > * { flex: 1; }
@@ -481,7 +497,7 @@
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1.5rem;
   align-items: start;
 }

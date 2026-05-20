@@ -2,16 +2,7 @@
    MÓDULO: REMUNERACIONES
    ============================================================ */
 
-.remuneraciones-container {
-  width: 100%;
-  height: 100%;
-  padding: 2rem 2.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  overflow-y: auto;
-  background: var(--bg-body);
-}
+
 
 .remuneraciones-header-row {
   display: flex;
@@ -446,3 +437,24 @@
 .btn-delete:hover { color: #ef4444; border-color: #ef4444; }
 
 .fw-600 { font-weight: 600; }
+
+/* ============================================================
+   RESPONSIVE — PANTALLAS TIPO NOTEBOOK Y ESCALAS 150% (Max 1280px)
+   ============================================================ */
+
+@media (max-width: 1280px) {
+  .he-summary-card {
+    flex-wrap: wrap;
+    padding: 1rem;
+  }
+  
+  .summary-divider {
+    height: 1px;
+    width: 100%;
+    margin: 1rem 0;
+  }
+  
+  .he-form-card {
+    padding: 1.25rem;
+  }
+}

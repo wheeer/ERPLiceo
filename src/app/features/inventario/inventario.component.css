@@ -2,16 +2,7 @@
    MÓDULO: INVENTARIO
    ============================================================ */
 
-.inventario-container {
-  width: 100%;
-  height: 100%;
-  padding: 2rem 2.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  overflow-y: auto;
-  background: var(--bg-body);
-}
+
 
 .inventario-header {
   text-align: left;
@@ -609,4 +600,13 @@
   color: var(--text-muted);
 }
 
+/* ============================================================
+   RESPONSIVE — PANTALLAS TIPO NOTEBOOK Y ESCALAS 150% (Max 1280px)
+   ============================================================ */
+
+@media (max-width: 1280px) {
+  .inventario-header-row {
+    flex-wrap: wrap;
+  }
+}
 
