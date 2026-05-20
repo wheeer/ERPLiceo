@@ -8,13 +8,10 @@
 .inventario-container {
   width: 100%;
   height: 100%;
-  /* Padding dinámico: Se ajusta orgánicamente entre 1rem (pequeño) y 2.5rem (grande) según el viewport */
-  padding: clamp(1rem, 3vw, 2.5rem);
+  /* El padding y background ahora los hereda libremente de .layout-router-area (Padre) */
   display: flex;
   flex-direction: column;
   gap: clamp(1rem, 2vw, 1.5rem);
-  overflow-y: auto;
-  background: var(--bg-body);
 }
 
 /* TABLE WRAPPER & GENERIC TABLES */
