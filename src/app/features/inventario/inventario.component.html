@@ -73,7 +73,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (item of filteredItems; track item.id) {
+              @for (item of itemsPaginados; track item.id) {
                 <tr [class.alert-row]="item.stock_disponible <= item.stock_minimo">
                   <td class="cell-codigo">
                     <span class="codigo-badge">{{ item.codigo }}</span>
@@ -123,6 +123,21 @@
             </tbody>
           </table>
         </div>
+        <div class="pagination-controls">
+            <div class="pagination-info">
+              <span>Mostrando {{ rangoMostrado }} registros</span>
+            </div>
+            <div class="pagination-actions">
+              <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+                @for (op of opcionesPorPagina; track op) {
+                  <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+                }
+              </select>
+              <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+              <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginas }}</span>
+              <button class="btn-page" (click)="siguientePagina()" [disabled]="paginaActual === totalPaginas">Siguiente →</button>
+            </div>
+          </div>
       } @else {
         <div class="empty-state-wrapper">
           <div class="empty-state-visual">📦</div>
@@ -198,7 +213,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (item of filteredItems; track item.id) {
+              @for (item of itemsPaginados; track item.id) {
                 <tr>
                   <td class="cell-producto">
                     <div class="item-info-detailed">
@@ -230,6 +245,21 @@
             </tbody>
           </table>
         </div>
+        <div class="pagination-controls">
+            <div class="pagination-info">
+              <span>Mostrando {{ rangoMostrado }} registros</span>
+            </div>
+            <div class="pagination-actions">
+              <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+                @for (op of opcionesPorPagina; track op) {
+                  <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+                }
+              </select>
+              <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+              <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginas }}</span>
+              <button class="btn-page" (click)="siguientePagina()" [disabled]="paginaActual === totalPaginas">Siguiente →</button>
+            </div>
+          </div>
       } @else {
         <div class="empty-state-wrapper">
           <div class="empty-state-visual">🔍</div>

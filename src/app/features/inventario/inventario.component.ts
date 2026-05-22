@@ -61,6 +61,41 @@ export class InventarioComponent implements OnInit {
   filteredItems: InventoryItem[] = [];
   showIncidenciasModal = false;
   selectedItem: InventoryItem | null = null;
+
+  // ==========================================
+  // PAGINACIÓN
+  // ==========================================
+  paginaActual = 1;
+  itemsPorPagina = 5; // Cambiado a 5 temporalmente para poder probar la paginación con los 11 datos falsos
+  opcionesPorPagina = [5, 10, 20, 50, 100];
+
+  get itemsPaginados(): InventoryItem[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.filteredItems.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get totalPaginas(): number {
+    return Math.ceil(this.filteredItems.length / this.itemsPorPagina);
+  }
+
+  get rangoMostrado(): string {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina + 1;
+    const fin = Math.min(this.paginaActual * this.itemsPorPagina, this.filteredItems.length);
+    return `${inicio}-${fin} de ${this.filteredItems.length}`;
+  }
+
+  paginaAnterior() {
+    if (this.paginaActual > 1) this.paginaActual--;
+  }
+
+  siguientePagina() {
+    if (this.paginaActual < this.totalPaginas) this.paginaActual++;
+  }
+
+  cambiarItemsPorPagina(event: Event) {
+    this.itemsPorPagina = Number((event.target as HTMLSelectElement).value);
+    this.paginaActual = 1;
+  }
   
   openIncidenciasModal(item: InventoryItem) {
     this.selectedItem = item;
@@ -132,6 +167,7 @@ export class InventarioComponent implements OnInit {
       item.producto.toLowerCase().includes(query) ||
       item.categoria.toLowerCase().includes(query)
     );
+    this.paginaActual = 1; // Resetear a página 1 al buscar
   }
 
   // ==========================================

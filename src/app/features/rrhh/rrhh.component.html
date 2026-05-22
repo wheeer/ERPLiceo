@@ -81,7 +81,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (employee of filteredEmployees; track employee.id) {
+              @for (employee of empleadosPaginados; track employee.id) {
                 <tr>
                   <td class="cell-rut">{{ employee.rut }}</td>
                   <td class="cell-nombre">
@@ -101,6 +101,21 @@
               }
             </tbody>
           </table>
+        </div>
+        <div class="pagination-controls">
+          <div class="pagination-info">
+            <span>Mostrando {{ rangoMostradoEmpleados }} registros</span>
+          </div>
+          <div class="pagination-actions">
+            <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+              @for (op of opcionesPorPagina; track op) {
+                <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+              }
+            </select>
+            <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+            <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasEmpleados }}</span>
+            <button class="btn-page" (click)="siguientePaginaActiva()" [disabled]="paginaActual === totalPaginasEmpleados">Siguiente →</button>
+          </div>
         </div>
       } @else {
         <div class="empty-state-wrapper">
@@ -175,7 +190,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (employee of filteredEmployees; track employee.id) {
+              @for (employee of empleadosPaginados; track employee.id) {
                 <tr>
                   <td class="cell-rut">{{ employee.rut }}</td>
                   <td class="cell-nombre">
@@ -205,6 +220,21 @@
               }
             </tbody>
           </table>
+        </div>
+        <div class="pagination-controls">
+          <div class="pagination-info">
+            <span>Mostrando {{ rangoMostradoEmpleados }} registros</span>
+          </div>
+          <div class="pagination-actions">
+            <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+              @for (op of opcionesPorPagina; track op) {
+                <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+              }
+            </select>
+            <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+            <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasEmpleados }}</span>
+            <button class="btn-page" (click)="siguientePaginaActiva()" [disabled]="paginaActual === totalPaginasEmpleados">Siguiente →</button>
+          </div>
         </div>
       } @else {
         <div class="empty-state-wrapper">
@@ -374,7 +404,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (emp of filteredAsistenciaList; track emp.id) {
+              @for (emp of asistenciaPaginada; track emp.id) {
                 <tr>
                   <td class="cell-rut">{{ emp.rut }}</td>
                   <td class="cell-nombre">
@@ -399,18 +429,33 @@
                     } @else if (getRiskLevel(emp.inasistenciasInjustificadas) === 'warning') {
                       <span class="risk-badge risk-warning" title="Observar inasistencias.">{{ emp.inasistenciasInjustificadas }} falta(s)</span>
                     } @else {
-                      <span class="risk-ok">—</span>
+                      <span class="risk-badge risk-ok">Ok</span>
                     }
                   </td>
                   <td class="cell-actions center">
-                    <button class="btn-primary btn-sm" (click)="openExcepcionModal(emp)">
-                      Marcar Excepción
+                    <button class="btn-action btn-edit" (click)="openExcepcionModal(emp)" title="Registrar Excepción (Atraso/Licencia)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                     </button>
                   </td>
                 </tr>
               }
             </tbody>
           </table>
+        </div>
+        <div class="pagination-controls">
+          <div class="pagination-info">
+            <span>Mostrando {{ rangoMostradoAsistencia }} registros</span>
+          </div>
+          <div class="pagination-actions">
+            <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+              @for (op of opcionesPorPagina; track op) {
+                <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+              }
+            </select>
+            <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+            <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasAsistencia }}</span>
+            <button class="btn-page" (click)="siguientePaginaActiva()" [disabled]="paginaActual === totalPaginasAsistencia">Siguiente →</button>
+          </div>
         </div>
       } @else {
         <div class="empty-state-wrapper">
