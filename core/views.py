@@ -5,8 +5,9 @@ import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
-from .db_connection import col_usuarios, col_roles, col_empleados
-
+from .db_connection import (col_usuarios,col_roles, col_empleados, col_remuneraciones, col_horas_extra)
+from bson import ObjectId
+from .jwt_middleware import jwt_required
 
 def status_check(request):
     try:
@@ -158,3 +159,312 @@ def cambiar_clave_view(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+# Endpoint de remuneraciones - Jasna #
+
+@csrf_exempt
+@jwt_required
+def obtener_remuneraciones(request, mes, anio):
+
+    if request.method != 'GET':
+        return JsonResponse({
+            "error": "Método no permitido. Usa GET."
+        }, status=405)
+
+    try:
+
+        remuneraciones = list(
+            col_remuneraciones.find({
+                "mes": int(mes),
+                "anio": int(anio)
+            })
+        )
+
+        print(remuneraciones)
+
+        # Convertir ObjectId a string
+        for item in remuneraciones:
+            item["_id"] = str(item["_id"])
+
+        return JsonResponse({
+            "success": True,
+            "data": remuneraciones,
+            "message": "Liquidaciones obtenidas correctamente."
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
+
+
+# API horas extra - Jasna #
+
+@csrf_exempt
+@jwt_required
+def obtener_horas_extra(request, mes, anio):
+
+    if request.method != 'GET':
+        return JsonResponse({
+            "error": "Método no permitido. Usa GET."
+        }, status=405)
+
+    try:
+
+        horas_extra = list(
+            col_horas_extra.find({
+                "mes": int(mes),
+                "anio": int(anio)
+            })
+        )
+
+        # Convertir ObjectId a string
+        for item in horas_extra:
+            item["_id"] = str(item["_id"])
+
+        return JsonResponse({
+            "success": True,
+            "data": horas_extra,
+            "message": "Horas extra obtenidas correctamente."
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
+# API liquidación por empleado - Jasna # 
+
+@csrf_exempt
+def obtener_liquidacion_empleado(request, rut, mes, anio):
+
+    if request.method != 'GET':
+        return JsonResponse({
+            "error": "Método no permitido. Usa GET."
+        }, status=405)
+
+    try:
+
+        liquidacion = col_remuneraciones.find_one({
+
+            "rut": rut,
+            "mes": int(mes),
+            "anio": int(anio)
+
+        })
+
+        if not liquidacion:
+            return JsonResponse({
+                "success": False,
+                "message": "Liquidación no encontrada."
+            }, status=404)
+
+        liquidacion["_id"] = str(liquidacion["_id"])
+
+        return JsonResponse({
+            "success": True,
+            "data": liquidacion
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
+# API calcular remuneraciones - Jasna #
+
+@csrf_exempt
+@jwt_required
+def calcular_remuneraciones(request):
+
+    if request.method != 'POST':
+        return JsonResponse({
+            "error": "Método no permitido. Usa POST."
+        }, status=405)
+
+    try:
+
+        data = json.loads(request.body)
+
+        mes = data.get("mes")
+        anio = data.get("anio")
+
+        if not mes or not anio:
+            return JsonResponse({
+                "success": False,
+                "message": "Mes y año son obligatorios."
+            }, status=400)
+
+        # Verificar si ya existen liquidaciones del período
+
+        existe_liquidacion = col_remuneraciones.find_one({
+            "mes": int(mes),
+            "anio": int(anio)
+        })
+
+        if existe_liquidacion:
+            return JsonResponse({
+                "success": False,
+                "message": "Ya existen liquidaciones para ese período."
+            }, status=400)
+
+        # Obtener empleados
+
+        empleados = list(col_empleados.find())
+
+        liquidaciones_generadas = []
+
+        for empleado in empleados:
+
+            print(empleado)
+
+            sueldo_base = empleado.get("sueldo_base", 0)
+
+            # Obtener horas extra del empleado
+
+            horas_extra_empleado = list(
+                col_horas_extra.find({
+                    "rut": empleado.get("rut"),
+                    "mes": int(mes),
+                    "anio": int(anio)
+                })
+            )
+
+            total_horas_extra = 0
+
+            for he in horas_extra_empleado:
+
+                horas = he.get("horas", 0)
+                tipo = he.get("tipo", "laboral")
+
+                # Valor hora aproximado
+                valor_hora = sueldo_base / 180
+
+                # Recargo legal
+                if tipo == "festivo":
+                    valor_he = valor_hora * 2
+                else:
+                    valor_he = valor_hora * 1.5
+
+                total_horas_extra += round(valor_he * horas)
+
+            # Gratificación legal 25%
+            gratificacion = round(sueldo_base * 0.25)
+
+            # Haberes no imponibles
+            movilizacion = 50000
+            colacion = 55000
+
+            total_haberes = (
+                sueldo_base +
+                gratificacion +
+                movilizacion +
+                colacion +
+                total_horas_extra
+            )
+
+            # Descuentos legales
+            afp = round(sueldo_base * 0.115)
+            salud = round(sueldo_base * 0.07)
+            seguro_cesantia = round(sueldo_base * 0.006)
+
+            descuento_asistencia = 0
+
+            total_descuentos = (
+                afp +
+                salud +
+                seguro_cesantia +
+                descuento_asistencia
+            )
+
+            neto = total_haberes - total_descuentos
+
+            liquidacion = {
+
+                "rut": empleado.get("rut"),
+                "nombre": empleado.get("nombre_completo"),
+                "cargo": empleado.get("cargo"),
+
+                "mes": int(mes),
+                "anio": int(anio),
+
+                "sueldoBase": sueldo_base,
+                "gratificacion": gratificacion,
+
+                "movilizacion": movilizacion,
+                "colacion": colacion,
+
+                "horasExtra": total_horas_extra,
+
+                "totalHaberes": total_haberes,
+
+                "afp": afp,
+                "salud": salud,
+                "seguro_cesantia": seguro_cesantia,
+
+                "descuento_asistencia": descuento_asistencia,
+
+                "neto": neto
+            }
+
+            # Guardar en MongoDB
+            resultado = col_remuneraciones.insert_one(liquidacion)
+
+            # Convertir ObjectId a string
+            liquidacion["_id"] = str(resultado.inserted_id)
+
+            liquidaciones_generadas.append(liquidacion)
+
+        return JsonResponse({
+            "success": True,
+            "message": "Liquidaciones generadas correctamente.",
+            "data": liquidaciones_generadas
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
+# API datos PDF liquidación - Jasna #
+
+@csrf_exempt
+@jwt_required
+def obtener_pdf_liquidacion(request, id):
+
+    if request.method != 'GET':
+        return JsonResponse({
+            "error": "Método no permitido. Usa GET."
+        }, status=405)
+
+    try:
+
+        liquidacion = col_remuneraciones.find_one({
+            "_id": ObjectId(id)
+        })
+
+        if not liquidacion:
+            return JsonResponse({
+                "success": False,
+                "message": "Liquidación no encontrada."
+            }, status=404)
+
+        liquidacion["_id"] = str(liquidacion["_id"])
+
+        return JsonResponse({
+            "success": True,
+            "data": liquidacion,
+            "message": "Datos PDF obtenidos correctamente."
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+

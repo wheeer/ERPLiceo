@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute } from '@angular/router';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface Payroll {
   id: number;
@@ -208,8 +210,13 @@ export class RemuneracionesComponent implements OnInit {
   getTotalHorasExtraMes(): number {
     return this.historialHorasExtra.reduce((sum, h) => sum + h.montoTotal, 0);
   }
-  descargarPDF(payroll: Payroll) {
+
+
+   descargarPDF(payroll: Payroll) {
     this.toastService.show(`Generando liquidación para ${payroll.nombre}...`, 'info');
     // TODO: Integrar jsPDF o servicio backend para exportación.
   }
 }
+
+
+
