@@ -164,7 +164,7 @@
             <span>Mostrando {{ rangoMostradoNomina }} registros</span>
           </div>
           <div class="pagination-actions">
-            <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+            <select class="page-size-select" (change)="cambiarItemsPorPagina($event)" title="Items por página" aria-label="Items por página">
               @for (op of opcionesPorPagina; track op) {
                 <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
               }
@@ -305,7 +305,7 @@
                 <span>Mostrando {{ rangoMostradoHorasExtra }} registros</span>
               </div>
               <div class="pagination-actions">
-                <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+                <select class="page-size-select" (change)="cambiarItemsPorPagina($event)" title="Items por página" aria-label="Items por página">
                   @for (op of opcionesPorPagina; track op) {
                     <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
                   }

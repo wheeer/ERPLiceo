@@ -73,6 +73,11 @@ export class RemuneracionesComponent implements OnInit {
   mesSeleccionado: number = 5;
   anioSeleccionado: number = 2026;
 
+  // Paginación
+  paginaActual: number = 1;
+  itemsPorPagina: number = 5;
+  opcionesPorPagina: number[] = [5, 10, 20];
+
   meses: any[] = [
     { value: 1, nombre: 'Enero' },
     { value: 2, nombre: 'Febrero' },
@@ -272,6 +277,59 @@ export class RemuneracionesComponent implements OnInit {
     return this.historialHorasExtra.reduce((sum, h) => sum + h.montoTotal, 0);
   }
 
+  // --- MÉTODOS DE PAGINACIÓN ---
+  get totalPaginasNomina(): number {
+    return Math.ceil(this.filteredPayrollData.length / this.itemsPorPagina) || 1;
+  }
+
+  get nominaPaginada(): Payroll[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.filteredPayrollData.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get rangoMostradoNomina(): string {
+    const total = this.filteredPayrollData.length;
+    if (total === 0) return '0';
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina + 1;
+    const fin = Math.min(this.paginaActual * this.itemsPorPagina, total);
+    return `${inicio} - ${fin} de ${total}`;
+  }
+
+  get totalPaginasHorasExtra(): number {
+    return Math.ceil(this.historialHorasExtra.length / this.itemsPorPagina) || 1;
+  }
+
+  get horasExtraPaginadas(): HorasExtraRecord[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.historialHorasExtra.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get rangoMostradoHorasExtra(): string {
+    const total = this.historialHorasExtra.length;
+    if (total === 0) return '0';
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina + 1;
+    const fin = Math.min(this.paginaActual * this.itemsPorPagina, total);
+    return `${inicio} - ${fin} de ${total}`;
+  }
+
+  cambiarItemsPorPagina(event: Event) {
+    const valor = (event.target as HTMLSelectElement).value;
+    this.itemsPorPagina = Number(valor);
+    this.paginaActual = 1;
+  }
+
+  paginaAnterior() {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+    }
+  }
+
+  siguientePaginaActiva() {
+    const totalPaginas = this.activeTab === 'nomina' ? this.totalPaginasNomina : this.totalPaginasHorasExtra;
+    if (this.paginaActual < totalPaginas) {
+      this.paginaActual++;
+    }
+  }
 
   descargarPDF(payroll: Payroll) {
     this.toastService.show(`Generando liquidación para ${payroll.nombre}...`, 'info');
