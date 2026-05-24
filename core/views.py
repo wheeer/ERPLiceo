@@ -263,7 +263,10 @@ def calcular_remuneraciones(request):
 
             horas_extra_empleado = list(
                 col_horas_extra.find({
-                    "rut_empleado": rut,
+                    "$or": [
+                        {"rut_empleado": rut},
+                        {"rut": rut}
+                    ],
                     "mes": int(mes),
                     "anio": int(anio)
                 })
@@ -277,15 +280,15 @@ def calcular_remuneraciones(request):
 
             for hora_extra in horas_extra_empleado:
 
-                horas = hora_extra.get(
-                    "cantidad_horas",
-                    0
-                )
+                horas = hora_extra.get("horas") or hora_extra.get("cantidad_horas") or 0
 
                 cantidad_horas_extra += horas
 
+                tipo = hora_extra.get("tipo", "laboral").lower()
+                recargo = 2.0 if tipo == "festivo" else 1.5
+
                 total_horas_extra += round(
-                    horas * valor_hora * 1.5
+                    horas * valor_hora * recargo
                 )
 
             # TOTAL IMPONIBLE
