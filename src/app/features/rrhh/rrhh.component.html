@@ -81,7 +81,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (employee of filteredEmployees; track employee.id) {
+              @for (employee of empleadosPaginados; track employee.id) {
                 <tr>
                   <td class="cell-rut">{{ employee.rut }}</td>
                   <td class="cell-nombre">
@@ -101,6 +101,21 @@
               }
             </tbody>
           </table>
+        </div>
+        <div class="pagination-controls">
+          <div class="pagination-info">
+            <span>Mostrando {{ rangoMostradoEmpleados }} registros</span>
+          </div>
+          <div class="pagination-actions">
+            <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+              @for (op of opcionesPorPagina; track op) {
+                <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+              }
+            </select>
+            <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+            <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasEmpleados }}</span>
+            <button class="btn-page" (click)="siguientePaginaActiva()" [disabled]="paginaActual === totalPaginasEmpleados">Siguiente →</button>
+          </div>
         </div>
       } @else {
         <div class="empty-state-wrapper">
@@ -175,7 +190,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (employee of filteredEmployees; track employee.id) {
+              @for (employee of empleadosPaginados; track employee.id) {
                 <tr>
                   <td class="cell-rut">{{ employee.rut }}</td>
                   <td class="cell-nombre">
@@ -205,6 +220,21 @@
               }
             </tbody>
           </table>
+        </div>
+        <div class="pagination-controls">
+          <div class="pagination-info">
+            <span>Mostrando {{ rangoMostradoEmpleados }} registros</span>
+          </div>
+          <div class="pagination-actions">
+            <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+              @for (op of opcionesPorPagina; track op) {
+                <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+              }
+            </select>
+            <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+            <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasEmpleados }}</span>
+            <button class="btn-page" (click)="siguientePaginaActiva()" [disabled]="paginaActual === totalPaginasEmpleados">Siguiente →</button>
+          </div>
         </div>
       } @else {
         <div class="empty-state-wrapper">
@@ -374,7 +404,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (emp of filteredAsistenciaList; track emp.id) {
+              @for (emp of asistenciaPaginada; track emp.id) {
                 <tr>
                   <td class="cell-rut">{{ emp.rut }}</td>
                   <td class="cell-nombre">
@@ -399,18 +429,33 @@
                     } @else if (getRiskLevel(emp.inasistenciasInjustificadas) === 'warning') {
                       <span class="risk-badge risk-warning" title="Observar inasistencias.">{{ emp.inasistenciasInjustificadas }} falta(s)</span>
                     } @else {
-                      <span class="risk-ok">—</span>
+                      <span class="risk-badge risk-ok">Ok</span>
                     }
                   </td>
                   <td class="cell-actions center">
-                    <button class="btn-primary btn-sm" (click)="openExcepcionModal(emp)">
-                      Marcar Excepción
+                    <button class="btn-action btn-edit" (click)="openExcepcionModal(emp)" title="Registrar Excepción (Atraso/Licencia)">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                     </button>
                   </td>
                 </tr>
               }
             </tbody>
           </table>
+        </div>
+        <div class="pagination-controls">
+          <div class="pagination-info">
+            <span>Mostrando {{ rangoMostradoAsistencia }} registros</span>
+          </div>
+          <div class="pagination-actions">
+            <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+              @for (op of opcionesPorPagina; track op) {
+                <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+              }
+            </select>
+            <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+            <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasAsistencia }}</span>
+            <button class="btn-page" (click)="siguientePaginaActiva()" [disabled]="paginaActual === totalPaginasAsistencia">Siguiente →</button>
+          </div>
         </div>
       } @else {
         <div class="empty-state-wrapper">
@@ -876,99 +921,6 @@
     </div>
   }
 
-  <!-- ============================================== -->
-  <!-- TAB 5: HORAS EXTRA (REGISTRO)                  -->
-  <!-- ============================================== -->
-  @if (activeTab === 'horasExtra') {
-    <div class="he-layout">
-      <!-- FORMULARIO DE REGISTRO (SIN MONTOS) -->
-      <div class="he-form-card">
-        <h3>Registro de Autorización - Horas Extra</h3>
-        <p class="he-legal-note">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          Registre las horas extra aprobadas. El sistema calculará el recargo y el monto a pagar automáticamente para Remuneraciones.
-        </p>
 
-        <form [formGroup]="horasExtraForm" (ngSubmit)="registrarHorasExtra()" class="crud-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Empleado Autorizado</label>
-              <select formControlName="empleadoId" [class.error]="horasExtraForm.get('empleadoId')?.invalid && horasExtraForm.get('empleadoId')?.touched">
-                <option value="">Seleccione un empleado...</option>
-                @for (emp of employees; track emp.id) {
-                  <option [value]="emp.id">{{ emp.nombre }} ({{ emp.cargo }})</option>
-                }
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Fecha de la Hora Extra</label>
-              <input type="date" formControlName="fecha" [class.error]="horasExtraForm.get('fecha')?.invalid && horasExtraForm.get('fecha')?.touched">
-            </div>
-            
-            <div class="form-group">
-              <label>Cantidad de Horas (máx 10/sem)</label>
-              <input type="number" formControlName="horas" min="1" max="10" [class.error]="horasExtraForm.get('horas')?.invalid && horasExtraForm.get('horas')?.touched">
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label>Autorizado Por (Nombre/Cargo)</label>
-              <input type="text" formControlName="autorizadoPor" placeholder="Ej: Director Rodrigo Soto" [class.error]="horasExtraForm.get('autorizadoPor')?.invalid && horasExtraForm.get('autorizadoPor')?.touched">
-            </div>
-          </div>
-
-          <button type="submit" class="btn-primary w-full" [disabled]="horasExtraForm.invalid">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Guardar Registro en el Historial
-          </button>
-        </form>
-      </div>
-
-      <!-- TABLA DE HISTORIAL BÁSICO -->
-      <div class="he-history">
-        <h3>Historial de Registros del Mes</h3>
-        <div class="table-wrapper">
-          <table class="employees-table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Empleado</th>
-                <th class="center">Horas</th>
-                <th>Autorizado Por</th>
-                <th class="center">Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              @if (historialHorasExtra.length === 0) {
-                <tr><td colspan="5" class="center empty-state">No hay horas extra registradas este mes.</td></tr>
-              }
-              @for (registro of historialHorasExtra; track registro.id) {
-                <tr>
-                  <td>{{ formatDate($any(registro.fecha)) }}</td>
-                  <td>
-                    <div class="employee-info-detailed">
-                      <span class="employee-name">{{ registro.empleado }}</span>
-                      <span class="employee-role">{{ registro.cargo }}</span>
-                    </div>
-                  </td>
-                  <td class="center"><strong>{{ registro.horas }}</strong> hrs</td>
-                  <td>{{ registro.autorizadoPor }}</td>
-                  <td class="cell-actions center">
-                    <button class="btn-action btn-delete" (click)="eliminarRegistroHE(registro.id)" title="Eliminar registro">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  }
 
 </div>

@@ -79,7 +79,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (payroll of filteredPayrollData; track payroll.id) {
+              @for (payroll of nominaPaginada; track payroll.id) {
                 <tr>
                   <td class="cell-rut">{{ payroll.rut }}</td>
                   <td class="cell-nombre">
@@ -131,6 +131,21 @@
               </tr>
             </tfoot>
           </table>
+        </div>
+        <div class="pagination-controls">
+          <div class="pagination-info">
+            <span>Mostrando {{ rangoMostradoNomina }} registros</span>
+          </div>
+          <div class="pagination-actions">
+            <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+              @for (op of opcionesPorPagina; track op) {
+                <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+              }
+            </select>
+            <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+            <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasNomina }}</span>
+            <button class="btn-page" (click)="siguientePaginaActiva()" [disabled]="paginaActual === totalPaginasNomina">Siguiente →</button>
+          </div>
         </div>
       } @else {
         <div class="empty-state-wrapper">
@@ -229,7 +244,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (registro of historialHorasExtra; track registro.id) {
+                  @for (registro of horasExtraPaginadas; track registro.id) {
                     <tr>
                       <td>{{ formatDate(registro.fecha) }}</td>
                       <td class="cell-nombre">{{ registro.empleado }}</td>
@@ -257,6 +272,21 @@
                   </tr>
                 </tfoot>
               </table>
+            </div>
+            <div class="pagination-controls">
+              <div class="pagination-info">
+                <span>Mostrando {{ rangoMostradoHorasExtra }} registros</span>
+              </div>
+              <div class="pagination-actions">
+                <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+                  @for (op of opcionesPorPagina; track op) {
+                    <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+                  }
+                </select>
+                <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+                <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasHorasExtra }}</span>
+                <button class="btn-page" (click)="siguientePaginaActiva()" [disabled]="paginaActual === totalPaginasHorasExtra">Siguiente →</button>
+              </div>
             </div>
           } @else {
             <div class="empty-state-wrapper">

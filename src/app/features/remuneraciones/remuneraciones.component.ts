@@ -101,6 +101,57 @@ export class RemuneracionesComponent implements OnInit {
   
   filteredPayrollData: Payroll[] = [];
 
+  // ==========================================
+  // PAGINACIÓN
+  // ==========================================
+  paginaActual = 1;
+  itemsPorPagina = 20;
+  opcionesPorPagina = [10, 20, 50, 100];
+
+  get nominaPaginada(): Payroll[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.filteredPayrollData.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get totalPaginasNomina(): number {
+    return Math.ceil(this.filteredPayrollData.length / this.itemsPorPagina) || 1;
+  }
+
+  get rangoMostradoNomina(): string {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina + 1;
+    const fin = Math.min(this.paginaActual * this.itemsPorPagina, this.filteredPayrollData.length);
+    return `${inicio}-${fin} de ${this.filteredPayrollData.length}`;
+  }
+
+  get horasExtraPaginadas(): HorasExtraRecord[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.historialHorasExtra.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get totalPaginasHorasExtra(): number {
+    return Math.ceil(this.historialHorasExtra.length / this.itemsPorPagina) || 1;
+  }
+
+  get rangoMostradoHorasExtra(): string {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina + 1;
+    const fin = Math.min(this.paginaActual * this.itemsPorPagina, this.historialHorasExtra.length);
+    return `${inicio}-${fin} de ${this.historialHorasExtra.length}`;
+  }
+
+  paginaAnterior() {
+    if (this.paginaActual > 1) this.paginaActual--;
+  }
+
+  siguientePaginaActiva() {
+    const total = this.activeTab === 'nomina' ? this.totalPaginasNomina : this.totalPaginasHorasExtra;
+    if (this.paginaActual < total) this.paginaActual++;
+  }
+
+  cambiarItemsPorPagina(event: Event) {
+    this.itemsPorPagina = Number((event.target as HTMLSelectElement).value);
+    this.paginaActual = 1;
+  }
+
   constructor() {
     this.horasExtraForm = this.fb.group({
       empleadoId: ['', Validators.required],
@@ -128,6 +179,7 @@ export class RemuneracionesComponent implements OnInit {
 
   changeTab(tab: 'nomina' | 'horasExtra') {
     this.activeTab = tab;
+    this.paginaActual = 1; // Resetear paginación al cambiar tab
   }
 
   calcularHoraNormal(sueldoBase: number): number {
@@ -199,6 +251,7 @@ export class RemuneracionesComponent implements OnInit {
       item.rut.toLowerCase().includes(query) ||
       item.cargo.toLowerCase().includes(query)
     );
+    this.paginaActual = 1;
   }
 
   getTotalHorasMes(): number {

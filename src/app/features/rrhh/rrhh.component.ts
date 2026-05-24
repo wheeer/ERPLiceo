@@ -178,6 +178,57 @@ export class RrhhComponent implements OnInit {
   filteredEmployees: Employee[] = [];
   filteredAsistenciaList: any[] = [];
 
+  // ==========================================
+  // PAGINACIÓN
+  // ==========================================
+  paginaActual = 1;
+  itemsPorPagina = 20;
+  opcionesPorPagina = [10, 20, 50, 100];
+
+  get empleadosPaginados(): Employee[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.filteredEmployees.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get totalPaginasEmpleados(): number {
+    return Math.ceil(this.filteredEmployees.length / this.itemsPorPagina) || 1;
+  }
+
+  get rangoMostradoEmpleados(): string {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina + 1;
+    const fin = Math.min(this.paginaActual * this.itemsPorPagina, this.filteredEmployees.length);
+    return `${inicio}-${fin} de ${this.filteredEmployees.length}`;
+  }
+
+  get asistenciaPaginada(): any[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.filteredAsistenciaList.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get totalPaginasAsistencia(): number {
+    return Math.ceil(this.filteredAsistenciaList.length / this.itemsPorPagina) || 1;
+  }
+
+  get rangoMostradoAsistencia(): string {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina + 1;
+    const fin = Math.min(this.paginaActual * this.itemsPorPagina, this.filteredAsistenciaList.length);
+    return `${inicio}-${fin} de ${this.filteredAsistenciaList.length}`;
+  }
+
+  paginaAnterior() {
+    if (this.paginaActual > 1) this.paginaActual--;
+  }
+
+  siguientePaginaActiva() {
+    const total = (this.activeTab === 'general' || this.activeTab === 'gestion') ? this.totalPaginasEmpleados : this.totalPaginasAsistencia;
+    if (this.paginaActual < total) this.paginaActual++;
+  }
+
+  cambiarItemsPorPagina(event: Event) {
+    this.itemsPorPagina = Number((event.target as HTMLSelectElement).value);
+    this.paginaActual = 1;
+  }
+
   constructor() {
     this.employeeForm = this.fb.group({
       id: [null],
@@ -273,6 +324,7 @@ export class RrhhComponent implements OnInit {
   
   changeTab(tab: 'general' | 'gestion' | 'ficha' | 'asistencia' | 'horasExtra') {
     this.activeTab = tab;
+    this.paginaActual = 1; // Resetear paginación al cambiar de tab
     
     if (tab !== 'ficha') {
       this.selectedEmployee = null;
@@ -360,6 +412,7 @@ export class RrhhComponent implements OnInit {
       e.rut.toLowerCase().includes(query) ||
       e.cargo.toLowerCase().includes(query)
     );
+    this.paginaActual = 1;
   }
 
   onSearchAsistencia(event: Event) {
@@ -368,6 +421,7 @@ export class RrhhComponent implements OnInit {
       e.nombre.toLowerCase().includes(query) || 
       e.rut.toLowerCase().includes(query)
     );
+    this.paginaActual = 1;
   }
 
   // ==========================================
