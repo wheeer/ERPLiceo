@@ -7,7 +7,7 @@
 
     <div class="periodo-selector">
 
-    <select [(ngModel)]="mesSeleccionado">
+    <select [(ngModel)]="mesSeleccionado" title="Seleccionar Mes" aria-label="Seleccionar Mes">
       @for (mes of meses; track mes.value) {
         <option [value]="mes.value">
           {{ mes.nombre }}
@@ -15,7 +15,7 @@
       }
     </select>
 
-    <select [(ngModel)]="anioSeleccionado">
+    <select [(ngModel)]="anioSeleccionado" title="Seleccionar Año" aria-label="Seleccionar Año">
       @for (anio of anios; track anio) {
         <option [value]="anio">
           {{ anio }}
@@ -73,7 +73,7 @@
                 <td>
                   <div class="employee-info-detailed">
                     <div class="skeleton-box shimmer w-70"></div>
-                    <div class="skeleton-box shimmer w-50" style="margin-top: 5px;"></div>
+                    <div class="skeleton-box shimmer w-50 mt-5px"></div>
                   </div>
                 </td>
                 <td class="cell-amount"><div class="skeleton-box shimmer w-60"></div></td>
@@ -187,7 +187,7 @@
           @for (i of [1,2,3]; track i) {
             <div class="summary-item">
               <div class="skeleton-box shimmer w-40"></div>
-              <div class="skeleton-box shimmer w-70" style="margin-top: 5px;"></div>
+              <div class="skeleton-box shimmer w-70 mt-5px"></div>
             </div>
             @if (i < 3) { <div class="summary-divider"></div> }
           }
