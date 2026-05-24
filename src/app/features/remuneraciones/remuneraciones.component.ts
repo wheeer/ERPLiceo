@@ -189,6 +189,7 @@ export class RemuneracionesComponent implements OnInit {
 
   changeTab(tab: 'nomina' | 'horasExtra') {
     this.activeTab = tab;
+    this.paginaActual = 1; // Resetear paginación al cambiar tab
   }
 
   calcularHoraNormal(sueldoBase: number): number {
@@ -260,6 +261,7 @@ export class RemuneracionesComponent implements OnInit {
       item.rut.toLowerCase().includes(query) ||
       item.cargo.toLowerCase().includes(query)
     );
+    this.paginaActual = 1;
   }
 
   getTotalHorasMes(): number {
