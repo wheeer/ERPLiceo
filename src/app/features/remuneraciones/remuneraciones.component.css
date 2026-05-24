@@ -395,23 +395,4 @@
 
 .fw-600 { font-weight: 600; }
 
-/* ============================================================
-   RESPONSIVE — PANTALLAS TIPO NOTEBOOK Y ESCALAS 150% (Max 1280px)
-   ============================================================ */
-
-@media (max-width: 1280px) {
-  .he-summary-card {
-    flex-wrap: wrap;
-    padding: 1rem;
-  }
-  
-  .summary-divider {
-    height: 1px;
-    width: 100%;
-    margin: 1rem 0;
-  }
-  
-  .he-form-card {
-    padding: 1.25rem;
-  }
-}
+.mt-5px { margin-top: 5px; }

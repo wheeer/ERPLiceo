@@ -1,8 +1,16 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute } from '@angular/router';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { HttpClient } from '@angular/common/http';
+
+
+
+
+
 
 interface Payroll {
   id: number;
@@ -47,12 +55,12 @@ interface HorasExtraRecord {
 @Component({
   selector: 'app-remuneraciones',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './remuneraciones.component.html',
   styleUrls: ['./remuneraciones.component.css']
 })
 export class RemuneracionesComponent implements OnInit {
-  
+  // Inyección de dependencias//
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
@@ -61,6 +69,26 @@ export class RemuneracionesComponent implements OnInit {
   // Tabs
   activeTab: 'nomina' | 'horasExtra' = 'nomina';
   isLoading = true;
+
+  mesSeleccionado: number = 5;
+  anioSeleccionado: number = 2026;
+
+  meses: any[] = [
+    { value: 1, nombre: 'Enero' },
+    { value: 2, nombre: 'Febrero' },
+    { value: 3, nombre: 'Marzo' },
+    { value: 4, nombre: 'Abril' },
+    { value: 5, nombre: 'Mayo' },
+    { value: 6, nombre: 'Junio' },
+    { value: 7, nombre: 'Julio' },
+    { value: 8, nombre: 'Agosto' },
+    { value: 9, nombre: 'Septiembre' },
+    { value: 10, nombre: 'Octubre' },
+    { value: 11, nombre: 'Noviembre' },
+    { value: 12, nombre: 'Diciembre' }
+  ];
+
+  anios: number[] = [2025, 2026, 2027];
 
   // Formulario y datos
   horasExtraForm: FormGroup;
@@ -98,69 +126,51 @@ export class RemuneracionesComponent implements OnInit {
       descuento_asistencia: 260000, dias_trabajados: 27, neto: 2453712, periodo: 'Abril 2026'
     }
   ];
-  
+
   filteredPayrollData: Payroll[] = [];
 
-  // ==========================================
-  // PAGINACIÓN
-  // ==========================================
-  paginaActual = 1;
-  itemsPorPagina = 20;
-  opcionesPorPagina = [10, 20, 50, 100];
 
-  get nominaPaginada(): Payroll[] {
-    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
-    return this.filteredPayrollData.slice(inicio, inicio + this.itemsPorPagina);
-  }
 
-  get totalPaginasNomina(): number {
-    return Math.ceil(this.filteredPayrollData.length / this.itemsPorPagina) || 1;
-  }
+  constructor(
+    private http: HttpClient
+  ) {
 
-  get rangoMostradoNomina(): string {
-    const inicio = (this.paginaActual - 1) * this.itemsPorPagina + 1;
-    const fin = Math.min(this.paginaActual * this.itemsPorPagina, this.filteredPayrollData.length);
-    return `${inicio}-${fin} de ${this.filteredPayrollData.length}`;
-  }
-
-  get horasExtraPaginadas(): HorasExtraRecord[] {
-    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
-    return this.historialHorasExtra.slice(inicio, inicio + this.itemsPorPagina);
-  }
-
-  get totalPaginasHorasExtra(): number {
-    return Math.ceil(this.historialHorasExtra.length / this.itemsPorPagina) || 1;
-  }
-
-  get rangoMostradoHorasExtra(): string {
-    const inicio = (this.paginaActual - 1) * this.itemsPorPagina + 1;
-    const fin = Math.min(this.paginaActual * this.itemsPorPagina, this.historialHorasExtra.length);
-    return `${inicio}-${fin} de ${this.historialHorasExtra.length}`;
-  }
-
-  paginaAnterior() {
-    if (this.paginaActual > 1) this.paginaActual--;
-  }
-
-  siguientePaginaActiva() {
-    const total = this.activeTab === 'nomina' ? this.totalPaginasNomina : this.totalPaginasHorasExtra;
-    if (this.paginaActual < total) this.paginaActual++;
-  }
-
-  cambiarItemsPorPagina(event: Event) {
-    this.itemsPorPagina = Number((event.target as HTMLSelectElement).value);
-    this.paginaActual = 1;
-  }
-
-  constructor() {
     this.horasExtraForm = this.fb.group({
       empleadoId: ['', Validators.required],
-      horas: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
+      horas: [1, [
+        Validators.required,
+        Validators.min(1),
+        Validators.max(10)
+      ]],
       recargo: [50, Validators.required]
     });
+
+  }
+
+  // TODO: Reemplazar con llamada al servicio de nómina (backend pendiente) //
+  // -> Implementar método para cargar datos reales desde API//
+
+  cargarRemuneraciones() {
+    this.http
+      .get<any>(`http://127.0.0.1:8000/api/remuneraciones/${this.mesSeleccionado}/${this.anioSeleccionado}/`)
+      .subscribe({
+        next: (response) => {
+          console.log('Respuesta API:', response);
+          console.log('Datos nómina:', response.data);
+          this.payrollData = response.data;
+          this.filteredPayrollData = response.data;
+        },
+        error: (error) => {
+          console.error(
+            'Error al obtener remuneraciones',
+            error
+          );
+        }
+      });
   }
 
   ngOnInit() {
+    this.cargarRemuneraciones();
     setTimeout(() => {
       this.isLoading = false;
       this.cdr.detectChanges();
@@ -194,7 +204,7 @@ export class RemuneracionesComponent implements OnInit {
 
     const formValues = this.horasExtraForm.value;
     const empleado = this.payrollData.find(p => p.id === Number(formValues.empleadoId));
-    
+
     if (!empleado) return;
 
     const valorHoraNormal = this.calcularHoraNormal(empleado.sueldoBase);
@@ -215,7 +225,7 @@ export class RemuneracionesComponent implements OnInit {
     };
 
     this.historialHorasExtra.unshift(nuevoRegistro);
-    
+
     this.toastService.show(`Horas extra calculadas y registradas: $${this.formatCurrency(Math.round(montoTotal))}`, 'success');
     this.horasExtraForm.patchValue({ horas: 1 });
   }
@@ -235,19 +245,19 @@ export class RemuneracionesComponent implements OnInit {
       minimumFractionDigits: 0
     }).format(value);
   }
-  
+
   getTotalSueldo(): number {
     return this.filteredPayrollData.reduce((sum, p) => sum + p.totalHaberes, 0);
   }
-  
+
   getTotalNeto(): number {
     return this.filteredPayrollData.reduce((sum, p) => sum + p.neto, 0);
   }
 
   onSearch(event: Event) {
     const query = (event.target as HTMLInputElement).value.toLowerCase();
-    this.filteredPayrollData = this.payrollData.filter(item => 
-      item.nombre.toLowerCase().includes(query) || 
+    this.filteredPayrollData = this.payrollData.filter(item =>
+      item.nombre.toLowerCase().includes(query) ||
       item.rut.toLowerCase().includes(query) ||
       item.cargo.toLowerCase().includes(query)
     );
@@ -261,8 +271,13 @@ export class RemuneracionesComponent implements OnInit {
   getTotalHorasExtraMes(): number {
     return this.historialHorasExtra.reduce((sum, h) => sum + h.montoTotal, 0);
   }
+
+
   descargarPDF(payroll: Payroll) {
     this.toastService.show(`Generando liquidación para ${payroll.nombre}...`, 'info');
     // TODO: Integrar jsPDF o servicio backend para exportación.
   }
 }
+
+
+
