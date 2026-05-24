@@ -1,10 +1,16 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute } from '@angular/router';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { HttpClient } from '@angular/common/http';
+
+
+
+
+
 
 interface Payroll {
   id: number;
@@ -49,12 +55,12 @@ interface HorasExtraRecord {
 @Component({
   selector: 'app-remuneraciones',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './remuneraciones.component.html',
   styleUrls: ['./remuneraciones.component.css']
 })
 export class RemuneracionesComponent implements OnInit {
-  
+  // Inyección de dependencias//
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
@@ -63,6 +69,24 @@ export class RemuneracionesComponent implements OnInit {
   // Tabs
   activeTab: 'nomina' | 'horasExtra' = 'nomina';
   isLoading = true;
+
+  mesSeleccionado: number = 5;
+  anioSeleccionado: number = 2026;
+
+  meses: any[] = [
+  { value: 1, nombre: 'Enero' },
+  { value: 2, nombre: 'Febrero' },
+  { value: 3, nombre: 'Marzo' },
+  { value: 4, nombre: 'Abril' },
+  { value: 5, nombre: 'Mayo' },
+  { value: 6, nombre: 'Junio' },
+  { value: 7, nombre: 'Julio' },
+  { value: 8, nombre: 'Agosto' },
+  { value: 9, nombre: 'Septiembre' },
+  { value: 10, nombre: 'Octubre' },
+  { value: 11, nombre: 'Noviembre' },
+  { value: 12, nombre: 'Diciembre' }
+];
 
   // Formulario y datos
   horasExtraForm: FormGroup;
@@ -103,15 +127,60 @@ export class RemuneracionesComponent implements OnInit {
   
   filteredPayrollData: Payroll[] = [];
 
-  constructor() {
-    this.horasExtraForm = this.fb.group({
-      empleadoId: ['', Validators.required],
-      horas: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
-      recargo: [50, Validators.required]
+
+
+constructor(
+  private http: HttpClient
+) {
+
+  this.horasExtraForm = this.fb.group({
+    empleadoId: ['', Validators.required],
+    horas: [1, [
+      Validators.required,
+      Validators.min(1),
+      Validators.max(10)
+    ]],
+    recargo: [50, Validators.required]
+  });
+
+}
+
+// TODO: Reemplazar con llamada al servicio de nómina (backend pendiente) //
+// -> Implementar método para cargar datos reales desde API//
+
+cargarRemuneraciones() {
+
+  this.http
+    .get<any>( `http://127.0.0.1:8000/api/remuneraciones/${this.mesSeleccionado}/${this.anioSeleccionado}/`)
+    .subscribe({
+
+      next: (response) => {
+
+        console.log('Respuesta API:', response);
+        console.log('Datos nómina:', response.data);
+
+        this.payrollData = response.data;
+
+        this.filteredPayrollData = response.data;
+
+      },
+
+      error: (error) => {
+
+        console.error(
+          'Error al obtener remuneraciones',
+          error
+        );
+
+      }
+
     });
-  }
+
+}
 
   ngOnInit() {
+
+    this.cargarRemuneraciones();
     setTimeout(() => {
       this.isLoading = false;
       this.cdr.detectChanges();

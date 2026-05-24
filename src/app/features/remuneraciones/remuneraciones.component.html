@@ -4,7 +4,34 @@
     <div class="remuneraciones-header">
       <h1 class="remuneraciones-title">Remuneraciones</h1>
       <p class="remuneraciones-subtitle">Nómina y cálculo de honorarios — Ley 21.561</p>
-    </div>
+
+    <div class="periodo-selector">
+
+    <select [(ngModel)]="mesSeleccionado">
+      @for (mes of meses; track mes.value) {
+        <option [value]="mes.value">
+          {{ mes.nombre }}
+        </option>
+      }
+    </select>
+
+    <select [(ngModel)]="anioSeleccionado">
+      @for (anio of anios; track anio) {
+        <option [value]="anio">
+          {{ anio }}
+        </option>
+      }
+    </select>
+
+    <button
+      class="btn-generar"
+      (click)="cargarRemuneraciones()"
+    >
+      Cargar
+    </button>
+
+  </div>
+</div>
     
     <!-- TABS DEL MÓDULO -->
     <div class="module-tabs">
