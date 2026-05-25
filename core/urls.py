@@ -15,4 +15,9 @@ urlpatterns = [
     
     # Horas Extra
     path('horas-extra/<int:mes>/<int:anio>/', views.obtener_horas_extra, name='obtener_horas_extra'),
+    
+    # Inventario
+    path('inventario/', views.inventario_lista, name='inventario_lista'),
+    path('inventario/criticos/', views.inventario_criticos, name='inventario_criticos'),
+    path('inventario/<str:codigo>/', views.inventario_detalle, name='inventario_detalle'),
 ]

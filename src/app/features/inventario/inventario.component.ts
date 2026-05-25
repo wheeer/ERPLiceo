@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute } from '@angular/router';
+import { InventarioService } from '../../core/services/inventario.service';
 
 interface InventoryItem {
-  id: number;
+  id: string; // Updated from number to string for ObjectId
   codigo: string;
   producto: string;
   categoria: string;
@@ -16,6 +17,7 @@ interface InventoryItem {
   stock_minimo: number;
   ubicacion: string;
   costo_unitario: number;
+  estado: string;
   incidencias: { fecha: string; tipo: string; cantidad: number; detalle: string; }[];
 }
 
@@ -32,6 +34,7 @@ export class InventarioComponent implements OnInit {
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
+  private inventarioService = inject(InventarioService);
 
   // Tabs
   activeTab: 'stock' | 'gestion' = 'stock';
@@ -43,20 +46,7 @@ export class InventarioComponent implements OnInit {
   inventoryForm: FormGroup;
   isSaving = false;
   
-  // TODO: Reemplazar con llamada al servicio de inventario (backend pendiente)
-  inventoryItems: InventoryItem[] = [
-    { id: 1,  codigo: 'ELM-001', producto: 'Taladro de Columna Industrial',  categoria: 'Electromecánica', ubicacion: 'Taller 1',        stock_total: 5,    stock_disponible: 4,   stock_reparacion: 1, stock_baja: 0,  stock_minimo: 1,  costo_unitario: 320000, incidencias: [{ fecha: '2026-04-05', tipo: 'Reparación', cantidad: 1, detalle: 'Motor trabado, en servicio técnico.' }] },
-    { id: 2,  codigo: 'ELM-002', producto: 'Multímetro Digital Fluke',         categoria: 'Electromecánica', ubicacion: 'Taller 1',        stock_total: 15,   stock_disponible: 10,  stock_reparacion: 2, stock_baja: 3,  stock_minimo: 3,  costo_unitario: 45000,  incidencias: [{ fecha: '2026-03-20', tipo: 'Baja',      cantidad: 3, detalle: 'Quemados por sobretensión.'        }] },
-    { id: 3,  codigo: 'ELM-003', producto: 'Soldador de Estaño 60W',            categoria: 'Electromecánica', ubicacion: 'Taller 1',        stock_total: 10,   stock_disponible: 8,   stock_reparacion: 2, stock_baja: 0,  stock_minimo: 2,  costo_unitario: 18000,  incidencias: [] },
-    { id: 4,  codigo: 'ELM-004', producto: 'Motor Eléctrico Trifásico 1HP',     categoria: 'Electromecánica', ubicacion: 'Bodega Central',  stock_total: 4,    stock_disponible: 2,   stock_reparacion: 2, stock_baja: 0,  stock_minimo: 1,  costo_unitario: 185000, incidencias: [{ fecha: '2026-04-10', tipo: 'Reparación', cantidad: 2, detalle: 'Bobinado dañado por alumnos de 3ro Medio.' }] },
-    { id: 5,  codigo: 'INF-001', producto: 'Notebook HP ProBook 450 G9',       categoria: 'Informática',     ubicacion: 'Laboratorio 1',  stock_total: 30,   stock_disponible: 25,  stock_reparacion: 4, stock_baja: 1,  stock_minimo: 5,  costo_unitario: 620000, incidencias: [{ fecha: '2026-04-02', tipo: 'Reparación', cantidad: 4, detalle: 'Pantallas quebradas.' }] },
-    { id: 6,  codigo: 'INF-002', producto: 'Switch Cisco 24 Puertos',          categoria: 'Informática',     ubicacion: 'Sala Servidores',stock_total: 3,    stock_disponible: 2,   stock_reparacion: 0, stock_baja: 1,  stock_minimo: 1,  costo_unitario: 280000, incidencias: [] },
-    { id: 7,  codigo: 'INF-003', producto: 'Cable UTP Cat6 (rollo 305m)',      categoria: 'Informática',     ubicacion: 'Bodega Central',  stock_total: 5,    stock_disponible: 4,   stock_reparacion: 0, stock_baja: 1,  stock_minimo: 2,  costo_unitario: 42000,  incidencias: [] },
-    { id: 8,  codigo: 'INS-001', producto: 'Resma Papel A4 (500 hojas)',       categoria: 'Papelería',       ubicacion: 'Bodega Central',  stock_total: 50,   stock_disponible: 40,  stock_reparacion: 0, stock_baja: 10, stock_minimo: 10, costo_unitario: 4500,   incidencias: [] },
-    { id: 9,  codigo: 'INS-002', producto: 'Tóner Impresora HP LaserJet',      categoria: 'Papelería',       ubicacion: 'Bodega Central',  stock_total: 5,    stock_disponible: 3,   stock_reparacion: 0, stock_baja: 2,  stock_minimo: 2,  costo_unitario: 38000,  incidencias: [] },
-    { id: 10, codigo: 'INS-003', producto: 'Proyector Epson EB-E01',           categoria: 'Audiovisual',     ubicacion: 'Sala Profesores', stock_total: 6,    stock_disponible: 5,   stock_reparacion: 1, stock_baja: 0,  stock_minimo: 2,  costo_unitario: 185000, incidencias: [{ fecha: '2026-04-12', tipo: 'Reparación', cantidad: 1, detalle: 'Lámpara fundida.' }] },
-    { id: 11, codigo: 'INS-004', producto: 'Silla Universitaria',              categoria: 'Mobiliario',      ubicacion: 'Bodegas Salas',   stock_total: 1000, stock_disponible: 950, stock_reparacion: 40,stock_baja: 10, stock_minimo: 50, costo_unitario: 25000,  incidencias: [{ fecha: '2026-04-15', tipo: 'Reparación', cantidad: 40, detalle: 'Estructuras desoldadas.' }] }
-  ];
+  inventoryItems: InventoryItem[] = [];
   
   filteredItems: InventoryItem[] = [];
   showIncidenciasModal = false;
@@ -130,12 +120,38 @@ export class InventarioComponent implements OnInit {
   }
 
   ngOnInit() {
-    setTimeout(() => {
-      this.isLoading = false;
-      this.cdr.detectChanges();
-    }, 1000);
+    this.isLoading = true;
+    this.inventarioService.getInventario().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.inventoryItems = response.data.map((item: any) => ({
+            id: item._id, // Mongo id mapping
+            codigo: item.codigo,
+            producto: item.nombre, // Backend 'nombre' -> Frontend 'producto'
+            categoria: item.categoria,
+            stock_total: (item.stock_disponible || 0) + (item.stock_reparacion || 0) + (item.stock_baja || 0),
+            stock_disponible: item.stock_disponible || 0,
+            stock_reparacion: item.stock_reparacion || 0,
+            stock_baja: item.stock_baja || 0,
+            stock_minimo: item.stock_minimo || 0,
+            ubicacion: item.ubicacion,
+            costo_unitario: item.costo_unitario || 0,
+            estado: item.estado,
+            incidencias: [] // Default as requested
+          }));
+          this.filteredItems = [...this.inventoryItems];
+        }
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error al cargar inventario:', error);
+        this.toastService.show('Error al cargar datos del inventario', 'warning');
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
 
-    this.filteredItems = [...this.inventoryItems];
     this.route.queryParams.subscribe(params => {
       if (params['tab']) {
         const tab = params['tab'];
@@ -216,7 +232,7 @@ export class InventarioComponent implements OnInit {
       } else {
         const newItem = {
           ...this.inventoryForm.value,
-          id: Math.max(...this.inventoryItems.map(i => i.id)) + 1,
+          id: String(Date.now()), // Temporary string ID until POST is connected
           incidencias: []
         };
         this.inventoryItems.push(newItem);
@@ -230,7 +246,7 @@ export class InventarioComponent implements OnInit {
     }, 1500);
   }
 
-  deleteItem(id: number) {
+  deleteItem(id: string) {
     if (confirm('¿Está seguro de eliminar este producto del inventario?')) {
       this.inventoryItems = this.inventoryItems.filter(i => i.id !== id);
       this.filteredItems = [...this.inventoryItems];
