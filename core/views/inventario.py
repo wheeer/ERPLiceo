@@ -1,1 +1,152 @@
-# Vistas del módulo Inventario
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from core.db_connection import col_inventario
+from core.jwt_middleware import jwt_required
+
+@csrf_exempt
+@jwt_required
+def inventario_lista(request):
+    if request.method == 'GET':
+        try:
+            items = list(col_inventario.find({}))
+            # Convert ObjectId to string for JSON serialization
+            for item in items:
+                item['_id'] = str(item['_id'])
+            return JsonResponse({
+                "success": True,
+                "message": "Inventario obtenido correctamente",
+                "data": items
+            }, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "success": False,
+                "message": str(e),
+                "data": None
+            }, status=500)
+
+    elif request.method == 'POST':
+        try:
+            body = json.loads(request.body)
+            codigo = body.get('codigo')
+            if not codigo:
+                return JsonResponse({"success": False, "message": "El código es obligatorio", "data": None}, status=400)
+            
+            existe = col_inventario.find_one({"codigo": codigo})
+            if existe:
+                return JsonResponse({"success": False, "message": "Ya existe un artículo con ese código", "data": None}, status=400)
+            
+            nuevo_articulo = {
+                "codigo": codigo,
+                "nombre": body.get("nombre", ""),
+                "categoria": body.get("categoria", ""),
+                "ubicacion": body.get("ubicacion", ""),
+                "stock_disponible": body.get("stock_disponible", 0),
+                "stock_reparacion": body.get("stock_reparacion", 0),
+                "stock_baja": body.get("stock_baja", 0),
+                "stock_minimo": body.get("stock_minimo", 0),
+                "costo_unitario": body.get("costo_unitario", 0),
+                "estado": body.get("estado", "Disponible"),
+                "ultimo_mantenimiento": body.get("ultimo_mantenimiento")
+            }
+            
+            resultado = col_inventario.insert_one(nuevo_articulo)
+            nuevo_articulo['_id'] = str(resultado.inserted_id)
+            
+            return JsonResponse({
+                "success": True,
+                "message": "Artículo creado correctamente",
+                "data": nuevo_articulo
+            }, status=201)
+        except Exception as e:
+            return JsonResponse({
+                "success": False,
+                "message": str(e),
+                "data": None
+            }, status=500)
+    else:
+        return JsonResponse({"success": False, "message": "Método no permitido", "data": None}, status=405)
+
+
+@csrf_exempt
+@jwt_required
+def inventario_criticos(request):
+    if request.method == 'GET':
+        try:
+            # Encuentra items donde stock_disponible <= stock_minimo
+            items = list(col_inventario.find({
+                "$expr": { "$lte": ["$stock_disponible", "$stock_minimo"] }
+            }))
+            
+            for item in items:
+                item['_id'] = str(item['_id'])
+                
+            return JsonResponse({
+                "success": True,
+                "message": "Artículos críticos obtenidos correctamente",
+                "data": items
+            }, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "success": False,
+                "message": str(e),
+                "data": None
+            }, status=500)
+    else:
+        return JsonResponse({"success": False, "message": "Método no permitido", "data": None}, status=405)
+
+
+@csrf_exempt
+@jwt_required
+def inventario_detalle(request, codigo):
+    if request.method == 'PUT':
+        try:
+            body = json.loads(request.body)
+            existe = col_inventario.find_one({"codigo": codigo})
+            if not existe:
+                return JsonResponse({"success": False, "message": "Artículo no encontrado", "data": None}, status=404)
+            
+            campos_actualizar = {}
+            for campo in ["nombre", "categoria", "ubicacion", "stock_disponible", "stock_reparacion", "stock_baja", "stock_minimo", "costo_unitario", "estado", "ultimo_mantenimiento"]:
+                if campo in body:
+                    campos_actualizar[campo] = body[campo]
+                    
+            if campos_actualizar:
+                col_inventario.update_one({"codigo": codigo}, {"$set": campos_actualizar})
+                
+            actualizado = col_inventario.find_one({"codigo": codigo})
+            actualizado['_id'] = str(actualizado['_id'])
+            
+            return JsonResponse({
+                "success": True,
+                "message": "Artículo actualizado correctamente",
+                "data": actualizado
+            }, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "success": False,
+                "message": str(e),
+                "data": None
+            }, status=500)
+
+    elif request.method == 'DELETE':
+        try:
+            existe = col_inventario.find_one({"codigo": codigo})
+            if not existe:
+                return JsonResponse({"success": False, "message": "Artículo no encontrado", "data": None}, status=404)
+                
+            col_inventario.delete_one({"codigo": codigo})
+            
+            return JsonResponse({
+                "success": True,
+                "message": "Artículo eliminado correctamente",
+                "data": None
+            }, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "success": False,
+                "message": str(e),
+                "data": None
+            }, status=500)
+    else:
+        return JsonResponse({"success": False, "message": "Método no permitido", "data": None}, status=405)

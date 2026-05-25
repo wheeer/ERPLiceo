@@ -6,3 +6,8 @@ from .remuneraciones import (
     obtener_remuneraciones,
     obtener_horas_extra
 )
+from .inventario import (
+    inventario_lista,
+    inventario_detalle,
+    inventario_criticos
+)
