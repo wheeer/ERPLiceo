@@ -20,4 +20,7 @@ urlpatterns = [
     path('inventario/', views.inventario_lista, name='inventario_lista'),
     path('inventario/criticos/', views.inventario_criticos, name='inventario_criticos'),
     path('inventario/<str:codigo>/', views.inventario_detalle, name='inventario_detalle'),
+
+    # Recursos Humanos
+    path('empleados', views.lista_empleados, name='api_empleados'),
 ]
