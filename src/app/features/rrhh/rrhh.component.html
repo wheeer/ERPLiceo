@@ -1,13 +1,11 @@
 <div class="rrhh-container">
   @if (!viewingForm) {
-    <!-- HEADER CON TABS -->
     <div class="rrhh-header-row">
       <div class="rrhh-header">
         <h1 class="rrhh-title">Recursos Humanos</h1>
         <p class="rrhh-subtitle">Gestión de personal y datos laborales</p>
       </div>
       
-      <!-- TABS DEL MÓDULO -->
       <div class="module-tabs">
         <button class="tab-btn" [class.active]="activeTab === 'general'" (click)="changeTab('general')">
           Vista General
@@ -29,9 +27,6 @@
       </div>
     </div>
 
-  <!-- ============================================== -->
-  <!-- TAB 1: VISTA GENERAL -->
-  <!-- ============================================== -->
   @if (activeTab === 'general') {
     <div class="action-bar-simple">
       <input type="text" class="search-input" placeholder="Buscar empleado por nombre, RUT o cargo..." (keyup)="onSearchEmployee($event)">
@@ -131,9 +126,6 @@
     </div>
   }
 
-  <!-- ============================================== -->
-  <!-- TAB 2: GESTIÓN DE PERSONAL -->
-  <!-- ============================================== -->
   @if (activeTab === 'gestion') {
     <div class="action-bar">
       <div class="bar-left">
@@ -247,9 +239,6 @@
     }
   }
 
-  <!-- ============================================== -->
-  <!-- TAB 3: FICHA DE EMPLEADO -->
-  <!-- ============================================== -->
   @if (activeTab === 'ficha' && selectedEmployee) {
     <div class="ficha-wrapper">
       <div class="ficha-header">
@@ -310,7 +299,6 @@
             </div>
           </div>
 
-          <!-- CALENDARIO DE ASISTENCIA INDIVIDUAL -->
           <div class="calendar-wrapper" style="margin-top: 2rem;">
             <div class="calendar-top">
               <h3 class="calendar-month">Abril 2026 - Asistencia de {{ selectedEmployee.nombre }}</h3>
@@ -342,9 +330,6 @@
     </div>
   }
 
-  <!-- ============================================== -->
-  <!-- TAB 4: ASISTENCIA POR EXCEPCIÓN                -->
-  <!-- ============================================== -->
   @if (activeTab === 'asistencia') {
     <div class="action-bar">
       <div class="bar-left">
@@ -465,14 +450,12 @@
         </div>
       }
     }
+    
+    <app-calendario-asistencia></app-calendario-asistencia>
+    
   }
 
-  } <!-- FIN de !viewingForm -->
-
-  <!-- ============================================== -->
-  <!-- VISTA DE FORMULARIO A PANTALLA COMPLETA        -->
-  <!-- ============================================== -->
-  @if (viewingForm) {
+  } @if (viewingForm) {
     <div class="full-page-form">
       <div class="form-header">
         <button class="btn-back" (click)="closeForm()">
@@ -495,7 +478,6 @@
       <div class="form-container">
         <form id="employeeForm" [formGroup]="employeeForm" (ngSubmit)="saveEmployee()" class="crud-form full-width-form">
           <div class="form-grid">
-            <!-- CARD: DATOS PERSONALES -->
             <div class="form-card">
               <h3>Datos Personales</h3>
               <div class="form-row">
@@ -542,10 +524,7 @@
                   </span>
                 }
               </div>
-            </div> <!-- FIN CARD: DATOS PERSONALES -->
-
-            <!-- CARD: CONTRATO -->
-            <div class="form-card">
+            </div> <div class="form-card">
               <h3>Datos de Contrato</h3>
               <div class="form-row">
             <div class="form-group">
@@ -582,10 +561,7 @@
                   <option value="licencia">En Licencia</option>
                 </select>
               </div>
-            </div> <!-- FIN CARD: CONTRATO -->
-
-            <!-- CARD: REMUNERACIONES -->
-            <div class="form-card">
+            </div> <div class="form-card">
               <h3>Configuración Remuneracional</h3>
               <div class="form-row">
                 <div class="form-group">
@@ -635,16 +611,9 @@
                 </div>
                 <div class="form-group"></div>
               </div>
-            </div> <!-- FIN CARD: REMUNERACIONES -->
-          </div> <!-- FIN form-grid -->
-        </form>
-      </div> <!-- FIN form-container -->
-    </div> <!-- FIN full-page-form -->
-  }
+            </div> </div> </form>
+      </div> </div> }
 
-  <!-- ============================================== -->
-  <!-- MODAL DE EXCEPCIÓN DE ASISTENCIA               -->
-  <!-- ============================================== -->
   @if (showAsistenciaModal && selectedAsistencia) {
     <div class="modal-overlay glass-modal">
       <div class="modal-content">
@@ -719,12 +688,8 @@
     </div>
   }
 
-  <!-- ============================================== -->
-  <!-- TAB 5: HORAS EXTRA (REGISTRO)                  -->
-  <!-- ============================================== -->
   @if (activeTab === 'horasExtra') {
     <div class="he-layout">
-      <!-- FORMULARIO DE REGISTRO (SIN MONTOS) -->
       <div class="he-form-card">
         <h3>Registro de Autorización - Horas Extra</h3>
         <p class="he-legal-note">
@@ -776,7 +741,6 @@
         </form>
       </div>
 
-      <!-- TABLA DE HISTORIAL BÁSICO -->
       <div class="he-history">
         <h3>Historial de Registros del Mes</h3>
         @if (isLoading) {
@@ -851,9 +815,6 @@
     </div>
   }
 
-  <!-- ============================================== -->
-  <!-- MODAL DE EXCEPCIÓN DE ASISTENCIA               -->
-  <!-- ============================================== -->
   @if (showAsistenciaModal && selectedAsistencia) {
     <div class="modal-overlay glass-modal">
       <div class="modal-content">

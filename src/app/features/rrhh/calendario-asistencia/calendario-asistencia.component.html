@@ -1,0 +1,31 @@
+<div class="calendario-container">
+  <h2>Calendario Visual de Asistencia</h2>
+
+  <div class="controles">
+    <select [(ngModel)]="empleadoSeleccionado" (change)="buscarAsistencia()">
+      <option value="">-- Seleccionar Empleado --</option>
+      <option *ngFor="let emp of empleados" [value]="emp.id">{{ emp.nombre }}</option>
+    </select>
+
+    <select [(ngModel)]="mesSeleccionado" (change)="buscarAsistencia()">
+      <option *ngFor="let mes of meses" [value]="mes.valor">{{ mes.nombre }}</option>
+    </select>
+
+    <select [(ngModel)]="anioSeleccionado" (change)="buscarAsistencia()">
+      <option *ngFor="let anio of anios" [value]="anio">{{ anio }}</option>
+    </select>
+  </div>
+
+  <div class="grid-calendario">
+    <div class="dia-celda" *ngFor="let dia of diasDelMes" [ngClass]="dia.clase">
+      {{ dia.dia }}
+    </div>
+  </div>
+
+  <div class="resumen">
+    <p><strong>Total Presentes:</strong> {{ resumen.presente }}</p>
+    <p><strong>Total Ausentes:</strong> {{ resumen.ausente }}</p>
+    <p><strong>Total Tardanzas:</strong> {{ resumen.tardanza }}</p>
+    <p><strong>Total Licencias:</strong> {{ resumen.licencia }}</p>
+  </div>
+</div>

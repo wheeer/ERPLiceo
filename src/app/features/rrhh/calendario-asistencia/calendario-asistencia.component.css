@@ -1,0 +1,45 @@
+.calendario-container {
+  padding: 20px;
+  color: white; /* Acorde al diseño oscuro del ERP */
+}
+
+.controles select {
+  margin-right: 10px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #1e1e2d;
+  color: white;
+  border: 1px solid #333;
+}
+
+.grid-calendario {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.dia-celda {
+  padding: 20px;
+  text-align: center;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #fff;
+}
+
+/* Colores de estado requeridos */
+.bg-verde { background-color: #28a745; } /* Presente */
+.bg-rojo { background-color: #dc3545; } /* Ausente */
+.bg-amarillo { background-color: #ffc107; color: #000; } /* Tardanza */
+.bg-azul { background-color: #007bff; } /* Licencia */
+.bg-gris { background-color: #6c757d; opacity: 0.5; } /* Fines de semana */
+.bg-blanco { background-color: #2b2b40; border: 1px solid #444; } /* Día hábil sin registrar */
+
+.resumen {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #1e1e2d;
+  border-radius: 8px;
+}

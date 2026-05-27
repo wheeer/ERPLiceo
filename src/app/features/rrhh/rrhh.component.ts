@@ -1,3 +1,4 @@
+import { CalendarioAsistenciaComponent } from './calendario-asistencia/calendario-asistencia.component';
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -42,10 +43,11 @@ export interface RegistroHorasExtra {
 @Component({
   selector: 'app-rrhh',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, CalendarioAsistenciaComponent],
   templateUrl: './rrhh.component.html',
   styleUrls: ['./rrhh.component.css']
 })
+
 export class RrhhComponent implements OnInit {
   
   // Dependencias
