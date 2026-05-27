@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute } from '@angular/router';
+import { RrhhService } from './rrhh.service'; // <-- IMPORTANTE: Importamos el nuevo servicio
 
 interface Employee {
   id: number;
@@ -52,11 +53,11 @@ export class RrhhComponent implements OnInit {
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
+  private rrhhService = inject(RrhhService); // <-- Inyectamos el servicio
 
   // Tabs
   activeTab: 'general' | 'gestion' | 'ficha' | 'asistencia' | 'horasExtra' = 'general';
   isLoading = true;
-
 
   // Estado CRUD
   viewingForm = false;
@@ -64,6 +65,7 @@ export class RrhhComponent implements OnInit {
   selectedEmployee: Employee | null = null;
   employeeForm: FormGroup;
   isSaving = false;
+  mostrarSoloActivos: boolean = false; // <-- Nuevo estado para el filtro
   
   // Estado Asistencia Diaria
   fechaHoy: Date = new Date();
@@ -90,17 +92,14 @@ export class RrhhComponent implements OnInit {
     return 'ok';
   }
 
-  
   // Configuración base del calendario de asistencia (Abril 2026)
   daysInMonth = Array.from({length: 30}, (_, i) => i + 1);
   
   getAttendanceStatus(employeeId: number, day: number): 'present' | 'absent' | 'leave' | 'weekend' {
-    // TODO: El backend debe devolver la asistencia filtrada por employeeId
     const weekends = [4, 5, 11, 12, 18, 19, 25, 26];
     if (weekends.includes(day)) return 'weekend';
     
-    // Simulación de datos variados por empleado (mock)
-    if (employeeId === 4 && day >= 10) return 'leave'; // Francisca (Licencia)
+    if (employeeId === 4 && day >= 10) return 'leave'; 
     
     const absences = employeeId % 2 === 0 ? [3, 14] : [22];
     if (absences.includes(day)) return 'absent';
@@ -111,70 +110,8 @@ export class RrhhComponent implements OnInit {
     return 'present';
   }
 
-  // TODO: Reemplazar con llamada al servicio de empleados (backend pendiente)
-  employees: Employee[] = [
-    {
-      id: 1,
-      rut: '12345678-9',
-      nombre: 'Juan Carlos Pérez',
-      correo: 'juan.perez@liceo.cl',
-      cargo: 'Profesor de Programación',
-      tipo_contrato: 'Indefinido',
-      fechaIngreso: new Date('2021-03-15'),
-      estado: 'activo',
-      departamento: 'Informática',
-      config_remuneracion: { sueldo_base: 2500000, afp: 'Habitat', salud: 'Fonasa', movilizacion: 50000, colacion: 55000 }
-    },
-    {
-      id: 2,
-      rut: '23456789-0',
-      nombre: 'María González Ruiz',
-      correo: 'maria.gonzalez@liceo.cl',
-      cargo: 'Jefa de Recursos Humanos',
-      tipo_contrato: 'Indefinido',
-      fechaIngreso: new Date('2019-07-01'),
-      estado: 'activo',
-      departamento: 'Administración',
-      config_remuneracion: { sueldo_base: 2800000, afp: 'Capital', salud: 'Isapre Cruz Blanca', movilizacion: 45000, colacion: 50000 }
-    },
-    {
-      id: 3,
-      rut: '34567890-1',
-      nombre: 'Roberto López Silva',
-      correo: 'roberto.lopez@liceo.cl',
-      cargo: 'Encargado de Mantenimiento',
-      tipo_contrato: 'Plazo Fijo',
-      fechaIngreso: new Date('2020-01-20'),
-      estado: 'activo',
-      departamento: 'Operaciones',
-      config_remuneracion: { sueldo_base: 1800000, afp: 'PlanVital', salud: 'Fonasa', movilizacion: 40000, colacion: 45000 }
-    },
-    {
-      id: 4,
-      rut: '45678901-2',
-      nombre: 'Francisca Martínez Díaz',
-      correo: 'francisca.martinez@liceo.cl',
-      cargo: 'Secretaria Administrativa',
-      tipo_contrato: 'Indefinido',
-      fechaIngreso: new Date('2022-11-10'),
-      estado: 'licencia',
-      departamento: 'Administración',
-      config_remuneracion: { sueldo_base: 1900000, afp: 'Modelo', salud: 'Fonasa', movilizacion: 40000, colacion: 50000 }
-    },
-    {
-      id: 5,
-      rut: '56789012-3',
-      nombre: 'Carlos Rodríguez Fuentes',
-      correo: 'carlos.rodriguez@liceo.cl',
-      cargo: 'Profesor de Electricidad',
-      tipo_contrato: 'Indefinido',
-      fechaIngreso: new Date('2018-05-03'),
-      estado: 'activo',
-      departamento: 'Electromecánica',
-      config_remuneracion: { sueldo_base: 2600000, afp: 'ProVida', salud: 'Fonasa', movilizacion: 42000, colacion: 48000 }
-    }
-  ];
-  
+  // El arreglo se inicializa vacío, se llenará con Mongo
+  employees: Employee[] = [];
   filteredEmployees: Employee[] = [];
   filteredAsistenciaList: any[] = [];
 
@@ -240,7 +177,6 @@ export class RrhhComponent implements OnInit {
       departamento: ['', Validators.required],
       fechaIngreso: [new Date().toISOString().split('T')[0], Validators.required],
       estado: ['activo', Validators.required],
-      // config_remuneracion — campos de la ficha remuneracional
       sueldo_base: [0, [Validators.required, Validators.min(500000)]],
       afp: ['', Validators.required],
       salud: ['', Validators.required],
@@ -264,12 +200,9 @@ export class RrhhComponent implements OnInit {
   }
 
   ngOnInit() {
-    setTimeout(() => {
-      this.isLoading = false;
-      this.cdr.detectChanges();
-    }, 1500);
+    // <-- Llamada a los datos reales al iniciar
+    this.cargarDatosEmpleados();
 
-    this.filteredEmployees = [...this.employees];
     this.filteredAsistenciaList = [...this.asistenciaList];
     this.route.queryParams.subscribe(params => {
       if (params['tab']) {
@@ -280,17 +213,59 @@ export class RrhhComponent implements OnInit {
       }
     });
     
-    // Calcular minutos de atraso dinámicamente
     this.excepcionForm.get('horaEntradaReal')?.valueChanges.subscribe(hora => {
       if (hora && this.excepcionForm.get('tipoExcepcion')?.value === 'atraso') {
         const [h, m] = hora.split(':').map(Number);
         const minutosLlegada = (h * 60) + m;
-        const minutosOficial = (8 * 60); // 08:00
+        const minutosOficial = (8 * 60); 
         const dif = minutosLlegada - minutosOficial;
         this.excepcionForm.get('minutosAtraso')?.setValue(dif > 0 ? dif : 0);
       }
     });
   }
+
+  // ==========================================
+  // Consumo de API MongoDB
+  // ==========================================
+  
+  cargarDatosEmpleados(): void {
+    this.isLoading = true;
+    this.rrhhService.obtenerEmpleados(this.mostrarSoloActivos).subscribe({
+      next: (datosReales) => {
+        // Mapeamos los datos de Mongo a la interfaz de Angular
+        this.employees = datosReales.map((emp: any) => ({
+          id: emp._id, 
+          rut: emp.rut,
+          nombre: emp.nombre_completo,
+          correo: 'No registrado', // El backend actual no trae el correo, ponemos valor por defecto
+          cargo: emp.cargo,
+          tipo_contrato: emp.tipo_contrato,
+          fechaIngreso: new Date(emp.fecha_ingreso),
+          estado: emp.activo ? 'activo' : 'inactivo',
+          config_remuneracion: { sueldo_base: 0, afp: '', salud: '', movilizacion: 0, colacion: 0 } // Valores por defecto para que no se caiga la ficha
+        }));
+        
+        this.filteredEmployees = [...this.employees];
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error al cargar empleados desde Mongo:', error);
+        this.toastService.show('Error al conectar con la base de datos', 'error');
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  toggleFiltroActivos(): void {
+    this.mostrarSoloActivos = !this.mostrarSoloActivos;
+    this.cargarDatosEmpleados();
+  }
+
+  // ==========================================
+  // Resto de la lógica intacta...
+  // ==========================================
   
   getStatusColor(status: Employee['estado']): string {
     const colors: Record<Employee['estado'], string> = {
@@ -317,14 +292,10 @@ export class RrhhComponent implements OnInit {
       day: '2-digit'
     });
   }
-
-  // ==========================================
-  // Métodos de navegación y gestión de estado
-  // ==========================================
   
   changeTab(tab: 'general' | 'gestion' | 'ficha' | 'asistencia' | 'horasExtra') {
     this.activeTab = tab;
-    this.paginaActual = 1; // Resetear paginación al cambiar de tab
+    this.paginaActual = 1; 
     
     if (tab !== 'ficha') {
       this.selectedEmployee = null;
@@ -371,17 +342,14 @@ export class RrhhComponent implements OnInit {
     
     this.isSaving = true;
     
-    // Simular latencia de red
     setTimeout(() => {
       if (this.isEditing) {
-        // Actualizar existente
         const index = this.employees.findIndex(e => e.id === this.employeeForm.value.id);
         if (index > -1) {
           this.employees[index] = { ...this.employees[index], ...this.employeeForm.value };
         }
         this.toastService.show('Empleado actualizado correctamente', 'success');
       } else {
-        // Crear nuevo
         const newEmp = {
           ...this.employeeForm.value,
           id: Math.max(...this.employees.map(e => e.id)) + 1
@@ -423,10 +391,6 @@ export class RrhhComponent implements OnInit {
     );
     this.paginaActual = 1;
   }
-
-  // ==========================================
-  // Registro de Horas Extra
-  // ==========================================
 
   registrarHorasExtra() {
     if (this.horasExtraForm.invalid) return;
@@ -470,10 +434,6 @@ export class RrhhComponent implements OnInit {
     this.historialHorasExtra = this.historialHorasExtra.filter(h => h.id !== id);
     this.toastService.show('Registro eliminado.', 'warning');
   }
-
-  // ==========================================
-  // Métodos de Asistencia por Excepción
-  // ==========================================
 
   openExcepcionModal(empleado: any) {
     this.selectedAsistencia = empleado;
