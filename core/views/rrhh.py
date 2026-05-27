@@ -1,8 +1,11 @@
 from django.http import JsonResponse
 from core.db_connection import db # Esto asume que la conexión a Mongo se exporta así desde db_connection.py
 
+<<<<<<< HEAD
 # Vistas del módulo Recursos Humanos
 
+=======
+>>>>>>> 6f420e4afb79d51bbde3f94427245a867f275a51
 def lista_empleados(request):
     # 1. Seleccionamos la colección de empleados
     coleccion_empleados = db['empleados']
@@ -29,6 +32,7 @@ def lista_empleados(request):
         })
 
     # 5. Devolvemos los datos en formato JSON
+<<<<<<< HEAD
     return JsonResponse(datos_formateados, safe=False)
 
 def obtener_asistencia_mensual(request, empleado_id, anio, mes):
@@ -65,3 +69,6 @@ def obtener_asistencia_mensual(request, empleado_id, anio, mes):
         
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+=======
+    return JsonResponse(datos_formateados, safe=False)# Vistas del módulo Recursos Humanos
+>>>>>>> 6f420e4afb79d51bbde3f94427245a867f275a51
