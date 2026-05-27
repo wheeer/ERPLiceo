@@ -6,6 +6,8 @@ from core.db_connection import col_empleados, col_remuneraciones, col_horas_extr
 from bson import ObjectId
 from core.jwt_middleware import jwt_required
 from datetime import datetime
+from django.http import JsonResponse
+
 
 # Acá se agregarán los endpoints relacionados con remuneraciones, horas extra y generación de PDF, todos protegidos con JWT.#
 
@@ -585,15 +587,15 @@ def obtener_remuneraciones(request, mes, anio):
 
                 "gratificacion": liquidacion["haberes"]["imponibles"]["gratificacion_legal"],
 
-               "horasExtra": liquidacion["haberes"]["imponibles"]["horas_extra"]["monto"],
+                "horasExtra": liquidacion["haberes"]["imponibles"]["horas_extra"],
 
                 "movilizacion": liquidacion["haberes"]["no_imponibles"]["movilizacion"],
 
                 "colacion": liquidacion["haberes"]["no_imponibles"]["colacion"],
 
-               "afp": liquidacion["descuentos_legales"]["afp"]["monto"],
+                "afp": liquidacion["descuentos_legales"]["afp"],
 
-               "salud": liquidacion["descuentos_legales"]["salud"]["monto"],
+                "salud": liquidacion["descuentos_legales"]["salud"],
 
                 "seguroCesantia": liquidacion["descuentos_legales"]["seguro_cesantia"],
 
@@ -677,3 +679,4 @@ def obtener_horas_extra(request, mes, anio):
             "message": f"Error al obtener horas extra: {str(e)}",
             "data": None
         }, status=500)
+    

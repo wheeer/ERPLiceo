@@ -1,3 +1,4 @@
+
 <div class="remuneraciones-container">
   <!-- HEADER CON TABS -->
   <div class="remuneraciones-header-row">
@@ -8,8 +9,8 @@
     <div class="periodo-selector">
 
     <select [(ngModel)]="mesSeleccionado" title="Seleccionar Mes" aria-label="Seleccionar Mes">
-      @for (mes of meses; track mes.value) {
-        <option [value]="mes.value">
+      @for (mes of meses; track mes.valor) {
+        <option [value]="mes.valor">
           {{ mes.nombre }}
         </option>
       }
@@ -25,7 +26,7 @@
 
     <button
       class="btn-generar"
-      (click)="cargarRemuneraciones()"
+      (click)="cambiarPeriodo()"
     >
       Cargar
     </button>
@@ -188,7 +189,6 @@
       <span class="info-text">Período: {{ payrollData[0].periodo }}</span>
     </div>
   }
-
 
   <!-- ============================================== -->
   <!-- TAB 2: HORAS EXTRA -->
