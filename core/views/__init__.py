@@ -11,8 +11,4 @@ from .inventario import (
     inventario_detalle,
     inventario_criticos
 )
-<<<<<<< HEAD
 from .rrhh import lista_empleados, obtener_asistencia_mensual
-=======
-from .rrhh import lista_empleados
->>>>>>> 6f420e4afb79d51bbde3f94427245a867f275a51

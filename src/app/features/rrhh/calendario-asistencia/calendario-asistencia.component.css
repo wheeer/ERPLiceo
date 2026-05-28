@@ -1,6 +1,6 @@
 .calendario-container {
   padding: 20px;
-  color: white; /* Acorde al diseño oscuro del ERP */
+  color: white;
 }
 
 .controles select {
@@ -10,13 +10,24 @@
   background-color: #1e1e2d;
   color: white;
   border: 1px solid #333;
+  margin-bottom: 20px;
+}
+
+/* Estilo para la nueva barra de letras (L M M J V S D) */
+.grid-dias-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-bottom: 5px;
+  text-align: center;
+  font-weight: bold;
+  color: #a0a0b5;
 }
 
 .grid-calendario {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 10px;
-  margin-top: 20px;
 }
 
 .dia-celda {
@@ -27,13 +38,18 @@
   color: #fff;
 }
 
-/* Colores de estado requeridos */
-.bg-verde { background-color: #28a745; } /* Presente */
-.bg-rojo { background-color: #dc3545; } /* Ausente */
-.bg-amarillo { background-color: #ffc107; color: #000; } /* Tardanza */
-.bg-azul { background-color: #007bff; } /* Licencia */
-.bg-gris { background-color: #6c757d; opacity: 0.5; } /* Fines de semana */
-.bg-blanco { background-color: #2b2b40; border: 1px solid #444; } /* Día hábil sin registrar */
+/* Celda invisible para alinear el día 1 con su día de la semana correspondiente */
+.celda-vacia {
+  background-color: transparent;
+  border: none;
+}
+
+.bg-verde { background-color: #28a745; } 
+.bg-rojo { background-color: #dc3545; } 
+.bg-amarillo { background-color: #ffc107; color: #000; } 
+.bg-azul { background-color: #007bff; } 
+.bg-gris { background-color: #6c757d; opacity: 0.5; } 
+.bg-blanco { background-color: #2b2b40; border: 1px solid #444; } 
 
 .resumen {
   display: flex;
@@ -42,4 +58,16 @@
   padding: 15px;
   background-color: #1e1e2d;
   border-radius: 8px;
+}
+
+/* Estilo para el mensaje de error cuando falla la API real */
+.alerta-error {
+  background-color: #ff4d4d20;
+  color: #ff4d4d;
+  border: 1px solid #ff4d4d;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: bold;
 }

@@ -16,9 +16,19 @@
     </select>
   </div>
 
+  <div *ngIf="mensajeError" class="alerta-error">
+    ⚠️ {{ mensajeError }}
+  </div>
+
+  <div class="grid-dias-semana">
+    <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+  </div>
+
   <div class="grid-calendario">
-    <div class="dia-celda" *ngFor="let dia of diasDelMes" [ngClass]="dia.clase">
-      {{ dia.dia }}
+    <div *ngFor="let dia of diasDelMes" 
+         class="dia-celda" 
+         [ngClass]="dia.esVacio ? 'celda-vacia' : dia.clase">
+      {{ dia.esVacio ? '' : dia.dia }}
     </div>
   </div>
 

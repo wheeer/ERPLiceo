@@ -13,11 +13,12 @@ import { FormsModule } from '@angular/forms';
 export class CalendarioAsistenciaComponent implements OnInit {
   empleados: any[] = [];
   empleadoSeleccionado: string = '';
-  mesSeleccionado: number = 4; // Comenzamos en Abril para tu prueba visual
+  mesSeleccionado: number = 4; 
   anioSeleccionado: number = 2026;
   
   diasDelMes: any[] = [];
   resumen = { presente: 0, ausente: 0, tardanza: 0, licencia: 0 };
+  mensajeError: string = ''; 
 
   meses = [
     { valor: 1, nombre: 'Enero' }, { valor: 2, nombre: 'Febrero' },
@@ -29,6 +30,8 @@ export class CalendarioAsistenciaComponent implements OnInit {
   ];
   anios = [2024, 2025, 2026];
 
+  private baseUrl = 'http://127.0.0.1:8000/api';
+
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
@@ -36,46 +39,31 @@ export class CalendarioAsistenciaComponent implements OnInit {
   }
 
   cargarEmpleados() {
-    // 1. Intenta cargar los empleados reales de la base de datos
-    this.http.get<any[]>('/api/empleados').subscribe({
+    this.http.get<any[]>(`${this.baseUrl}/empleados`).subscribe({
       next: (data) => {
+        // SOLUCIÓN CLAVE: Guardamos el RUT como identificador para enlazar con la BD
         this.empleados = data.map(emp => ({ id: emp.rut, nombre: emp.nombre_completo }));
       },
       error: (err) => {
-        console.error('Error de red, usando empleados de respaldo', err);
-        // 2. Respaldo (Tu código original mantenido por si falla la API)
-        this.empleados = [
-          { id: '1', nombre: 'Juan Carlos Pérez' },
-          { id: '2', nombre: 'María López' }
-        ];
+        this.mensajeError = 'No se pudieron cargar los empleados.';
       }
     });
   }
 
   buscarAsistencia() {
     if (!this.empleadoSeleccionado) return;
-
-    // Tu llamada HTTP original intacta
-    const url = `/api/asistencia/${this.empleadoSeleccionado}/${this.mesSeleccionado}/${this.anioSeleccionado}`;
+    this.mensajeError = ''; 
+    
+    const url = `${this.baseUrl}/asistencia/${this.mesSeleccionado}/${this.anioSeleccionado}?empleadoId=${this.empleadoSeleccionado}`;
     
     this.http.get<any>(url).subscribe({
       next: (response) => {
-        // Si el endpoint maestro funciona, usa los datos reales
-        this.generarCalendario(response.data);
+        this.generarCalendario(response.data || []);
       },
       error: (err) => {
-        console.warn('La ruta real aún no está habilitada. Activando simulación visual...');
-        
-        // La simulación añadida en caso de error para que puedas ver tu trabajo
-        const datosSimulados = [
-          { fecha: '2026-04-01', estado: 'Presente' },
-          { fecha: '2026-04-02', estado: 'Presente' },
-          { fecha: '2026-04-03', estado: 'Tardanza' },
-          { fecha: '2026-04-06', estado: 'Ausente' },
-          { fecha: '2026-04-07', estado: 'Licencia' },
-          { fecha: '2026-04-08', estado: 'Presente' }
-        ];
-        this.generarCalendario(datosSimulados);
+        this.mensajeError = 'Error de conexión con el servidor.';
+        this.diasDelMes = [];
+        this.resumen = { presente: 0, ausente: 0, tardanza: 0, licencia: 0 };
       }
     });
   }
@@ -85,37 +73,47 @@ export class CalendarioAsistenciaComponent implements OnInit {
     this.resumen = { presente: 0, ausente: 0, tardanza: 0, licencia: 0 };
     
     const diasEnElMes = new Date(this.anioSeleccionado, this.mesSeleccionado, 0).getDate();
+    const primerDiaDelMes = new Date(this.anioSeleccionado, this.mesSeleccionado - 1, 1).getDay();
+    const desfase = primerDiaDelMes === 0 ? 6 : primerDiaDelMes - 1;
+
+    for (let i = 0; i < desfase; i++) {
+      this.diasDelMes.push({ esVacio: true });
+    }
 
     for (let i = 1; i <= diasEnElMes; i++) {
       const fechaActual = new Date(this.anioSeleccionado, this.mesSeleccionado - 1, i);
       const esFinDeSemana = fechaActual.getDay() === 0 || fechaActual.getDay() === 6;
       
       let estadoDia = 'sin-registro';
-      let claseColor = 'bg-gris'; // Fines de semana en gris por defecto
+      let claseColor = 'bg-gris'; 
 
       if (!esFinDeSemana) {
-        // Buscar si hay un registro para este día
-        // Nota: Se usa split() para evitar errores de zona horaria con las fechas de Mongo
+        // SOLUCIÓN CLAVE 2: Parser universal de fechas que extrae el día sin importar el formato
         const registro = asistenciasBD.find(a => {
-          if (a.fecha && a.fecha.includes('-')) {
-            const partes = a.fecha.split('-');
-            return parseInt(partes[2], 10) === i;
+          if (!a.fecha) return false;
+          const fechaSoloDia = a.fecha.toString().split('T')[0].split(' ')[0];
+          const partes = fechaSoloDia.includes('-') ? fechaSoloDia.split('-') : fechaSoloDia.split('/');
+          let dia = -1;
+          if (partes.length >= 3) {
+            if (partes[0].length === 4) dia = parseInt(partes[2], 10);
+            else dia = parseInt(partes[0], 10);
           }
-          return new Date(a.fecha).getDate() === i;
+          return dia === i;
         });
 
         if (registro) {
-          estadoDia = registro.estado.toLowerCase();
+          estadoDia = registro.estado.toLowerCase().trim();
           if (estadoDia === 'presente') { claseColor = 'bg-verde'; this.resumen.presente++; }
           else if (estadoDia === 'ausente') { claseColor = 'bg-rojo'; this.resumen.ausente++; }
           else if (estadoDia === 'atraso' || estadoDia === 'tardanza') { claseColor = 'bg-amarillo'; this.resumen.tardanza++; }
           else if (estadoDia === 'licencia') { claseColor = 'bg-azul'; this.resumen.licencia++; }
         } else {
-           claseColor = 'bg-blanco'; // Día hábil sin información
+           claseColor = 'bg-blanco'; 
         }
       }
 
       this.diasDelMes.push({
+        esVacio: false,
         dia: i,
         esFinDeSemana: esFinDeSemana,
         clase: claseColor
