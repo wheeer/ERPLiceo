@@ -52,7 +52,9 @@ def calcular_remuneraciones(request):
                 "data": None
             }, status=400)
 
-        empleados = list(col_empleados.find())
+        empleados = list(col_empleados.find({
+            "estado": {"$in": ["activo", "licencia"]}
+        }))
 
         liquidaciones_generadas = []
 
