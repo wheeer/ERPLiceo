@@ -1,0 +1,34 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev.backend
+    container_name: erp_backend_dev
+    ports:
+      - "8000:8000"
+    volumes:
+      # Sincroniza la carpeta local con el contenedor (Hot-reloading)
+      - .:/app
+    env_file:
+      - .env
+    networks:
+      - erp_network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev.frontend
+    container_name: erp_frontend_dev
+    ports:
+      - "4200:4200"
+    volumes:
+      # Sincroniza el código de Angular
+      - .:/app
+      # Volumen anónimo para que los node_modules de Linux (contenedor) no se sobrescriban con los de Windows
+      - /app/node_modules
+    networks:
+      - erp_network
+
+networks:
+  erp_network:
+    driver: bridge
