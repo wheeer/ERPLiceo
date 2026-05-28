@@ -8,7 +8,7 @@ import { InventarioService } from '../../core/services/inventario.service';
 interface InventoryItem {
   id: string; // Updated from number to string for ObjectId
   codigo: string;
-  producto: string;
+  nombre: string;
   categoria: string;
   stock_total: number;
   stock_disponible: number;
@@ -18,6 +18,7 @@ interface InventoryItem {
   ubicacion: string;
   costo_unitario: number;
   estado: string;
+  ultimo_mantenimiento: string | null;
   incidencias: { fecha: string; tipo: string; cantidad: number; detalle: string; }[];
 }
 
@@ -107,7 +108,7 @@ export class InventarioComponent implements OnInit {
     this.inventoryForm = this.fb.group({
       id: [null],
       codigo: ['', Validators.required],
-      producto: ['', Validators.required],
+      nombre: ['', Validators.required],
       categoria: ['', Validators.required],
       stock_total: [0, [Validators.required, Validators.min(0)]],
       stock_disponible: [0, [Validators.required, Validators.min(0)]],
@@ -115,7 +116,8 @@ export class InventarioComponent implements OnInit {
       stock_baja: [0, [Validators.required, Validators.min(0)]],
       stock_minimo: [5, [Validators.required, Validators.min(1)]],
       ubicacion: ['', Validators.required],
-      costo_unitario: [0, Validators.required]
+      costo_unitario: [0, Validators.required],
+      ultimo_mantenimiento: [null]
     });
   }
 
@@ -127,7 +129,7 @@ export class InventarioComponent implements OnInit {
           this.inventoryItems = response.data.map((item: any) => ({
             id: item._id, // Mongo id mapping
             codigo: item.codigo,
-            producto: item.nombre, // Backend 'nombre' -> Frontend 'producto'
+            nombre: item.nombre, 
             categoria: item.categoria,
             stock_total: (item.stock_disponible || 0) + (item.stock_reparacion || 0) + (item.stock_baja || 0),
             stock_disponible: item.stock_disponible || 0,
@@ -137,7 +139,8 @@ export class InventarioComponent implements OnInit {
             ubicacion: item.ubicacion,
             costo_unitario: item.costo_unitario || 0,
             estado: item.estado,
-            incidencias: [] // Default as requested
+            ultimo_mantenimiento: item.ultimo_mantenimiento || null,
+            incidencias: item.incidencias || []
           }));
           this.filteredItems = [...this.inventoryItems];
         }
@@ -180,7 +183,7 @@ export class InventarioComponent implements OnInit {
     const query = (event.target as HTMLInputElement).value.toLowerCase();
     this.filteredItems = this.inventoryItems.filter(item => 
       item.codigo.toLowerCase().includes(query) || 
-      item.producto.toLowerCase().includes(query) ||
+      item.nombre.toLowerCase().includes(query) ||
       item.categoria.toLowerCase().includes(query)
     );
     this.paginaActual = 1; // Resetear a página 1 al buscar

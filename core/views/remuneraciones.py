@@ -591,11 +591,17 @@ def obtener_remuneraciones(request, mes, anio):
 
                 "colacion": liquidacion["haberes"]["no_imponibles"]["colacion"],
 
-               "afp": liquidacion["descuentos_legales"]["afp"]["monto"],
+               "afp": ( liquidacion["descuentos_legales"]["afp"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"]["afp"], dict)
+                else liquidacion["descuentos_legales"]["afp"] ),
 
-               "salud": liquidacion["descuentos_legales"]["salud"]["monto"],
+               "salud": ( liquidacion["descuentos_legales"]["salud"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"]["salud"], dict)
+                else liquidacion["descuentos_legales"]["salud"] ),
 
-                "seguroCesantia": liquidacion["descuentos_legales"]["seguro_cesantia"],
+                "seguroCesantia": ( liquidacion["descuentos_legales"]["seguro_cesantia"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"]["seguro_cesantia"], dict)
+                else liquidacion["descuentos_legales"]["seguro_cesantia"] ),
 
                 "totalHaberes": liquidacion["totales"]["total_haberes"],
 
