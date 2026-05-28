@@ -41,13 +41,15 @@ def inventario_lista(request):
                 "nombre": body.get("nombre", ""),
                 "categoria": body.get("categoria", ""),
                 "ubicacion": body.get("ubicacion", ""),
+                "stock_total": body.get("stock_total", 0),
                 "stock_disponible": body.get("stock_disponible", 0),
                 "stock_reparacion": body.get("stock_reparacion", 0),
                 "stock_baja": body.get("stock_baja", 0),
                 "stock_minimo": body.get("stock_minimo", 0),
                 "costo_unitario": body.get("costo_unitario", 0),
                 "estado": body.get("estado", "Disponible"),
-                "ultimo_mantenimiento": body.get("ultimo_mantenimiento")
+                "ultimo_mantenimiento": body.get("ultimo_mantenimiento"),
+                "incidencias": body.get("incidencias", [])
             }
             
             resultado = col_inventario.insert_one(nuevo_articulo)
@@ -107,7 +109,7 @@ def inventario_detalle(request, codigo):
                 return JsonResponse({"success": False, "message": "Artículo no encontrado", "data": None}, status=404)
             
             campos_actualizar = {}
-            for campo in ["nombre", "categoria", "ubicacion", "stock_disponible", "stock_reparacion", "stock_baja", "stock_minimo", "costo_unitario", "estado", "ultimo_mantenimiento"]:
+            for campo in ["nombre", "categoria", "ubicacion", "stock_total", "stock_disponible", "stock_reparacion", "stock_baja", "stock_minimo", "costo_unitario", "estado", "ultimo_mantenimiento", "incidencias"]:
                 if campo in body:
                     campos_actualizar[campo] = body[campo]
                     

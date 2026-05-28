@@ -237,12 +237,13 @@ export class RrhhComponent implements OnInit {
           id: emp._id, 
           rut: emp.rut,
           nombre: emp.nombre_completo,
-          correo: 'No registrado', // El backend actual no trae el correo, ponemos valor por defecto
+          correo: emp.correo || 'No registrado',
+          departamento: emp.departamento || 'Sin departamento',
           cargo: emp.cargo,
           tipo_contrato: emp.tipo_contrato,
           fechaIngreso: new Date(emp.fecha_ingreso),
-          estado: emp.activo ? 'activo' : 'inactivo',
-          config_remuneracion: { sueldo_base: 0, afp: '', salud: '', movilizacion: 0, colacion: 0 } // Valores por defecto para que no se caiga la ficha
+          estado: emp.estado || 'inactivo',
+          config_remuneracion: emp.config_remuneracion || { sueldo_base: 0, afp: '', salud: '', movilizacion: 0, colacion: 0 }
         }));
         
         this.filteredEmployees = [...this.employees];

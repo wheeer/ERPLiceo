@@ -22,7 +22,7 @@
   <!-- ============================================== -->
   @if (activeTab === 'stock') {
     <div class="action-bar-simple">
-      <input type="text" class="search-input" placeholder="Buscar por código, producto o categoría..." (keyup)="onSearch($event)">
+      <input type="text" class="search-input" placeholder="Buscar por código, nombre o categoría..." (keyup)="onSearch($event)">
     </div>
 
     @if (isLoading) {
@@ -31,7 +31,7 @@
           <thead>
             <tr>
               <th>Código</th>
-              <th>Producto</th>
+              <th>Nombre</th>
               <th>Categoría</th>
               <th class="amount">Disponible</th>
               <th class="amount">Reparación</th>
@@ -63,7 +63,7 @@
             <thead>
               <tr>
                 <th>Código</th>
-                <th>Producto</th>
+                <th>Nombre</th>
                 <th>Categoría</th>
                 <th class="amount">Disponible</th>
                 <th class="amount">Reparación</th>
@@ -78,7 +78,7 @@
                   <td class="cell-codigo">
                     <span class="codigo-badge">{{ item.codigo }}</span>
                   </td>
-                  <td class="cell-producto">{{ item.producto }}</td>
+                  <td class="cell-producto">{{ item.nombre }}</td>
                   <td class="cell-categoria">
                     <span class="category-tag">{{ item.categoria }}</span>
                   </td>
@@ -128,7 +128,7 @@
               <span>Mostrando {{ rangoMostrado }} registros</span>
             </div>
             <div class="pagination-actions">
-              <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+              <select class="page-size-select" aria-label="Seleccionar elementos por página" (change)="cambiarItemsPorPagina($event)">
                 @for (op of opcionesPorPagina; track op) {
                   <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
                 }
@@ -179,7 +179,7 @@
         <table class="inventory-table crud-table">
           <thead>
             <tr>
-              <th>Código / Producto</th>
+              <th>Código / Nombre</th>
               <th class="hide-mobile">Categoría</th>
               <th class="center">Ajuste Disponible</th>
               <th class="hide-mobile">Ubicación</th>
@@ -205,7 +205,7 @@
           <table class="inventory-table crud-table">
             <thead>
               <tr>
-                <th>Código / Producto</th>
+                <th>Código / Nombre</th>
                 <th class="hide-mobile">Categoría</th>
                 <th class="center">Ajuste Disponible</th>
                 <th class="hide-mobile">Ubicación</th>
@@ -218,7 +218,7 @@
                   <td class="cell-producto">
                     <div class="item-info-detailed">
                       <span class="codigo-badge mini">{{ item.codigo }}</span>
-                      <span class="item-name">{{ item.producto }}</span>
+                      <span class="item-name">{{ item.nombre }}</span>
                     </div>
                   </td>
                   <td class="cell-categoria">
@@ -250,7 +250,7 @@
               <span>Mostrando {{ rangoMostrado }} registros</span>
             </div>
             <div class="pagination-actions">
-              <select class="page-size-select" (change)="cambiarItemsPorPagina($event)">
+              <select class="page-size-select" aria-label="Seleccionar elementos por página" (change)="cambiarItemsPorPagina($event)">
                 @for (op of opcionesPorPagina; track op) {
                   <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
                 }
@@ -278,7 +278,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h2>{{ isEditing ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
-          <button class="btn-close" (click)="closeModal()">
+          <button class="btn-close" aria-label="Cerrar modal" (click)="closeModal()">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -287,14 +287,14 @@
           <div class="modal-body">
             <div class="form-row">
               <div class="form-group">
-                <label>Código SKU</label>
-                <input type="text" formControlName="codigo" placeholder="Ej: PNT-001" 
+                <label for="codigo">Código SKU</label>
+                <input id="codigo" type="text" formControlName="codigo" placeholder="Ej: PNT-001" 
                   [class.error]="inventoryForm.get('codigo')?.invalid && inventoryForm.get('codigo')?.touched"
                   [class.valid]="inventoryForm.get('codigo')?.valid && inventoryForm.get('codigo')?.touched">
               </div>
               <div class="form-group">
-                <label>Categoría</label>
-                <select formControlName="categoria"
+                <label for="categoria">Categoría</label>
+                <select id="categoria" formControlName="categoria"
                   [class.error]="inventoryForm.get('categoria')?.invalid && inventoryForm.get('categoria')?.touched"
                   [class.valid]="inventoryForm.get('categoria')?.valid && inventoryForm.get('categoria')?.touched">
                   <option value="">Seleccione...</option>
@@ -309,48 +309,48 @@
             </div>
 
             <div class="form-group">
-              <label>Nombre del Producto</label>
-              <input type="text" formControlName="producto" placeholder="Ej: Pantalla LED 24''" 
-                [class.error]="inventoryForm.get('producto')?.invalid && inventoryForm.get('producto')?.touched"
-                [class.valid]="inventoryForm.get('producto')?.valid && inventoryForm.get('producto')?.touched">
+              <label for="nombre">Nombre del Producto</label>
+              <input id="nombre" type="text" formControlName="nombre" placeholder="Ej: Pantalla LED 24''" 
+                [class.error]="inventoryForm.get('nombre')?.invalid && inventoryForm.get('nombre')?.touched"
+                [class.valid]="inventoryForm.get('nombre')?.valid && inventoryForm.get('nombre')?.touched">
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Stock Total</label>
-                <input type="number" formControlName="stock_total" min="0">
+                <label for="stock_total">Stock Total</label>
+                <input id="stock_total" type="number" formControlName="stock_total" min="0">
               </div>
               <div class="form-group">
-                <label>Stock Disponible</label>
-                <input type="number" formControlName="stock_disponible" min="0">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>En Reparación</label>
-                <input type="number" formControlName="stock_reparacion" min="0">
-              </div>
-              <div class="form-group">
-                <label>Baja Definitiva</label>
-                <input type="number" formControlName="stock_baja" min="0">
+                <label for="stock_disponible">Stock Disponible</label>
+                <input id="stock_disponible" type="number" formControlName="stock_disponible" min="0">
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Stock Mínimo (Alerta)</label>
-                <input type="number" formControlName="stock_minimo" min="1">
+                <label for="stock_reparacion">En Reparación</label>
+                <input id="stock_reparacion" type="number" formControlName="stock_reparacion" min="0">
               </div>
               <div class="form-group">
-                <label>Costo Unitario ($)</label>
-                <input type="number" formControlName="costo_unitario" min="0">
+                <label for="stock_baja">Baja Definitiva</label>
+                <input id="stock_baja" type="number" formControlName="stock_baja" min="0">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="stock_minimo">Stock Mínimo (Alerta)</label>
+                <input id="stock_minimo" type="number" formControlName="stock_minimo" min="1">
+              </div>
+              <div class="form-group">
+                <label for="costo_unitario">Costo Unitario ($)</label>
+                <input id="costo_unitario" type="number" formControlName="costo_unitario" min="0">
               </div>
             </div>
 
             <div class="form-group">
-              <label>Ubicación</label>
-              <input type="text" formControlName="ubicacion" placeholder="Ej: Taller 1">
+              <label for="ubicacion">Ubicación</label>
+              <input id="ubicacion" type="text" formControlName="ubicacion" placeholder="Ej: Taller 1">
             </div>
           </div>
         </form>
@@ -377,47 +377,12 @@
       <div class="modal-content">
         <div class="modal-header">
           <h2>Historial de Incidencias</h2>
-          <button class="btn-close" (click)="closeIncidenciasModal()">
+          <button class="btn-close" aria-label="Cerrar modal de incidencias" (click)="closeIncidenciasModal()">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
         <div class="modal-subheader">
-          <p><strong>{{ selectedItem.codigo }}</strong> — {{ selectedItem.producto }}</p>
-          <p>Stock Total: {{ selectedItem.stock_total }} | Disponible: {{ selectedItem.stock_disponible }} | Reparación: {{ selectedItem.stock_reparacion }} | Baja: {{ selectedItem.stock_baja }}</p>
-        </div>
-        <div class="incidencias-list">
-          @for (inc of selectedItem.incidencias; track inc.fecha) {
-            <div class="incidencia-item" [class.tipo-reparacion]="inc.tipo === 'Reparación'" [class.tipo-baja]="inc.tipo === 'Baja'">
-              <div class="inc-header">
-                <span class="inc-tipo">{{ inc.tipo }}</span>
-                <span class="inc-cantidad">{{ inc.cantidad }} unidad(es)</span>
-                <span class="inc-fecha">{{ inc.fecha }}</span>
-              </div>
-              <p class="inc-detalle">{{ inc.detalle }}</p>
-            </div>
-          }
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" (click)="closeIncidenciasModal()">Cerrar</button>
-        </div>
-      </div>
-    </div>
-  }
-
-  <!-- ============================================== -->
-  <!-- MODAL DE INCIDENCIAS                           -->
-  <!-- ============================================== -->
-  @if (showIncidenciasModal && selectedItem) {
-    <div class="modal-overlay">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Historial de Incidencias</h2>
-          <button class="btn-close" (click)="closeIncidenciasModal()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <div class="modal-subheader">
-          <p><strong>{{ selectedItem.codigo }}</strong> — {{ selectedItem.producto }}</p>
+          <p><strong>{{ selectedItem.codigo }}</strong> — {{ selectedItem.nombre }}</p>
           <p>Stock Total: {{ selectedItem.stock_total }} | Disponible: {{ selectedItem.stock_disponible }} | Reparación: {{ selectedItem.stock_reparacion }} | Baja: {{ selectedItem.stock_baja }}</p>
         </div>
         <div class="incidencias-list">
