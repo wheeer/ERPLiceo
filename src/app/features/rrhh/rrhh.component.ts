@@ -350,7 +350,7 @@ export class RrhhComponent implements OnInit {
     this.asistenciaMensual.forEach(dia => {
       const partesFecha = dia.fecha.split('-');
       const numeroDia = parseInt(partesFecha[2], 10);
-      
+
       const fechaObj = new Date(this.anioSeleccionado, this.mesSeleccionado - 1, numeroDia);
       const esFinde = fechaObj.getDay() === 0 || fechaObj.getDay() === 6;
 
