@@ -54,8 +54,8 @@ def asistencia_mensual(request):
 def obtener_asistencia_mensual(request, mes, anio):
     try:
         mes, anio = int(mes), int(anio)
-        # El RUT ahora se lee de los parámetros de consulta (Query Params)
-        empleado_rut = request.GET.get('rut')
+        # El ID/RUT ahora se lee de los parámetros de consulta (Query Params)
+        empleado_id = request.GET.get('empleadoId', request.GET.get('rut'))
         
         # 1. Obtenemos los empleados activos para llenar el Select del FrontEnd
         empleados_activos = list(col_empleados.find(
@@ -67,13 +67,19 @@ def obtener_asistencia_mensual(request, mes, anio):
         asistencia = []
         
         # 2. Si se mandó un empleado, buscamos sus registros exactos
-        if empleado_rut:
+        if empleado_id:
             primer_dia = datetime(anio, mes, 1)
             ultimo_dia = datetime(anio, mes, num_dias, 23, 59, 59)
             
+            filtros = [
+                {"empleado_rut": empleado_id},  # ← Coincide con el campo del seed
+                {"empleado_id": empleado_id},
+                {"rut": empleado_id}
+            ]
+            
             registros = list(col_asistencia.find(
                 {
-                    "empleado_rut": empleado_rut, 
+                    "$or": filtros, 
                     "fecha": {"$gte": primer_dia, "$lte": ultimo_dia}
                 },
                 {"_id": 0, "fecha": 1, "estado": 1}

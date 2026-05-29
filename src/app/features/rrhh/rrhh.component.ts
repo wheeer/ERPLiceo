@@ -284,7 +284,7 @@ export class RrhhComponent implements OnInit {
 
     // Si hay un empleado seleccionado, se pasa como query param
     if (this.empleadoSeleccionado) {
-      url += `?rut=${this.empleadoSeleccionado}`;
+      url += `?empleadoId=${this.empleadoSeleccionado}`;
     }
 
     this.http.get<{ empleados: EmpleadoCalendario[], asistencia: AsistenciaDia[] }>(url).subscribe({
