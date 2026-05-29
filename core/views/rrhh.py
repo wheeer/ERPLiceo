@@ -1,20 +1,21 @@
-from django.http import JsonResponse
-from core.db_connection import db # Esto asume que la conexión a Mongo se exporta así desde db_connection.py
+import calendar
 from datetime import datetime
+from django.http import JsonResponse
+from core.db_connection import db, col_empleados, col_asistencia
+
+# ==========================================
+# CÓDIGO ORIGINAL (NO SE TOCÓ LA LÓGICA)
+# ==========================================
 
 def lista_empleados(request):
-    # 1. Seleccionamos la colección de empleados
     coleccion_empleados = db['empleados']
     
-    # 2. Preparamos el filtro por si el frontend pide solo los activos (?activo=true)
     filtro = {}
     if request.GET.get('activo') == 'true':
         filtro['estado'] = 'activo'
 
-    # 3. Buscamos en la base de datos
     empleados_db = coleccion_empleados.find(filtro)
     
-    # 4. Armamos la lista con los datos exactos que pide el frontend
     datos_formateados = []
     for emp in empleados_db:
         datos_formateados.append({
@@ -30,7 +31,6 @@ def lista_empleados(request):
             'config_remuneracion': emp.get('config_remuneracion', {})
         })
 
-    # 5. Devolvemos los datos en formato JSON
     return JsonResponse(datos_formateados, safe=False)
 
 def asistencia_mensual(request):
@@ -51,3 +51,63 @@ def asistencia_mensual(request):
         })
         
     return JsonResponse(datos_formateados, safe=False)
+def obtener_asistencia_mensual(request, mes, anio):
+    try:
+        mes, anio = int(mes), int(anio)
+        # El ID/RUT ahora se lee de los parámetros de consulta (Query Params)
+        empleado_id = request.GET.get('empleadoId', request.GET.get('rut'))
+        
+        # 1. Obtenemos los empleados activos para llenar el Select del FrontEnd
+        empleados_activos = list(col_empleados.find(
+            {"estado": "activo"}, 
+            {"_id": 0, "rut": 1, "nombre_completo": 1}
+        ))
+        
+        _, num_dias = calendar.monthrange(anio, mes)
+        asistencia = []
+        
+        # 2. Si se mandó un empleado, buscamos sus registros exactos
+        if empleado_id:
+            primer_dia = datetime(anio, mes, 1)
+            ultimo_dia = datetime(anio, mes, num_dias, 23, 59, 59)
+            
+            filtros = [
+                {"empleado_rut": empleado_id},  # ← Coincide con el campo del seed
+                {"empleado_id": empleado_id},
+                {"rut": empleado_id}
+            ]
+            
+            registros = list(col_asistencia.find(
+                {
+                    "$or": filtros, 
+                    "fecha": {"$gte": primer_dia, "$lte": ultimo_dia}
+                },
+                {"_id": 0, "fecha": 1, "estado": 1}
+            ))
+            
+            mapa_asistencia = {reg["fecha"].strftime("%Y-%m-%d"): reg.get("estado") for reg in registros}
+            
+            asistencia = [
+                {
+                    "fecha": f"{anio}-{mes:02d}-{dia:02d}",
+                    "estado": mapa_asistencia.get(f"{anio}-{mes:02d}-{dia:02d}", "Sin registro")
+                }
+                for dia in range(1, num_dias + 1)
+            ]
+        else:
+            # 3. Si no hay empleado, retornamos los días en blanco
+            asistencia = [
+                {
+                    "fecha": f"{anio}-{mes:02d}-{dia:02d}",
+                    "estado": "Sin registro"
+                }
+                for dia in range(1, num_dias + 1)
+            ]
+            
+        return JsonResponse({
+            "empleados": empleados_activos,
+            "asistencia": asistencia
+        }, status=200)
+        
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

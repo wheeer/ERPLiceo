@@ -23,4 +23,5 @@ urlpatterns = [
 
     # Recursos Humanos
     path('empleados', views.lista_empleados, name='api_empleados'),
+    path('asistencia/<int:mes>/<int:anio>/', views.obtener_asistencia_mensual, name='obtener_asistencia_mensual'),
 ]
