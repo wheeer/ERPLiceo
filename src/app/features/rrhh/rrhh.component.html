@@ -313,33 +313,7 @@
             </div>
           </div>
 
-          <!-- CALENDARIO DE ASISTENCIA INDIVIDUAL -->
-          <div class="calendar-wrapper" style="margin-top: 2rem;">
-            <div class="calendar-top">
-              <h3 class="calendar-month">Abril 2026 - Asistencia de {{ selectedEmployee.nombre }}</h3>
-              <div class="calendar-legend">
-                <span class="legend-item"><span class="dot present"></span> Presente</span>
-                <span class="legend-item"><span class="dot absent"></span> Ausente</span>
-                <span class="legend-item"><span class="dot leave"></span> Licencia</span>
-              </div>
-            </div>
-            
-            <div class="calendar-grid">
-              <div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div><div class="cal-day-header">Mié</div>
-              <div class="cal-day-header">Jue</div><div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div><div class="cal-day-header">Dom</div>
-              
-              <div class="cal-day empty"></div>
-              <div class="cal-day empty"></div>
-              
-              @for (day of daysInMonth; track day) {
-                <div class="cal-day" [class]="'cal-status-' + getAttendanceStatus(selectedEmployee.id, day)">
-                  <span class="day-number">{{ day }}</span>
-                  @if (getAttendanceStatus(selectedEmployee.id, day) === 'absent') { <span class="day-tag tag-absent">Falta</span> }
-                  @if (getAttendanceStatus(selectedEmployee.id, day) === 'leave') { <span class="day-tag tag-leave">Licencia</span> }
-                </div>
-              }
-            </div>
-          </div>
+
         </div>
       }
     </div>

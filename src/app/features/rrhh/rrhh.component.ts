@@ -319,6 +319,9 @@ export class RrhhComponent implements OnInit {
     this.asistenciaMensual.forEach(dia => {
       const estado = dia.estado ? dia.estado.toLowerCase() : '';
 
+      // Ignorar fines de semana y días sin registro
+      if (!estado || estado === 'sin registro' || estado === 'finde') return;
+
       if (estado.includes('presente')) {
         this.totalPresentes++;
       } else if (estado.includes('ausente')) {
@@ -405,18 +408,7 @@ export class RrhhComponent implements OnInit {
     return 'ok';
   }
 
-  daysInMonth = Array.from({ length: 30 }, (_, i) => i + 1);
 
-  getAttendanceStatus(employeeId: number, day: number): 'present' | 'absent' | 'leave' | 'weekend' {
-    const weekends = [4, 5, 11, 12, 18, 19, 25, 26];
-    if (weekends.includes(day)) return 'weekend';
-    if (employeeId === 4 && day >= 10) return 'leave';
-    const absences = employeeId % 2 === 0 ? [3, 14] : [22];
-    if (absences.includes(day)) return 'absent';
-    const leaves = employeeId % 3 === 0 ? [8, 9, 10] : [];
-    if (leaves.includes(day)) return 'leave';
-    return 'present';
-  }
 
   getStatusColor(status: Employee['estado']): string {
     const colors: Record<Employee['estado'], string> = {
