@@ -21,6 +21,9 @@
         <button class="tab-btn" [class.active]="activeTab === 'horasExtra'" (click)="changeTab('horasExtra')">
           Horas Extra
         </button>
+        <button class="tab-btn" [class.active]="activeTab === 'calendario'" (click)="changeTab('calendario')">
+          Calendario Mensual
+        </button>
         @if (activeTab === 'ficha' && selectedEmployee) {
           <button class="tab-btn active">
             Ficha: {{ selectedEmployee.nombre.split(' ')[0] }}
@@ -465,6 +468,83 @@
         </div>
       }
     }
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 6: CALENDARIO DE ASISTENCIA (Issue #21)    -->
+  <!-- ============================================== -->
+  @if (activeTab === 'calendario') {
+    <div class="calendar-wrapper" style="margin-top: 1rem;">
+      <div class="calendar-top">
+        <h3 class="calendar-month">Asistencia Mensual</h3>
+        
+        <div class="calendar-filters">
+          <select [(ngModel)]="mesSeleccionado" (change)="obtenerAsistencia()" class="search-input" style="min-width: 120px;">
+            @for (mes of meses; track mes.value) {
+              <option [value]="mes.value">{{ mes.nombre }}</option>
+            }
+          </select>
+
+          <select [(ngModel)]="anioSeleccionado" (change)="obtenerAsistencia()" class="search-input" style="min-width: 100px;">
+            @for (anio of anios; track anio) {
+              <option [value]="anio">{{ anio }}</option>
+            }
+          </select>
+
+          <select [(ngModel)]="empleadoSeleccionado" (change)="obtenerAsistencia()" class="search-input">
+            <option value="" disabled selected>Seleccione un empleado...</option>
+            @for (emp of empleadosCalendario; track emp.rut) {
+              <option [value]="emp.rut">{{ emp.nombre_completo }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="calendar-legend">
+          <span class="legend-item"><span class="dot present"></span> Presente</span>
+          <span class="legend-item"><span class="dot absent"></span> Ausente</span>
+          <span class="legend-item" style="color: #eab308;"><span class="dot" style="background: #eab308;"></span> Tardanza</span>
+          <span class="legend-item"><span class="dot leave"></span> Licencia</span>
+        </div>
+      </div>
+      
+      <div class="calendar-grid">
+        <div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div><div class="cal-day-header">Mié</div>
+        <div class="cal-day-header">Jue</div><div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div><div class="cal-day-header">Dom</div>
+        
+        @for (dia of diasCalendario; track dia.numero || $index) {
+          @if (dia.vacio) {
+            <div class="cal-day empty"></div>
+          } @else {
+            <div class="cal-day" [ngClass]="{
+              'cal-status-present': dia.estado === 'Presente',
+              'cal-status-absent': dia.estado === 'Ausente Injustificado' || dia.estado === 'Ausente',
+              'cal-status-warning': dia.estado === 'Atraso' || dia.estado === 'Tardanza',
+              'cal-status-leave': dia.estado === 'Licencia Médica' || dia.estado === 'Licencia',
+              'cal-status-weekend': dia.estado === 'Finde'
+            }">
+              <span class="day-number">{{ dia.numero }}</span>
+              @if (dia.estado !== 'Finde' && dia.estado !== 'Sin registro' && dia.estado !== 'Presente') {
+                <span class="day-tag" [ngClass]="{
+                  'tag-absent': dia.estado === 'Ausente Injustificado' || dia.estado === 'Ausente',
+                  'tag-warning': dia.estado === 'Atraso' || dia.estado === 'Tardanza',
+                  'tag-leave': dia.estado === 'Licencia Médica' || dia.estado === 'Licencia'
+                }">{{ dia.estado }}</span>
+              }
+            </div>
+          }
+        }
+      </div>
+
+      <div class="calendar-summary">
+        <h4>Resumen Mensual</h4>
+        <div class="summary-stats">
+          <div class="stat-item"><span class="stat-number text-success">{{ totalPresentes }}</span> Presentes</div>
+          <div class="stat-item"><span class="stat-number text-danger">{{ totalAusentes }}</span> Ausentes</div>
+          <div class="stat-item"><span class="stat-number text-warning">{{ totalTardanzas }}</span> Tardanzas</div>
+          <div class="stat-item"><span class="stat-number text-info">{{ totalLicencias }}</span> Licencias</div>
+        </div>
+      </div>
+    </div>
   }
 
   } <!-- FIN de !viewingForm -->
