@@ -101,7 +101,7 @@
 }
 .dot.present { background: #22c55e; }
 .dot.absent { background: #ef4444; }
-.dot.leave { background: #f59e0b; }
+.dot.leave { background: #3b82f6; }
 
 .calendar-grid {
   display: grid;
@@ -146,7 +146,7 @@
 
 .cal-status-present { border-left: 3px solid #22c55e; }
 .cal-status-absent { border-left: 3px solid #ef4444; background: rgba(239, 68, 68, 0.05); }
-.cal-status-leave { border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.05); }
+.cal-status-leave { border-left: 3px solid #3b82f6; background: rgba(59, 130, 246, 0.05); }
 .cal-status-weekend { opacity: 0.5; background: rgba(100, 116, 139, 0.05); }
 
 .day-tag {
@@ -158,7 +158,7 @@
   align-self: flex-start;
 }
 .tag-absent { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-.tag-leave { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.tag-leave { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
 
 /* TABLE WRAPPER */
 .table-wrapper {
@@ -750,3 +750,56 @@
     font-size: 2rem;
   }
 }
+
+/* ============================================================
+   ESTILOS ESPECÍFICOS PARA EL CALENDARIO MENSUAL
+   ============================================================ */
+.calendar-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cal-status-warning { border-left: 3px solid #eab308; background: rgba(234, 179, 8, 0.05); }
+.tag-warning { background: rgba(234, 179, 8, 0.1); color: #eab308; }
+
+.calendar-summary {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.calendar-summary h4 {
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.summary-stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255,255,255,0.03);
+  padding: 1rem;
+  border-radius: 8px;
+  flex: 1;
+  min-width: 100px;
+  border: 1px solid var(--border-color);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.text-success { color: #22c55e; }
+.text-danger { color: #ef4444; }
+.text-warning { color: #eab308; }
+.text-info { color: #3b82f6; }

@@ -1,3 +1,4 @@
+
 import json
 from datetime import datetime
 from django.http import JsonResponse
@@ -166,15 +167,68 @@ def asistencia_registro(request):
 def asistencia_mensual(request, mes, anio):
     if request.method == 'GET':
         try:
+            mes, anio = int(mes), int(anio)
+            empleado_id = request.GET.get('empleadoId', request.GET.get('rut'))
+            
+            # 1. Obtenemos los empleados activos para llenar el Select del FrontEnd
+            empleados_activos = list(col_empleados.find(
+                {
+                    "$and": [
+                        {"activo": {"$ne": False}},
+                        {"estado": {"$ne": "inactivo"}}
+                    ]
+                }, 
+                {"_id": 0, "rut": 1, "nombre_completo": 1}
+            ))
+            
+            import calendar
+            _, num_dias = calendar.monthrange(anio, mes)
             mes_str = str(mes).zfill(2)
             prefijo_fecha = f"{anio}-{mes_str}"
             
-            asistencias = list(col_asistencia.find({"fecha": {"$regex": f"^{prefijo_fecha}"}}))
+            asistencia = []
             
-            for asis in asistencias:
-                asis['_id'] = str(asis['_id'])
+            if empleado_id:
+                filtros = [
+                    {"empleado_rut": empleado_id},
+                    {"empleado_id": empleado_id},
+                    {"rut": empleado_id}
+                ]
                 
-            return JsonResponse({"success": True, "data": asistencias, "message": "Asistencia mensual obtenida"}, status=200)
+                registros = list(col_asistencia.find(
+                    {
+                        "$or": filtros, 
+                        "fecha": {"$regex": f"^{prefijo_fecha}"}
+                    },
+                    {"_id": 0, "fecha": 1, "estado": 1, "horas_extra": 1}
+                ))
+                
+                mapa_asistencia = {reg["fecha"]: reg.get("estado") for reg in registros}
+                
+                asistencia = [
+                    {
+                        "fecha": f"{anio}-{mes:02d}-{dia:02d}",
+                        "estado": mapa_asistencia.get(f"{anio}-{mes:02d}-{dia:02d}", "Sin registro")
+                    }
+                    for dia in range(1, num_dias + 1)
+                ]
+            else:
+                asistencia = [
+                    {
+                        "fecha": f"{anio}-{mes:02d}-{dia:02d}",
+                        "estado": "Sin registro"
+                    }
+                    for dia in range(1, num_dias + 1)
+                ]
+                
+            return JsonResponse({
+                "success": True, 
+                "data": {
+                    "empleados": empleados_activos,
+                    "asistencia": asistencia
+                }, 
+                "message": "Asistencia mensual obtenida"
+            }, status=200)
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e), "data": []}, status=500)
     else:

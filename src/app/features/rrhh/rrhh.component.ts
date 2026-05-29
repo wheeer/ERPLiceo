@@ -1,11 +1,15 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute } from '@angular/router';
-import { RrhhService } from './rrhh.service'; // <-- IMPORTANTE: Importamos el nuevo servicio
+import { RrhhService } from './rrhh.service';
 
-interface Employee {
+// ==========================================
+// INTERFACES ANTIGUAS
+// ==========================================
+export interface Employee {
   id: number;
   rut: string;
   nombre: string;
@@ -39,45 +43,80 @@ export interface RegistroHorasExtra {
   autorizadoPor: string;
 }
 
+export interface AsistenciaEmpleado {
+  id: number;
+  rut: string;
+  nombre: string;
+  cargo: string;
+  estado: string;
+  entrada?: string;
+  salida?: string;
+  diasVacaciones: number;
+  inasistenciasInjustificadas: number;
+}
+
+// ==========================================
+// NUEVAS INTERFACES (Issue #21)
+// ==========================================
+export interface EmpleadoCalendario {
+  rut: string;
+  nombre_completo?: string;
+}
+
+export interface AsistenciaDia {
+  fecha: string;
+  estado: string;
+}
+
+export interface DiaCalendario {
+  vacio: boolean;
+  numero?: number;
+  fechaCompleta?: string;
+  estado?: string;
+}
+
+export type TabType = 'general' | 'gestion' | 'ficha' | 'asistencia' | 'horasExtra' | 'calendario';
+
 @Component({
   selector: 'app-rrhh',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './rrhh.component.html',
   styleUrls: ['./rrhh.component.css']
 })
 export class RrhhComponent implements OnInit {
 
-  // Dependencias
+  // ==========================================
+  // DEPENDENCIAS (Unificadas al estilo moderno)
+  // ==========================================
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
-  private rrhhService = inject(RrhhService); // <-- Inyectamos el servicio
+  private rrhhService = inject(RrhhService);
+  private http = inject(HttpClient);
 
-  // Tabs
-  activeTab: 'general' | 'gestion' | 'ficha' | 'asistencia' | 'horasExtra' = 'general';
+  // ==========================================
+  // ESTADO ANTIGUO (CRUD, Tabs, Horas Extra)
+  // ==========================================
+  activeTab: TabType = 'general';
   isLoading = true;
-
-  // Estado CRUD
   viewingForm = false;
   isEditing = false;
   selectedEmployee: Employee | null = null;
   employeeForm: FormGroup;
   isSaving = false;
-  mostrarSoloActivos: boolean = false; // <-- Nuevo estado para el filtro
+  mostrarSoloActivos: boolean = false;
 
-  // Estado Asistencia Diaria
   fechaHoy: Date = new Date();
   showAsistenciaModal = false;
-  selectedAsistencia: any = null;
+  selectedAsistencia: AsistenciaEmpleado | null = null;
   excepcionForm: FormGroup;
 
-  // Estado Horas Extra
   horasExtraForm: FormGroup;
   historialHorasExtra: RegistroHorasExtra[] = [];
 
-  asistenciaList: any[] = [
+  asistenciaList: AsistenciaEmpleado[] = [
     { id: 1, rut: '11111111-1', nombre: 'Walter Hollub', cargo: 'Administrador del Sistema', estado: 'Presente', entrada: '08:00', salida: '17:00', diasVacaciones: 15, inasistenciasInjustificadas: 0 },
     { id: 2, rut: '22222222-2', nombre: 'Jordan Acevedo', cargo: 'Jefe de Recursos Humanos', estado: 'Presente', entrada: '08:00', salida: '17:00', diasVacaciones: 12, inasistenciasInjustificadas: 2 },
     { id: 3, rut: '33333333-3', nombre: 'Jasna Ramírez', cargo: 'Encargada de Remuneraciones', estado: 'Presente', entrada: '08:00', salida: '17:00', diasVacaciones: 15, inasistenciasInjustificadas: 0 },
@@ -86,37 +125,38 @@ export class RrhhComponent implements OnInit {
     { id: 6, rut: '66666666-6', nombre: 'Ana Tijoux Merino', cargo: 'Psicóloga Convivencia Escolar', estado: 'Presente', entrada: '08:00', salida: '17:00', diasVacaciones: 10, inasistenciasInjustificadas: 1 }
   ];
 
-  getRiskLevel(inasistencias: number): 'ok' | 'warning' | 'danger' {
-    if (inasistencias >= 3) return 'danger';
-    if (inasistencias >= 1) return 'warning';
-    return 'ok';
-  }
 
-  // Configuración base del calendario de asistencia (Abril 2026)
-  daysInMonth = Array.from({ length: 30 }, (_, i) => i + 1);
-
-  getAttendanceStatus(employeeId: number, day: number): 'present' | 'absent' | 'leave' | 'weekend' {
-    const weekends = [4, 5, 11, 12, 18, 19, 25, 26];
-    if (weekends.includes(day)) return 'weekend';
-
-    if (employeeId === 4 && day >= 10) return 'leave';
-
-    const absences = employeeId % 2 === 0 ? [3, 14] : [22];
-    if (absences.includes(day)) return 'absent';
-
-    const leaves = employeeId % 3 === 0 ? [8, 9, 10] : [];
-    if (leaves.includes(day)) return 'leave';
-
-    return 'present';
-  }
-
-  // El arreglo se inicializa vacío, se llenará con Mongo
   employees: Employee[] = [];
   filteredEmployees: Employee[] = [];
-  filteredAsistenciaList: any[] = [];
+  filteredAsistenciaList: AsistenciaEmpleado[] = [];
 
   // ==========================================
-  // PAGINACIÓN
+  // ESTADO NUEVO (Issue #21 - Calendario)
+  // ==========================================
+  mesSeleccionado: number;
+  anioSeleccionado: number;
+  empleadoSeleccionado: string = '';
+  empleadosCalendario: EmpleadoCalendario[] = [];
+  asistenciaMensual: AsistenciaDia[] = [];
+  diasCalendario: DiaCalendario[] = [];
+
+  totalPresentes: number = 0;
+  totalAusentes: number = 0;
+  totalTardanzas: number = 0;
+  totalLicencias: number = 0;
+
+  meses = [
+    { value: 1, nombre: 'Enero' }, { value: 2, nombre: 'Febrero' },
+    { value: 3, nombre: 'Marzo' }, { value: 4, nombre: 'Abril' },
+    { value: 5, nombre: 'Mayo' }, { value: 6, nombre: 'Junio' },
+    { value: 7, nombre: 'Julio' }, { value: 8, nombre: 'Agosto' },
+    { value: 9, nombre: 'Septiembre' }, { value: 10, nombre: 'Octubre' },
+    { value: 11, nombre: 'Noviembre' }, { value: 12, nombre: 'Diciembre' }
+  ];
+  anios = [2024, 2025, 2026, 2027];
+
+  // ==========================================
+  // PAGINACIÓN (Antiguo)
   // ==========================================
   paginaActual = 1;
   itemsPorPagina = 20;
@@ -137,7 +177,7 @@ export class RrhhComponent implements OnInit {
     return `${inicio}-${fin} de ${this.filteredEmployees.length}`;
   }
 
-  get asistenciaPaginada(): any[] {
+  get asistenciaPaginada(): AsistenciaEmpleado[] {
     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
     return this.filteredAsistenciaList.slice(inicio, inicio + this.itemsPorPagina);
   }
@@ -166,6 +206,9 @@ export class RrhhComponent implements OnInit {
     this.paginaActual = 1;
   }
 
+  // ==========================================
+  // CONSTRUCTOR
+  // ==========================================
   constructor() {
     this.employeeForm = this.fb.group({
       id: [null],
@@ -197,24 +240,31 @@ export class RrhhComponent implements OnInit {
       horas: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
       autorizadoPor: ['', Validators.required]
     });
+
+    const hoy = new Date();
+    this.mesSeleccionado = hoy.getMonth() + 1;
+    this.anioSeleccionado = hoy.getFullYear();
   }
 
+  // ==========================================
+  // ON INIT
+  // ==========================================
   ngOnInit() {
-    // <-- Llamada a los datos reales al iniciar
     this.cargarDatosEmpleados();
-
     this.filteredAsistenciaList = [...this.asistenciaList];
+
     this.route.queryParams.subscribe(params => {
       if (params['tab']) {
         const tab = params['tab'];
         if (['general', 'gestion', 'ficha', 'asistencia', 'horasExtra'].includes(tab)) {
-          this.activeTab = tab as any;
+          this.activeTab = tab as TabType;
         }
       }
     });
 
-    this.excepcionForm.get('horaEntradaReal')?.valueChanges.subscribe(hora => {
-      if (hora && this.excepcionForm.get('tipoExcepcion')?.value === 'atraso') {
+    this.excepcionForm.get(\'horaEntradaReal\')?.valueChanges.subscribe((hora: string | null) => {
+      const tipoExcepcionActual = this.excepcionForm.get(\'tipoExcepcion\')?.value || \'\';
+      if (hora && tipoExcepcionActual === \'atraso\') {
         const [h, m] = hora.split(':').map(Number);
         const minutosLlegada = (h * 60) + m;
         const minutosOficial = (8 * 60);
@@ -222,17 +272,104 @@ export class RrhhComponent implements OnInit {
         this.excepcionForm.get('minutosAtraso')?.setValue(dif > 0 ? dif : 0);
       }
     });
+
+    this.obtenerAsistencia();
   }
 
   // ==========================================
-  // Consumo de API MongoDB
+  // LÓGICA NUEVA: CALENDARIO (Issue #21)
+  // ==========================================
+
+  obtenerAsistencia(): void {
+    let url = `http://127.0.0.1:8000/api/asistencia/${this.mesSeleccionado}/${this.anioSeleccionado}/`;
+
+    if (this.empleadoSeleccionado) {
+      url += `?empleadoId=${this.empleadoSeleccionado}`;
+    }
+
+    this.http.get<{ success: boolean, data: {empleados: EmpleadoCalendario[], asistencia: AsistenciaDia[]}, message: string }>(url).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.empleadosCalendario = response.data.empleados || [];
+          this.asistenciaMensual = response.data.asistencia || [];
+
+          if (!this.empleadoSeleccionado && this.empleadosCalendario.length > 0) {
+            this.empleadoSeleccionado = this.empleadosCalendario[0].rut;
+            this.obtenerAsistencia();
+            return;
+          }
+
+          this.calcularTotales();
+          this.generarCalendario();
+          this.cdr.detectChanges();
+        }
+      },
+      error: (error: any) => {
+        console.error('Error al obtener la asistencia del calendario:', error);
+      }
+    });
+  }
+
+  calcularTotales(): void {
+    this.totalPresentes = 0;
+    this.totalAusentes = 0;
+    this.totalTardanzas = 0;
+    this.totalLicencias = 0;
+
+    this.asistenciaMensual.forEach(dia => {
+      const estado = dia.estado ? dia.estado.toLowerCase() : '';
+
+      if (!estado || estado === 'sin registro' || estado === 'finde') return;
+
+      if (estado.includes('presente')) {
+        this.totalPresentes++;
+      } else if (estado.includes('ausente')) {
+        this.totalAusentes++;
+      } else if (estado.includes('atraso') || estado.includes('tardanza')) {
+        this.totalTardanzas++;
+      } else if (estado.includes('licencia')) {
+        this.totalLicencias++;
+      }
+    });
+  }
+
+  generarCalendario(): void {
+    this.diasCalendario = [];
+    if (this.asistenciaMensual.length === 0) return;
+
+    const primerDiaFecha = new Date(this.anioSeleccionado, this.mesSeleccionado - 1, 1);
+    let diaSemana = primerDiaFecha.getDay();
+
+    diaSemana = diaSemana === 0 ? 6 : diaSemana - 1;
+
+    for (let i = 0; i < diaSemana; i++) {
+      this.diasCalendario.push({ vacio: true });
+    }
+
+    this.asistenciaMensual.forEach(dia => {
+      const partesFecha = dia.fecha.split('-');
+      const numeroDia = parseInt(partesFecha[2], 10);
+
+      const fechaObj = new Date(this.anioSeleccionado, this.mesSeleccionado - 1, numeroDia);
+      const esFinde = fechaObj.getDay() === 0 || fechaObj.getDay() === 6;
+
+      this.diasCalendario.push({
+        vacio: false,
+        numero: numeroDia,
+        fechaCompleta: dia.fecha,
+        estado: esFinde ? 'Finde' : dia.estado
+      });
+    });
+  }
+
+  // ==========================================
+  // LÓGICA ANTIGUA (CRUD y Tablas) MANTENIDA INTACTA
   // ==========================================
 
   cargarDatosEmpleados(): void {
     this.isLoading = true;
     this.rrhhService.obtenerEmpleados(this.mostrarSoloActivos).subscribe({
-      next: (datosReales) => {
-        // Mapeamos los datos de Mongo a la interfaz de Angular
+      next: (datosReales: any[]) => {
         this.employees = datosReales.map((emp: any) => ({
           id: emp._id,
           rut: emp.rut,
@@ -250,7 +387,7 @@ export class RrhhComponent implements OnInit {
         this.isLoading = false;
         this.cdr.detectChanges();
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error al cargar empleados desde Mongo:', error);
         this.toastService.show('Error al conectar con la base de datos', 'error');
         this.isLoading = false;
@@ -264,9 +401,12 @@ export class RrhhComponent implements OnInit {
     this.cargarDatosEmpleados();
   }
 
-  // ==========================================
-  // Resto de la lógica intacta...
-  // ==========================================
+  getRiskLevel(inasistencias: number): \'ok\' | \'warning\' | \'danger\' {
+    if (inasistencias >= 3) return \'danger\';
+    if (inasistencias >= 1) return \'warning\';
+    return \'ok\';
+  }
+
 
   getStatusColor(status: Employee['estado']): string {
     const colors: Record<Employee['estado'], string> = {
@@ -274,7 +414,7 @@ export class RrhhComponent implements OnInit {
       'inactivo': 'status-inactive',
       'licencia': 'status-leave'
     };
-    return colors[status];
+    return colors[status] || 'status-inactive';
   }
 
   getStatusLabel(status: Employee['estado']): string {
@@ -283,7 +423,7 @@ export class RrhhComponent implements OnInit {
       'inactivo': 'Inactivo',
       'licencia': 'En Licencia'
     };
-    return labels[status];
+    return labels[status] || 'Desconocido';
   }
 
   formatDate(date: Date): string {
@@ -294,7 +434,7 @@ export class RrhhComponent implements OnInit {
     });
   }
 
-  changeTab(tab: 'general' | 'gestion' | 'ficha' | 'asistencia' | 'horasExtra') {
+  changeTab(tab: TabType) {
     this.activeTab = tab;
     this.paginaActual = 1;
 
@@ -351,9 +491,9 @@ export class RrhhComponent implements OnInit {
         }
         this.toastService.show('Empleado actualizado correctamente', 'success');
       } else {
-        const newEmp = {
+        const newEmp: Employee = {
           ...this.employeeForm.value,
-          id: Math.max(...this.employees.map(e => e.id)) + 1
+          id: this.employees.length > 0 ? Math.max(...this.employees.map(e => e.id)) + 1 : 1
         };
         this.employees.push(newEmp);
         this.toastService.show('Empleado registrado correctamente', 'success');
@@ -436,7 +576,7 @@ export class RrhhComponent implements OnInit {
     this.toastService.show('Registro eliminado.', 'warning');
   }
 
-  openExcepcionModal(empleado: any) {
+  openExcepcionModal(empleado: AsistenciaEmpleado) {
     this.selectedAsistencia = empleado;
     this.excepcionForm.reset({
       tipoExcepcion: 'atraso',
@@ -472,7 +612,7 @@ export class RrhhComponent implements OnInit {
         'sin_goce': 'Permiso S/Goce'
       };
 
-      emp.estado = estadosMap[tipo];
+      emp.estado = estadosMap[tipo] || emp.estado;
 
       if (tipo === 'atraso') {
         emp.entrada = formValue.horaEntradaReal;
