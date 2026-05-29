@@ -11,4 +11,12 @@ from .inventario import (
     inventario_detalle,
     inventario_criticos
 )
-from .rrhh import lista_empleados
+from .rrhh import (
+    empleados_lista,
+    empleados_detalle,
+    asistencia_registro,
+    asistencia_mensual,
+    asistencia_resumen,
+    horas_extra_lista,
+    horas_extra_registro
+)
