@@ -490,4 +490,17 @@ export class InventarioComponent implements OnInit {
     this.showReparacionModal = false;
     this.pendingDiff = 0;
   }
+
+  // Método para ajustar stock disponible con botones en el formulario
+  adjustAvailableStock(amount: number) {
+    if (this.inventoryForm.disabled || this.isSaving) return;
+    
+    const current = this.inventoryForm.getRawValue().stock_disponible || 0;
+    const nuevoStock = Math.max(0, current + amount);
+    
+    if (nuevoStock !== current) {
+      // Al cambiar el valor, valueChanges se encargará de recalcular stock_total automáticamente
+      this.inventoryForm.patchValue({ stock_disponible: nuevoStock });
+    }
+  }
 }

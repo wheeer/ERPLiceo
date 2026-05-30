@@ -285,12 +285,23 @@
               <div class="form-group">
                 <label for="codigo">Código SKU</label>
                 <input id="codigo" type="text" formControlName="codigo" placeholder="Ej: PNT-001" 
+                  [readonly]="isEditing"
+                  [style.background-color]="isEditing ? 'rgba(0,0,0,0.2)' : ''"
+                  [style.color]="isEditing ? 'var(--text-primary)' : ''"
+                  [style.font-weight]="isEditing ? 'bold' : ''"
+                  [style.cursor]="isEditing ? 'not-allowed' : 'text'"
+                  [style.opacity]="isEditing ? '0.8' : '1'"
                   [class.error]="inventoryForm.get('codigo')?.invalid && inventoryForm.get('codigo')?.touched"
                   [class.valid]="inventoryForm.get('codigo')?.valid && inventoryForm.get('codigo')?.touched">
               </div>
               <div class="form-group">
                 <label for="categoria">Categoría</label>
                 <select id="categoria" formControlName="categoria"
+                  [style.pointer-events]="isEditing ? 'none' : 'auto'"
+                  [style.background-color]="isEditing ? 'rgba(0,0,0,0.2)' : ''"
+                  [style.color]="isEditing ? 'var(--text-primary)' : ''"
+                  [style.font-weight]="isEditing ? 'bold' : ''"
+                  [style.opacity]="isEditing ? '0.8' : '1'"
                   [class.error]="inventoryForm.get('categoria')?.invalid && inventoryForm.get('categoria')?.touched"
                   [class.valid]="inventoryForm.get('categoria')?.valid && inventoryForm.get('categoria')?.touched">
                   <option value="">Seleccione...</option>
@@ -314,11 +325,15 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="stock_total">Stock Total</label>
-                <input id="stock_total" type="number" formControlName="stock_total" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+                <input id="stock_total" type="number" formControlName="stock_total" readonly style="background-color: rgba(0,0,0,0.2); color: var(--text-primary); font-weight: bold; cursor: not-allowed; opacity: 0.8;">
               </div>
               <div class="form-group">
                 <label for="stock_disponible">Stock Disponible</label>
-                <input id="stock_disponible" type="number" formControlName="stock_disponible" min="0">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <button type="button" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #ef4444; width: 38px; height: 38px; border-radius: 6px; cursor: pointer; font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" (click)="adjustAvailableStock(-1)" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">-</button>
+                  <input id="stock_disponible" type="number" formControlName="stock_disponible" readonly style="background-color: rgba(0,0,0,0.2); color: var(--text-primary); font-weight: bold; cursor: not-allowed; text-align: center; flex: 1; margin: 0; opacity: 0.8;">
+                  <button type="button" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #10b981; width: 38px; height: 38px; border-radius: 6px; cursor: pointer; font-size: 1.2rem; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" (click)="adjustAvailableStock(1)" onmouseover="this.style.background='rgba(16, 185, 129, 0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">+</button>
+                </div>
               </div>
             </div>
 
