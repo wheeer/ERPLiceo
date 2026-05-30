@@ -46,6 +46,17 @@ export class InventarioComponent implements OnInit {
   isEditing = false;
   inventoryForm: FormGroup;
   isSaving = false;
+  private previousFormValues: any = null;
+  
+  // Modales Asíncronos
+  showBajaModal = false;
+  showReparacionModal = false;
+  showDeleteModal = false;
+  showSaveModal = false;
+  
+  pendingDiff = 0;
+  pendingDeleteId: string | null = null;
+  isModalUpdating = false;
   
   inventoryItems: InventoryItem[] = [];
   
@@ -122,15 +133,69 @@ export class InventarioComponent implements OnInit {
   }
 
   ngOnInit() {
-    // Auto-calcular el stock total basado en los sub-stocks (Prevención de Errores)
+    // Auto-calcular el stock total y gestionar lógica de procedencia (Prevención de Errores)
     this.inventoryForm.valueChanges.subscribe(values => {
-      const disp = values.stock_disponible || 0;
-      const rep = values.stock_reparacion || 0;
-      const baja = values.stock_baja || 0;
+      if (!this.previousFormValues || !this.showModal || this.isModalUpdating) return;
+
+      let disp = values.stock_disponible || 0;
+      let rep = values.stock_reparacion || 0;
+      let baja = values.stock_baja || 0;
+
+      const prevDisp = this.previousFormValues.stock_disponible || 0;
+      const prevRep = this.previousFormValues.stock_reparacion || 0;
+      const prevBaja = this.previousFormValues.stock_baja || 0;
+
+      let needsUpdate = false;
+
+      // 1. Si aumentó reparación (asumimos que viene de disponible)
+      if (rep > prevRep) {
+        const diff = rep - prevRep;
+        disp = Math.max(0, disp - diff);
+        needsUpdate = true;
+      }
+      // 2. Si bajó reparación (preguntar destino)
+      else if (rep < prevRep) {
+        this.pendingDiff = prevRep - rep;
+        this.showReparacionModal = true;
+        
+        // Revertir visualmente mientras el modal está abierto
+        this.isModalUpdating = true;
+        this.inventoryForm.patchValue({ stock_reparacion: prevRep }, { emitEvent: false });
+        this.isModalUpdating = false;
+        return;
+      }
+      // 3. Si aumentó baja (y no fue por el paso 2)
+      else if (baja > prevBaja && !needsUpdate) {
+        this.pendingDiff = baja - prevBaja;
+        this.showBajaModal = true;
+        
+        // Revertir visualmente mientras el modal está abierto
+        this.isModalUpdating = true;
+        this.inventoryForm.patchValue({ stock_baja: prevBaja }, { emitEvent: false });
+        this.isModalUpdating = false;
+        return;
+      }
+
       const total = disp + rep + baja;
-      
-      if (this.inventoryForm.get('stock_total')?.value !== total) {
-        this.inventoryForm.get('stock_total')?.setValue(total, { emitEvent: false });
+
+      // Actualizar variables de control primero para evitar recursividad
+      this.previousFormValues = {
+        ...values,
+        stock_disponible: disp,
+        stock_reparacion: rep,
+        stock_baja: baja,
+        stock_total: total
+      };
+
+      if (needsUpdate || values.stock_total !== total || values.stock_disponible !== disp || values.stock_baja !== baja || values.stock_reparacion !== rep) {
+        this.isModalUpdating = true;
+        this.inventoryForm.patchValue({
+          stock_disponible: disp,
+          stock_reparacion: rep,
+          stock_baja: baja,
+          stock_total: total
+        }, { emitEvent: false });
+        this.isModalUpdating = false;
       }
     });
 
@@ -219,24 +284,29 @@ export class InventarioComponent implements OnInit {
       stock_minimo: 5,
       costo_unitario: 0
     });
+    this.previousFormValues = this.inventoryForm.getRawValue();
     this.showModal = true;
   }
 
   openEditModal(item: InventoryItem) {
     this.isEditing = true;
     this.inventoryForm.patchValue(item);
+    this.previousFormValues = this.inventoryForm.getRawValue();
     this.showModal = true;
   }
 
   closeModal() {
     this.showModal = false;
+    this.previousFormValues = null;
   }
 
   saveItem() {
     if (this.inventoryForm.invalid) return;
-    
-    if (!confirm('¿Deseas guardar los cambios de este producto?')) return;
-    
+    this.showSaveModal = true;
+  }
+
+  executeSave() {
+    this.showSaveModal = false;
     this.isSaving = true;
     const formData = this.inventoryForm.value;
     
@@ -289,73 +359,135 @@ export class InventarioComponent implements OnInit {
     }
   }
 
-  deleteItem(id: string) {
-    if (confirm('¿Está seguro de eliminar este producto del inventario?')) {
-      const itemToDelete = this.inventoryItems.find(i => i.id === id);
-      if (itemToDelete) {
-        this.inventarioService.eliminarArticulo(itemToDelete.codigo).subscribe({
-          next: (response) => {
-            if (response.success) {
-              this.inventoryItems = this.inventoryItems.filter(i => i.id !== id);
-              this.filteredItems = [...this.inventoryItems];
-              this.toastService.show('Producto eliminado del inventario.', 'warning');
-              this.cdr.detectChanges();
-            }
-          },
-          error: (error) => {
-            console.error('Error eliminando:', error);
-            this.toastService.show('Error al eliminar producto', 'error');
-            this.cdr.detectChanges();
-          }
-        });
-      }
-    }
+  cancelSave() {
+    this.showSaveModal = false;
   }
 
-  ajustarStock(item: InventoryItem, cantidad: number, event: Event) {
-    const accion = cantidad > 0 ? 'sumar' : 'descontar';
-    const num = Math.abs(cantidad);
-    
-    if (!confirm(`¿Estás seguro de que deseas ${accion} ${num} unidad(es) al stock disponible de "${item.nombre}"?`)) {
-      return;
-    }
+  confirmDelete(id: string) {
+    this.pendingDeleteId = id;
+    this.showDeleteModal = true;
+  }
 
-    const nuevoStock = Math.max(0, item.stock_disponible + cantidad);
+  executeDelete() {
+    this.showDeleteModal = false;
+    if (!this.pendingDeleteId) return;
     
-    const itemActualizado = { ...item };
-    itemActualizado.stock_disponible = nuevoStock;
-    itemActualizado.stock_total = itemActualizado.stock_disponible + itemActualizado.stock_reparacion + itemActualizado.stock_baja;
-
-    this.inventarioService.actualizarArticulo(item.codigo, itemActualizado).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          item.stock_disponible = response.data.stock_disponible;
-          item.stock_total = response.data.stock_total;
-          
-          this.toastService.show(`Stock disponible actualizado: ${item.stock_disponible} unidades.`, 'info');
-          
-          const target = event.target as HTMLElement;
-          const tr = target.closest('tr');
-          
-          if (tr) {
-            const flashColor = cantidad > 0 
-              ? 'rgba(0, 217, 255, 0.25)' 
-              : 'rgba(239, 68, 68, 0.25)';
-              
-            tr.animate([
-              { backgroundColor: flashColor },
-              { backgroundColor: 'transparent' }
-            ], {
-              duration: 800,
-              easing: 'ease-out'
-            });
+    const id = this.pendingDeleteId;
+    const itemToDelete = this.inventoryItems.find(i => i.id === id);
+    if (itemToDelete) {
+      this.inventarioService.eliminarArticulo(itemToDelete.codigo).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.inventoryItems = this.inventoryItems.filter(i => i.id !== id);
+            this.filteredItems = [...this.inventoryItems];
+            this.toastService.show('Producto eliminado del inventario.', 'warning');
+            this.cdr.detectChanges();
           }
+        },
+        error: (error) => {
+          console.error('Error eliminando:', error);
+          this.toastService.show('Error al eliminar producto', 'error');
+          this.cdr.detectChanges();
         }
-      },
-      error: (error) => {
-        console.error('Error ajustando stock:', error);
-        this.toastService.show('Error al guardar el ajuste de stock', 'error');
-      }
-    });
+      });
+    }
+    this.pendingDeleteId = null;
+  }
+
+  cancelDelete() {
+    this.showDeleteModal = false;
+    this.pendingDeleteId = null;
+  }
+
+  // Lógica para aplicar los cambios del Modal Asíncrono de Baja
+  confirmarBaja(origen: 'disponible' | 'reparacion') {
+    this.showBajaModal = false;
+    if (this.pendingDiff <= 0) return;
+    
+    this.isModalUpdating = true;
+    
+    const currentValues = this.inventoryForm.getRawValue();
+    let disp = currentValues.stock_disponible;
+    let rep = currentValues.stock_reparacion;
+    let baja = currentValues.stock_baja;
+    
+    baja += this.pendingDiff;
+    
+    if (origen === 'reparacion') {
+      rep = Math.max(0, rep - this.pendingDiff);
+    } else {
+      disp = Math.max(0, disp - this.pendingDiff);
+    }
+    
+    const total = disp + rep + baja;
+    
+    this.previousFormValues = {
+      ...currentValues,
+      stock_disponible: disp,
+      stock_reparacion: rep,
+      stock_baja: baja,
+      stock_total: total
+    };
+    
+    this.inventoryForm.patchValue({
+      stock_disponible: disp,
+      stock_reparacion: rep,
+      stock_baja: baja,
+      stock_total: total
+    }, { emitEvent: false });
+    
+    this.isModalUpdating = false;
+    this.pendingDiff = 0;
+  }
+
+  cancelarBaja() {
+    this.showBajaModal = false;
+    this.pendingDiff = 0;
+  }
+
+  // Lógica para aplicar los cambios del Modal Asíncrono de Quitar Reparación
+  confirmarQuitarReparacion(destino: 'disponible' | 'baja') {
+    this.showReparacionModal = false;
+    if (this.pendingDiff <= 0) return;
+    
+    this.isModalUpdating = true;
+    
+    const currentValues = this.inventoryForm.getRawValue();
+    let disp = currentValues.stock_disponible;
+    let rep = currentValues.stock_reparacion;
+    let baja = currentValues.stock_baja;
+    
+    rep = Math.max(0, rep - this.pendingDiff);
+    
+    if (destino === 'baja') {
+      baja += this.pendingDiff;
+    } else {
+      disp += this.pendingDiff;
+    }
+    
+    const total = disp + rep + baja;
+    
+    this.previousFormValues = {
+      ...currentValues,
+      stock_disponible: disp,
+      stock_reparacion: rep,
+      stock_baja: baja,
+      stock_total: total
+    };
+    
+    this.inventoryForm.patchValue({
+      stock_disponible: disp,
+      stock_reparacion: rep,
+      stock_baja: baja,
+      stock_total: total
+    }, { emitEvent: false });
+    
+    this.isModalUpdating = false;
+    this.pendingDiff = 0;
+  }
+
+  cancelarQuitarReparacion() {
+    this.showReparacionModal = false;
+    this.pendingDiff = 0;
   }
 }

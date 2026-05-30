@@ -181,7 +181,7 @@
             <tr>
               <th>Código / Nombre</th>
               <th class="hide-mobile">Categoría</th>
-              <th class="center">Ajuste Disponible</th>
+              <th class="center">Stock Disponible</th>
               <th class="hide-mobile">Ubicación</th>
               <th class="center">Acciones</th>
             </tr>
@@ -207,7 +207,7 @@
               <tr>
                 <th>Código / Nombre</th>
                 <th class="hide-mobile">Categoría</th>
-                <th class="center">Ajuste Disponible</th>
+                <th class="center">Stock Disponible</th>
                 <th class="hide-mobile">Ubicación</th>
                 <th class="center">Acciones</th>
               </tr>
@@ -224,19 +224,15 @@
                   <td class="cell-categoria">
                     <span class="category-tag">{{ item.categoria }}</span>
                   </td>
-                  <td class="cell-stock-adjust">
-                    <div class="stock-adjust-controls">
-                      <button class="btn-adjust minus" (click)="ajustarStock(item, -1, $event)">-</button>
-                      <span class="current-stock" [class.alert]="item.stock_disponible <= item.stock_minimo">{{ item.stock_disponible }}</span>
-                      <button class="btn-adjust plus" (click)="ajustarStock(item, 1, $event)">+</button>
-                    </div>
+                  <td class="cell-stock-adjust center">
+                    <span class="current-stock" [class.alert]="item.stock_disponible <= item.stock_minimo">{{ item.stock_disponible }}</span>
                   </td>
                   <td class="cell-ubicacion hide-mobile">{{ item.ubicacion }}</td>
                   <td class="cell-actions center">
                     <button class="btn-action btn-edit" (click)="openEditModal(item)" title="Editar">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
-                    <button class="btn-action btn-delete" (click)="deleteItem(item.id)" title="Eliminar">
+                    <button class="btn-action btn-delete" (click)="confirmDelete(item.id)" title="Eliminar">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                   </td>
@@ -409,6 +405,114 @@
         </div>
         <div class="modal-footer">
           <button class="btn-secondary" (click)="closeIncidenciasModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- MODALES DE CONTROL ASÍNCRONO DE INVENTARIO     -->
+  <!-- ============================================== -->
+
+  <!-- MODAL ASÍNCRONO: BAJA DEFINITIVA -->
+  @if (showBajaModal) {
+    <div class="modal-overlay" style="z-index: 1001;">
+      <div class="modal-content small-modal" style="max-width: 400px;">
+        <div class="modal-header">
+          <h2>Origen de la Baja</h2>
+          <button class="btn-close" (click)="cancelarBaja()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Has dado de baja <strong>{{ pendingDiff }}</strong> unidad(es). ¿De dónde provenían?</p>
+          <div class="radio-group" style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+            <label class="radio-option" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px;">
+              <input type="radio" name="origenBaja" value="disponible" #origenDisp checked>
+              <span>De Stock Disponible</span>
+            </label>
+            <label class="radio-option" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px;">
+              <input type="radio" name="origenBaja" value="reparacion" #origenRep>
+              <span>De En Reparación</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="cancelarBaja()">Cancelar</button>
+          <button class="btn-primary" (click)="confirmarBaja(origenRep.checked ? 'reparacion' : 'disponible')">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL ASÍNCRONO: QUITAR DE REPARACIÓN -->
+  @if (showReparacionModal) {
+    <div class="modal-overlay" style="z-index: 1001;">
+      <div class="modal-content small-modal" style="max-width: 400px;">
+        <div class="modal-header">
+          <h2>Destino del Equipo</h2>
+          <button class="btn-close" (click)="cancelarQuitarReparacion()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Has quitado <strong>{{ pendingDiff }}</strong> unidad(es) de Reparación. ¿A dónde fueron?</p>
+          <div class="radio-group" style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+            <label class="radio-option" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px;">
+              <input type="radio" name="destinoReparacion" value="disponible" #destinoDisp checked>
+              <span>Quedaron Disponibles</span>
+            </label>
+            <label class="radio-option" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px;">
+              <input type="radio" name="destinoReparacion" value="baja" #destinoBaja>
+              <span>Fueron dadas de baja</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="cancelarQuitarReparacion()">Cancelar</button>
+          <button class="btn-primary" (click)="confirmarQuitarReparacion(destinoBaja.checked ? 'baja' : 'disponible')">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL CONFIRMAR ELIMINACIÓN -->
+  @if (showDeleteModal) {
+    <div class="modal-overlay" style="z-index: 1001;">
+      <div class="modal-content small-modal" style="max-width: 400px;">
+        <div class="modal-header">
+          <h2>Confirmar Eliminación</h2>
+          <button class="btn-close" (click)="cancelDelete()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>¿Está seguro de eliminar este producto del inventario de forma permanente?</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="cancelDelete()">Cancelar</button>
+          <button class="btn-primary" style="background-color: #ef4444; border-color: #ef4444;" (click)="executeDelete()">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL CONFIRMAR GUARDADO -->
+  @if (showSaveModal) {
+    <div class="modal-overlay" style="z-index: 1001;">
+      <div class="modal-content small-modal" style="max-width: 400px;">
+        <div class="modal-header">
+          <h2>Confirmar Cambios</h2>
+          <button class="btn-close" (click)="cancelSave()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>¿Deseas guardar los cambios de este producto en la base de datos?</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="cancelSave()">Cancelar</button>
+          <button class="btn-primary" (click)="executeSave()">Guardar</button>
         </div>
       </div>
     </div>

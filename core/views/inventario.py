@@ -121,7 +121,6 @@ def inventario_detalle(request, codigo):
             
             if stock_reparacion_new > stock_reparacion_old:
                 diff = stock_reparacion_new - stock_reparacion_old
-                stock_disponible_new = max(0, stock_disponible_new - diff)
                 incidencias.append({
                     "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "tipo": "Reparación",
@@ -131,7 +130,6 @@ def inventario_detalle(request, codigo):
 
             if stock_baja_new > stock_baja_old:
                 diff = stock_baja_new - stock_baja_old
-                stock_disponible_new = max(0, stock_disponible_new - diff)
                 incidencias.append({
                     "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "tipo": "Baja",
