@@ -223,64 +223,127 @@ export class InventarioComponent implements OnInit {
   saveItem() {
     if (this.inventoryForm.invalid) return;
     
-    this.isSaving = true;
+    if (!confirm('¿Deseas guardar los cambios de este producto?')) return;
     
-    setTimeout(() => {
-      if (this.isEditing) {
-        const index = this.inventoryItems.findIndex(i => i.id === this.inventoryForm.value.id);
-        if (index > -1) {
-          this.inventoryItems[index] = { ...this.inventoryItems[index], ...this.inventoryForm.value };
+    this.isSaving = true;
+    const formData = this.inventoryForm.value;
+    
+    if (this.isEditing) {
+      this.inventarioService.actualizarArticulo(formData.codigo, formData).subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            const index = this.inventoryItems.findIndex(i => i.id === formData.id);
+            if (index > -1) {
+              // Actualizar con datos del backend, asegurando el id
+              this.inventoryItems[index] = { ...this.inventoryItems[index], ...response.data, id: response.data._id || formData.id };
+            }
+            this.toastService.show('Producto actualizado correctamente', 'success');
+            this.isSaving = false;
+            this.closeModal();
+            this.filteredItems = [...this.inventoryItems];
+            this.cdr.detectChanges();
+          }
+        },
+        error: (error) => {
+          console.error('Error actualizando:', error);
+          this.toastService.show('Error al actualizar el producto', 'error');
+          this.isSaving = false;
+          this.cdr.detectChanges();
         }
-        this.toastService.show('Producto actualizado correctamente', 'success');
-      } else {
-        const newItem = {
-          ...this.inventoryForm.value,
-          id: String(Date.now()), // Temporary string ID until POST is connected
-          incidencias: []
-        };
-        this.inventoryItems.push(newItem);
-        this.toastService.show('Producto registrado correctamente', 'success');
-      }
-      
-      this.isSaving = false;
-      this.closeModal();
-      this.filteredItems = [...this.inventoryItems];
-      this.cdr.detectChanges();
-    }, 1500);
+      });
+    } else {
+      this.inventarioService.crearArticulo(formData).subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            const newItem = {
+              ...response.data,
+              id: response.data._id || response.data.id || String(Date.now())
+            };
+            this.inventoryItems.push(newItem);
+            this.toastService.show('Producto registrado correctamente', 'success');
+            this.isSaving = false;
+            this.closeModal();
+            this.filteredItems = [...this.inventoryItems];
+            this.cdr.detectChanges();
+          }
+        },
+        error: (error) => {
+          console.error('Error creando:', error);
+          this.toastService.show('Error al crear el producto', 'error');
+          this.isSaving = false;
+          this.cdr.detectChanges();
+        }
+      });
+    }
   }
 
   deleteItem(id: string) {
     if (confirm('¿Está seguro de eliminar este producto del inventario?')) {
-      this.inventoryItems = this.inventoryItems.filter(i => i.id !== id);
-      this.filteredItems = [...this.inventoryItems];
-      this.toastService.show('Producto eliminado del inventario.', 'warning');
+      const itemToDelete = this.inventoryItems.find(i => i.id === id);
+      if (itemToDelete) {
+        this.inventarioService.eliminarArticulo(itemToDelete.codigo).subscribe({
+          next: (response) => {
+            if (response.success) {
+              this.inventoryItems = this.inventoryItems.filter(i => i.id !== id);
+              this.filteredItems = [...this.inventoryItems];
+              this.toastService.show('Producto eliminado del inventario.', 'warning');
+              this.cdr.detectChanges();
+            }
+          },
+          error: (error) => {
+            console.error('Error eliminando:', error);
+            this.toastService.show('Error al eliminar producto', 'error');
+            this.cdr.detectChanges();
+          }
+        });
+      }
     }
   }
 
   ajustarStock(item: InventoryItem, cantidad: number, event: Event) {
-    const nuevoStock = Math.max(0, item.stock_disponible + cantidad);
-    item.stock_disponible = nuevoStock;
-    item.stock_total = item.stock_disponible + item.stock_reparacion + item.stock_baja;
+    const accion = cantidad > 0 ? 'sumar' : 'descontar';
+    const num = Math.abs(cantidad);
     
-    this.toastService.show(`Stock disponible actualizado: ${nuevoStock} unidades.`, 'info');
-    
-    // Feedback visual usando Web Animations API (100% confiable y sin conflictos con Angular)
-    const target = event.target as HTMLElement;
-    const tr = target.closest('tr');
-    
-    if (tr) {
-      // Color aurora cian/azul para sumar (+), color ámbar/rojo sutil para restar (-)
-      const flashColor = cantidad > 0 
-        ? 'rgba(0, 217, 255, 0.25)' 
-        : 'rgba(239, 68, 68, 0.25)';
-        
-      tr.animate([
-        { backgroundColor: flashColor },
-        { backgroundColor: 'transparent' }
-      ], {
-        duration: 800,
-        easing: 'ease-out'
-      });
+    if (!confirm(`¿Estás seguro de que deseas ${accion} ${num} unidad(es) al stock disponible de "${item.nombre}"?`)) {
+      return;
     }
+
+    const nuevoStock = Math.max(0, item.stock_disponible + cantidad);
+    
+    const itemActualizado = { ...item };
+    itemActualizado.stock_disponible = nuevoStock;
+    itemActualizado.stock_total = itemActualizado.stock_disponible + itemActualizado.stock_reparacion + itemActualizado.stock_baja;
+
+    this.inventarioService.actualizarArticulo(item.codigo, itemActualizado).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          item.stock_disponible = response.data.stock_disponible;
+          item.stock_total = response.data.stock_total;
+          
+          this.toastService.show(`Stock disponible actualizado: ${item.stock_disponible} unidades.`, 'info');
+          
+          const target = event.target as HTMLElement;
+          const tr = target.closest('tr');
+          
+          if (tr) {
+            const flashColor = cantidad > 0 
+              ? 'rgba(0, 217, 255, 0.25)' 
+              : 'rgba(239, 68, 68, 0.25)';
+              
+            tr.animate([
+              { backgroundColor: flashColor },
+              { backgroundColor: 'transparent' }
+            ], {
+              duration: 800,
+              easing: 'ease-out'
+            });
+          }
+        }
+      },
+      error: (error) => {
+        console.error('Error ajustando stock:', error);
+        this.toastService.show('Error al guardar el ajuste de stock', 'error');
+      }
+    });
   }
 }
