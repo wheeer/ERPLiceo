@@ -122,6 +122,18 @@ export class InventarioComponent implements OnInit {
   }
 
   ngOnInit() {
+    // Auto-calcular el stock total basado en los sub-stocks (Prevención de Errores)
+    this.inventoryForm.valueChanges.subscribe(values => {
+      const disp = values.stock_disponible || 0;
+      const rep = values.stock_reparacion || 0;
+      const baja = values.stock_baja || 0;
+      const total = disp + rep + baja;
+      
+      if (this.inventoryForm.get('stock_total')?.value !== total) {
+        this.inventoryForm.get('stock_total')?.setValue(total, { emitEvent: false });
+      }
+    });
+
     this.isLoading = true;
     this.inventarioService.getInventario().subscribe({
       next: (response) => {

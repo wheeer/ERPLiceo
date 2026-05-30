@@ -298,12 +298,12 @@
                   [class.error]="inventoryForm.get('categoria')?.invalid && inventoryForm.get('categoria')?.touched"
                   [class.valid]="inventoryForm.get('categoria')?.valid && inventoryForm.get('categoria')?.touched">
                   <option value="">Seleccione...</option>
-                  <option value="Hardware">Hardware</option>
-                  <option value="Componentes">Componentes</option>
-                  <option value="Perifericos">Periféricos</option>
-                  <option value="Cableria">Cablería</option>
+                  <option value="Electromecánica">Electromecánica</option>
+                  <option value="Informática">Informática</option>
+                  <option value="Papelería">Papelería</option>
                   <option value="Audiovisual">Audiovisual</option>
-                  <option value="Accesorios">Accesorios</option>
+                  <option value="Mobiliario">Mobiliario</option>
+                  <option value="Seguridad">Seguridad</option>
                 </select>
               </div>
             </div>
@@ -318,7 +318,7 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="stock_total">Stock Total</label>
-                <input id="stock_total" type="number" formControlName="stock_total" min="0">
+                <input id="stock_total" type="number" formControlName="stock_total" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
               </div>
               <div class="form-group">
                 <label for="stock_disponible">Stock Disponible</label>
@@ -350,7 +350,17 @@
 
             <div class="form-group">
               <label for="ubicacion">Ubicación</label>
-              <input id="ubicacion" type="text" formControlName="ubicacion" placeholder="Ej: Taller 1">
+              <select id="ubicacion" formControlName="ubicacion"
+                [class.error]="inventoryForm.get('ubicacion')?.invalid && inventoryForm.get('ubicacion')?.touched"
+                [class.valid]="inventoryForm.get('ubicacion')?.valid && inventoryForm.get('ubicacion')?.touched">
+                <option value="">Seleccione...</option>
+                <option value="Taller 1">Taller 1</option>
+                <option value="Laboratorio 1">Laboratorio 1</option>
+                <option value="Bodega Central">Bodega Central</option>
+                <option value="Sala Servidores">Sala Servidores</option>
+                <option value="Sala Profesores">Sala Profesores</option>
+                <option value="Bodegas Salas">Bodegas Salas</option>
+              </select>
             </div>
           </div>
         </form>
