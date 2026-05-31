@@ -21,16 +21,11 @@ urlpatterns = [
     path('inventario/criticos/', views.inventario_criticos, name='inventario_criticos'),
     path('inventario/<str:codigo>/', views.inventario_detalle, name='inventario_detalle'),
 
-    # Recursos Humanos (Rutas Originales)
-    path('empleados', views.lista_empleados, name='lista_empleados'),
-    path('asistencia/<int:mes>/<int:anio>/', views.obtener_asistencia_mensual, name='obtener_asistencia_mensual'),
-
-    # Recursos Humanos (Nuevos Endpoints DRF - Issue #17)
+        # Recursos Humanos (Nuevos Endpoints DRF - Issue #17)
     path('api/empleados/', views.api_empleados, name='api_empleados'),
     path('api/empleados/<str:rut>/', views.api_empleado_detalle, name='api_empleado_detalle'),
-    
+    path('api/asistencia/', views.api_asistencia, name='api_asistencia_post'),
     path('api/asistencia/<int:mes>/<int:anio>/', views.api_asistencia, name='api_asistencia'),
     path('api/asistencia/resumen/<int:mes>/<int:anio>/', views.api_asistencia_resumen, name='api_asistencia_resumen'),
-    
-    path('api/horas-extra/<int:mes>/<int:anio>/', views.api_horas_extra, name='api_horas_extra'),
-]
+    path('api/horas-extra/', views.api_horas_extra, name='api_horas_extra_post'),
+    path('api/horas-extra/<int:mes>/<int:anio>/', views.api_horas_extra, name='api_horas_extra'),]

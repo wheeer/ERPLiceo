@@ -148,7 +148,7 @@ def parse_request_body(request):
 def api_empleados(request):
     try:
         if request.method == 'GET':
-            empleados = list(col_empleados.find({"estado": "activo"}))
+            empleados = list(col_empleados.find({"estado": {"$ne": "inactivo"}}))
             data = [format_mongo_doc(emp) for emp in empleados]
             return JsonResponse({"success": True, "data": data, "message": "Empleados activos obtenidos con éxito"}, status=200)
         
