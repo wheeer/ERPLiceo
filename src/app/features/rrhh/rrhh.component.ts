@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute } from '@angular/router';
 import { RrhhService } from './rrhh.service';
@@ -10,7 +10,7 @@ import { RrhhService } from './rrhh.service';
 // INTERFACES ANTIGUAS
 // ==========================================
 export interface Employee {
-  id: number;
+  id: string | number;
   rut: string;
   nombre: string;
   correo: string;
@@ -29,8 +29,8 @@ export interface Employee {
 }
 
 export interface RegistroHorasExtra {
-  id: number;
-  empleadoId: number;
+  id: string | number;
+  empleadoId: string | number;
   empleado: string;
   cargo: string;
   rut: string;
@@ -94,7 +94,6 @@ export class RrhhComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
   private rrhhService = inject(RrhhService);
-  private http = inject(HttpClient);
 
   // ==========================================
   // ESTADO ANTIGUO (CRUD, Tabs, Horas Extra)
@@ -280,17 +279,23 @@ export class RrhhComponent implements OnInit {
   // ==========================================
 
   obtenerAsistencia(): void {
-    let url = `http://127.0.0.1:8000/api/asistencia/${this.mesSeleccionado}/${this.anioSeleccionado}`;
-
-    // Si hay un empleado seleccionado, se pasa como query param
-    if (this.empleadoSeleccionado) {
-      url += `?empleadoId=${this.empleadoSeleccionado}`;
-    }
-
-    this.http.get<{ empleados: EmpleadoCalendario[], asistencia: AsistenciaDia[] }>(url).subscribe({
+    this.rrhhService.obtenerAsistencia(this.mesSeleccionado, this.anioSeleccionado, this.empleadoSeleccionado).subscribe({
       next: (response) => {
-        this.empleadosCalendario = response.empleados || [];
-        this.asistenciaMensual = response.asistencia || [];
+        // En el nuevo API, la asistencia viene en response.data
+        const registros = response.data || [];
+        
+        // Mapear los registros al formato esperado por el frontend
+        // Si no hay empleado seleccionado, mostramos todos; de lo contrario filtramos (aunque el backend ya lo filtra)
+        this.asistenciaMensual = registros.map((reg: any) => ({
+          fecha: reg.fecha,
+          estado: reg.estado
+        }));
+
+        // Poblamos los empleados del calendario desde la lista global ya cargada
+        this.empleadosCalendario = this.employees.map(e => ({
+          rut: e.rut,
+          nombre_completo: e.nombre
+        }));
 
         // EXPERIENCIA DE USUARIO: Si es la primera carga y no hay empleado seleccionado, 
         // seleccionamos el primero automáticamente para que el calendario no se vea vacío.
@@ -370,7 +375,8 @@ export class RrhhComponent implements OnInit {
   cargarDatosEmpleados(): void {
     this.isLoading = true;
     this.rrhhService.obtenerEmpleados(this.mostrarSoloActivos).subscribe({
-      next: (datosReales: any[]) => {
+      next: (response: any) => {
+        const datosReales = response.data ? response.data : response;
         this.employees = datosReales.map((emp: any) => ({
           id: emp._id,
           rut: emp.rut,
@@ -385,6 +391,19 @@ export class RrhhComponent implements OnInit {
         }));
 
         this.filteredEmployees = [...this.employees];
+        
+        // Populate the calendar dropdown from the real employees list
+        this.empleadosCalendario = this.employees.map(e => ({
+          rut: e.rut,
+          nombre_completo: e.nombre
+        }));
+
+        // If no employee is selected in the calendar yet, select the first one and fetch its specific attendance
+        if (!this.empleadoSeleccionado && this.empleadosCalendario.length > 0) {
+          this.empleadoSeleccionado = this.empleadosCalendario[0].rut;
+          this.obtenerAsistencia();
+        }
+
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -495,7 +514,7 @@ export class RrhhComponent implements OnInit {
       } else {
         const newEmp: Employee = {
           ...this.employeeForm.value,
-          id: this.employees.length > 0 ? Math.max(...this.employees.map(e => e.id)) + 1 : 1
+          id: this.employees.length > 0 ? Math.max(...this.employees.map(e => Number(e.id) || 0)) + 1 : 1
         };
         this.employees.push(newEmp);
         this.toastService.show('Empleado registrado correctamente', 'success');
@@ -508,7 +527,7 @@ export class RrhhComponent implements OnInit {
     }, 1500);
   }
 
-  deleteEmployee(id: number) {
+  deleteEmployee(id: string | number) {
     if (confirm('¿Está seguro de eliminar este empleado?')) {
       this.employees = this.employees.filter(e => e.id !== id);
       this.filteredEmployees = [...this.employees];
@@ -542,7 +561,7 @@ export class RrhhComponent implements OnInit {
 
     setTimeout(() => {
       const data = this.horasExtraForm.value;
-      const empleado = this.employees.find(e => e.id == data.empleadoId);
+      const empleado = this.employees.find(e => String(e.id) === String(data.empleadoId));
 
       if (empleado) {
         this.historialHorasExtra.unshift({
@@ -573,7 +592,7 @@ export class RrhhComponent implements OnInit {
     }, 1500);
   }
 
-  eliminarRegistroHE(id: number) {
+  eliminarRegistroHE(id: string | number) {
     this.historialHorasExtra = this.historialHorasExtra.filter(h => h.id !== id);
     this.toastService.show('Registro eliminado.', 'warning');
   }
