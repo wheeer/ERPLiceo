@@ -54,6 +54,8 @@ export class InventarioComponent implements OnInit {
   showDeleteModal = false;
   showSaveModal = false;
   
+  isSkuModified = false;
+  originalSku: string | null = null;
   pendingDiff = 0;
   pendingDeleteId: string | null = null;
   isModalUpdating = false;
@@ -292,16 +294,25 @@ export class InventarioComponent implements OnInit {
     this.isEditing = true;
     this.inventoryForm.patchValue(item);
     this.previousFormValues = this.inventoryForm.getRawValue();
+    this.originalSku = item.codigo;
     this.showModal = true;
   }
 
   closeModal() {
     this.showModal = false;
     this.previousFormValues = null;
+    this.originalSku = null;
   }
 
   saveItem() {
     if (this.inventoryForm.invalid) return;
+    
+    if (this.isEditing && this.originalSku) {
+      this.isSkuModified = this.inventoryForm.value.codigo !== this.originalSku;
+    } else {
+      this.isSkuModified = false;
+    }
+    
     this.showSaveModal = true;
   }
 

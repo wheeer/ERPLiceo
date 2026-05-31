@@ -285,23 +285,12 @@
               <div class="form-group">
                 <label for="codigo">Código SKU</label>
                 <input id="codigo" type="text" formControlName="codigo" placeholder="Ej: PNT-001" 
-                  [readonly]="isEditing"
-                  [style.background-color]="isEditing ? 'rgba(0,0,0,0.2)' : ''"
-                  [style.color]="isEditing ? 'var(--text-primary)' : ''"
-                  [style.font-weight]="isEditing ? 'bold' : ''"
-                  [style.cursor]="isEditing ? 'not-allowed' : 'text'"
-                  [style.opacity]="isEditing ? '0.8' : '1'"
                   [class.error]="inventoryForm.get('codigo')?.invalid && inventoryForm.get('codigo')?.touched"
                   [class.valid]="inventoryForm.get('codigo')?.valid && inventoryForm.get('codigo')?.touched">
               </div>
               <div class="form-group">
                 <label for="categoria">Categoría</label>
                 <select id="categoria" formControlName="categoria"
-                  [style.pointer-events]="isEditing ? 'none' : 'auto'"
-                  [style.background-color]="isEditing ? 'rgba(0,0,0,0.2)' : ''"
-                  [style.color]="isEditing ? 'var(--text-primary)' : ''"
-                  [style.font-weight]="isEditing ? 'bold' : ''"
-                  [style.opacity]="isEditing ? '0.8' : '1'"
                   [class.error]="inventoryForm.get('categoria')?.invalid && inventoryForm.get('categoria')?.touched"
                   [class.valid]="inventoryForm.get('categoria')?.valid && inventoryForm.get('categoria')?.touched">
                   <option value="">Seleccione...</option>
@@ -523,11 +512,21 @@
           </button>
         </div>
         <div class="modal-body">
-          <p>¿Deseas guardar los cambios de este producto en la base de datos?</p>
+          @if (isSkuModified) {
+            <div style="background-color: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+              <h3 style="color: #f59e0b; margin-top: 0; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Advertencia Crítica
+              </h3>
+              <p style="margin-bottom: 0; font-size: 0.9rem; color: var(--text-primary);">Estás modificando el código SKU original. Esto puede afectar la trazabilidad e historial del producto. ¿Deseas continuar y guardar los cambios?</p>
+            </div>
+          } @else {
+            <p>¿Deseas guardar los cambios de este producto en la base de datos?</p>
+          }
         </div>
         <div class="modal-footer">
           <button class="btn-secondary" (click)="cancelSave()">Cancelar</button>
-          <button class="btn-primary" (click)="executeSave()">Guardar</button>
+          <button class="btn-primary" [style.background-color]="isSkuModified ? '#f59e0b' : ''" [style.border-color]="isSkuModified ? '#f59e0b' : ''" (click)="executeSave()">Guardar</button>
         </div>
       </div>
     </div>
