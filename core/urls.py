@@ -20,4 +20,12 @@ urlpatterns = [
     path('inventario/', views.inventario_lista, name='inventario_lista'),
     path('inventario/criticos/', views.inventario_criticos, name='inventario_criticos'),
     path('inventario/<str:codigo>/', views.inventario_detalle, name='inventario_detalle'),
-]
+
+        # Recursos Humanos (Nuevos Endpoints DRF - Issue #17)
+    path('empleados/', views.api_empleados, name='api_empleados'),
+    path('empleados/<str:rut>/', views.api_empleado_detalle, name='api_empleado_detalle'),
+    path('asistencia/', views.api_asistencia, name='api_asistencia_post'),
+    path('asistencia/<int:mes>/<int:anio>/', views.api_asistencia, name='api_asistencia'),
+    path('asistencia/resumen/<int:mes>/<int:anio>/', views.api_asistencia_resumen, name='api_asistencia_resumen'),
+    path('horas-extra/', views.api_horas_extra, name='api_horas_extra_post'),
+    path('horas-extra/<int:mes>/<int:anio>/', views.api_horas_extra, name='api_horas_extra'),]

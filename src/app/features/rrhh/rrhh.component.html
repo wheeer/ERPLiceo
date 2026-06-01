@@ -21,6 +21,9 @@
         <button class="tab-btn" [class.active]="activeTab === 'horasExtra'" (click)="changeTab('horasExtra')">
           Horas Extra
         </button>
+        <button class="tab-btn" [class.active]="activeTab === 'calendario'" (click)="changeTab('calendario')">
+          Calendario Mensual
+        </button>
         @if (activeTab === 'ficha' && selectedEmployee) {
           <button class="tab-btn active">
             Ficha: {{ selectedEmployee.nombre.split(' ')[0] }}
@@ -212,7 +215,7 @@
                     <button class="btn-action btn-edit" (click)="openEditModal(employee)" title="Editar">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
-                    <button class="btn-action btn-delete" (click)="deleteEmployee(employee.id)" title="Eliminar">
+                    <button class="btn-action btn-delete" (click)="deleteEmployee(employee.rut)" title="Eliminar">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                   </td>
@@ -310,33 +313,7 @@
             </div>
           </div>
 
-          <!-- CALENDARIO DE ASISTENCIA INDIVIDUAL -->
-          <div class="calendar-wrapper" style="margin-top: 2rem;">
-            <div class="calendar-top">
-              <h3 class="calendar-month">Abril 2026 - Asistencia de {{ selectedEmployee.nombre }}</h3>
-              <div class="calendar-legend">
-                <span class="legend-item"><span class="dot present"></span> Presente</span>
-                <span class="legend-item"><span class="dot absent"></span> Ausente</span>
-                <span class="legend-item"><span class="dot leave"></span> Licencia</span>
-              </div>
-            </div>
-            
-            <div class="calendar-grid">
-              <div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div><div class="cal-day-header">Mié</div>
-              <div class="cal-day-header">Jue</div><div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div><div class="cal-day-header">Dom</div>
-              
-              <div class="cal-day empty"></div>
-              <div class="cal-day empty"></div>
-              
-              @for (day of daysInMonth; track day) {
-                <div class="cal-day" [class]="'cal-status-' + getAttendanceStatus(selectedEmployee.id, day)">
-                  <span class="day-number">{{ day }}</span>
-                  @if (getAttendanceStatus(selectedEmployee.id, day) === 'absent') { <span class="day-tag tag-absent">Falta</span> }
-                  @if (getAttendanceStatus(selectedEmployee.id, day) === 'leave') { <span class="day-tag tag-leave">Licencia</span> }
-                </div>
-              }
-            </div>
-          </div>
+
         </div>
       }
     </div>
@@ -465,6 +442,83 @@
         </div>
       }
     }
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB 6: CALENDARIO DE ASISTENCIA (Issue #21)    -->
+  <!-- ============================================== -->
+  @if (activeTab === 'calendario') {
+    <div class="calendar-wrapper" style="margin-top: 1rem;">
+      <div class="calendar-top">
+        <h3 class="calendar-month">Asistencia Mensual</h3>
+        
+        <div class="calendar-filters">
+          <select [(ngModel)]="mesSeleccionado" (change)="obtenerAsistencia()" class="search-input" style="min-width: 120px;">
+            @for (mes of meses; track mes.value) {
+              <option [value]="mes.value">{{ mes.nombre }}</option>
+            }
+          </select>
+
+          <select [(ngModel)]="anioSeleccionado" (change)="obtenerAsistencia()" class="search-input" style="min-width: 100px;">
+            @for (anio of anios; track anio) {
+              <option [value]="anio">{{ anio }}</option>
+            }
+          </select>
+
+          <select [(ngModel)]="empleadoSeleccionado" (change)="obtenerAsistencia()" class="search-input">
+            <option value="" disabled selected>Seleccione un empleado...</option>
+            @for (emp of empleadosCalendario; track emp.rut) {
+              <option [value]="emp.rut">{{ emp.nombre_completo }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="calendar-legend">
+          <span class="legend-item"><span class="dot present"></span> Presente</span>
+          <span class="legend-item"><span class="dot absent"></span> Ausente</span>
+          <span class="legend-item" style="color: #eab308;"><span class="dot" style="background: #eab308;"></span> Tardanza</span>
+          <span class="legend-item"><span class="dot leave"></span> Licencia</span>
+        </div>
+      </div>
+      
+      <div class="calendar-grid">
+        <div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div><div class="cal-day-header">Mié</div>
+        <div class="cal-day-header">Jue</div><div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div><div class="cal-day-header">Dom</div>
+        
+        @for (dia of diasCalendario; track dia.numero || $index) {
+          @if (dia.vacio) {
+            <div class="cal-day empty"></div>
+          } @else {
+            <div class="cal-day" [ngClass]="{
+              'cal-status-present': dia.estado === 'Presente',
+              'cal-status-absent': dia.estado === 'Ausente Injustificado' || dia.estado === 'Ausente',
+              'cal-status-warning': dia.estado === 'Atraso' || dia.estado === 'Tardanza',
+              'cal-status-leave': dia.estado === 'Licencia Médica' || dia.estado === 'Licencia',
+              'cal-status-weekend': dia.estado === 'Finde'
+            }">
+              <span class="day-number">{{ dia.numero }}</span>
+              @if (dia.estado !== 'Finde' && dia.estado !== 'Sin registro' && dia.estado !== 'Presente') {
+                <span class="day-tag" [ngClass]="{
+                  'tag-absent': dia.estado === 'Ausente Injustificado' || dia.estado === 'Ausente',
+                  'tag-warning': dia.estado === 'Atraso' || dia.estado === 'Tardanza',
+                  'tag-leave': dia.estado === 'Licencia Médica' || dia.estado === 'Licencia'
+                }">{{ dia.estado }}</span>
+              }
+            </div>
+          }
+        }
+      </div>
+
+      <div class="calendar-summary">
+        <h4>Resumen Mensual</h4>
+        <div class="summary-stats">
+          <div class="stat-item"><span class="stat-number text-success">{{ totalPresentes }}</span> Presentes</div>
+          <div class="stat-item"><span class="stat-number text-danger">{{ totalAusentes }}</span> Ausentes</div>
+          <div class="stat-item"><span class="stat-number text-warning">{{ totalTardanzas }}</span> Tardanzas</div>
+          <div class="stat-item"><span class="stat-number text-info">{{ totalLicencias }}</span> Licencias</div>
+        </div>
+      </div>
+    </div>
   }
 
   } <!-- FIN de !viewingForm -->

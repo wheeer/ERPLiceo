@@ -54,7 +54,9 @@ def calcular_remuneraciones(request):
                 "data": None
             }, status=400)
 
-        empleados = list(col_empleados.find())
+        empleados = list(col_empleados.find({
+            "estado": {"$in": ["activo", "licencia"]}
+        }))
 
         liquidaciones_generadas = []
 
@@ -597,7 +599,13 @@ def obtener_remuneraciones(request, mes, anio):
 
                 "salud": liquidacion["descuentos_legales"]["salud"],
 
-                "seguroCesantia": liquidacion["descuentos_legales"]["seguro_cesantia"],
+<<<<<<< Updated upstream
+                "seguroCesantia": ( liquidacion["descuentos_legales"]["seguro_cesantia"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"]["seguro_cesantia"], dict)
+                else liquidacion["descuentos_legales"]["seguro_cesantia"] ),
+=======
+               "seguroCesantia": liquidacion["descuentos_legales"]["seguro_cesantia"],
+>>>>>>> Stashed changes
 
                 "totalHaberes": liquidacion["totales"]["total_haberes"],
 

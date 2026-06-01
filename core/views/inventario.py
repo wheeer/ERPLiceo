@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from core.db_connection import col_inventario
@@ -41,13 +42,15 @@ def inventario_lista(request):
                 "nombre": body.get("nombre", ""),
                 "categoria": body.get("categoria", ""),
                 "ubicacion": body.get("ubicacion", ""),
+                "stock_total": body.get("stock_total", 0),
                 "stock_disponible": body.get("stock_disponible", 0),
                 "stock_reparacion": body.get("stock_reparacion", 0),
                 "stock_baja": body.get("stock_baja", 0),
                 "stock_minimo": body.get("stock_minimo", 0),
                 "costo_unitario": body.get("costo_unitario", 0),
                 "estado": body.get("estado", "Disponible"),
-                "ultimo_mantenimiento": body.get("ultimo_mantenimiento")
+                "ultimo_mantenimiento": body.get("ultimo_mantenimiento"),
+                "incidencias": body.get("incidencias", [])
             }
             
             resultado = col_inventario.insert_one(nuevo_articulo)
@@ -106,8 +109,42 @@ def inventario_detalle(request, codigo):
             if not existe:
                 return JsonResponse({"success": False, "message": "Artículo no encontrado", "data": None}, status=404)
             
+            # Lógica automática para stock e incidencias
+            stock_disponible_old = int(existe.get("stock_disponible", 0))
+            stock_reparacion_old = int(existe.get("stock_reparacion", 0))
+            stock_baja_old = int(existe.get("stock_baja", 0))
+            incidencias = existe.get("incidencias", [])
+
+            stock_reparacion_new = int(body.get("stock_reparacion", stock_reparacion_old))
+            stock_baja_new = int(body.get("stock_baja", stock_baja_old))
+            stock_disponible_new = int(body.get("stock_disponible", stock_disponible_old))
+            
+            if stock_reparacion_new > stock_reparacion_old:
+                diff = stock_reparacion_new - stock_reparacion_old
+                incidencias.append({
+                    "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "tipo": "Reparación",
+                    "cantidad": diff,
+                    "detalle": "Actualizado desde panel de gestión"
+                })
+
+            if stock_baja_new > stock_baja_old:
+                diff = stock_baja_new - stock_baja_old
+                incidencias.append({
+                    "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "tipo": "Baja",
+                    "cantidad": diff,
+                    "detalle": "Actualizado desde panel de gestión"
+                })
+
+            body["stock_disponible"] = stock_disponible_new
+            body["stock_reparacion"] = stock_reparacion_new
+            body["stock_baja"] = stock_baja_new
+            body["stock_total"] = stock_disponible_new + stock_reparacion_new + stock_baja_new
+            body["incidencias"] = incidencias
+
             campos_actualizar = {}
-            for campo in ["nombre", "categoria", "ubicacion", "stock_disponible", "stock_reparacion", "stock_baja", "stock_minimo", "costo_unitario", "estado", "ultimo_mantenimiento"]:
+            for campo in ["nombre", "categoria", "ubicacion", "stock_total", "stock_disponible", "stock_reparacion", "stock_baja", "stock_minimo", "costo_unitario", "estado", "ultimo_mantenimiento", "incidencias"]:
                 if campo in body:
                     campos_actualizar[campo] = body[campo]
                     

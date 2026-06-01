@@ -1,0 +1,26 @@
+# Usa una imagen oficial de Python ligera
+FROM python:3.12-slim
+
+# Establece variables de entorno para evitar que Python genere archivos .pyc 
+# y asegure que los logs se muestren directamente en la consola.
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Establece el directorio de trabajo dentro del contenedor
+WORKDIR /app
+
+# Copia los archivos de requerimientos primero para aprovechar la caché de Docker
+COPY requirements.txt .
+
+# Instala las dependencias
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Nota: El código fuente se montará como volumen (hot-reloading) en el docker-compose.
+# Dejamos COPY . . comentado para el futuro Docker de producción.
+# COPY . .
+
+# Expone el puerto 8000
+EXPOSE 8000
+
+# Comando por defecto para correr el servidor de desarrollo de Django
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
