@@ -1,65 +1,40 @@
-
 <div class="remuneraciones-container">
-  <!-- HEADER CON TABS -->
   <div class="remuneraciones-header-row">
     <div class="remuneraciones-header">
       <h1 class="remuneraciones-title">Remuneraciones</h1>
       <p class="remuneraciones-subtitle">Nómina y cálculo de honorarios — Ley 21.561</p>
 
       <div class="periodo-selector">
-
-<<<<<<< Updated upstream
-    <select [(ngModel)]="mesSeleccionado" title="Seleccionar Mes" aria-label="Seleccionar Mes">
-      @for (mes of meses; track mes.valor) {
-        <option [value]="mes.valor">
-          {{ mes.nombre }}
-        </option>
-      }
-    </select>
-=======
         <select [(ngModel)]="mesSeleccionado" title="Seleccionar Mes" aria-label="Seleccionar Mes">
           @for (mes of meses; track mes.value) {
-          <option [value]="mes.value">
-            {{ mes.nombre }}
-          </option>
+          <option [value]="mes.value">{{ mes.nombre }}</option>
           }
         </select>
->>>>>>> Stashed changes
 
         <select [(ngModel)]="anioSeleccionado" title="Seleccionar Año" aria-label="Seleccionar Año">
           @for (anio of anios; track anio) {
-          <option [value]="anio">
-            {{ anio }}
-          </option>
+          <option [value]="anio">{{ anio }}</option>
           }
         </select>
+
         <button class="btn-generar" (click)="cargarRemuneraciones()" [disabled]="isFetching">
           @if (isFetching) {
-          <span class="spinner-btn"></span> Cargando...
+            <span class="spinner-btn"></span> Cargando...
           } @else {
-          Cargar
+            Cargar
           }
         </button>
 
-<<<<<<< Updated upstream
-    <button
-      class="btn-generar"
-      (click)="cambiarPeriodo()"
-    >
-      Cargar
-    </button>
-=======
-        <button class="btn-generar-liquidaciones" (click)="generarLiquidaciones()">
-          Generar Liquidaciones
+        <button class="btn-generar-liquidaciones" (click)="generarLiquidaciones()" [disabled]="isFetching">
+          @if (isFetching) {
+            <span class="spinner-btn"></span> Generando...
+          } @else {
+            Generar Liquidaciones
+          }
         </button>
-
       </div>
-
-
     </div>
->>>>>>> Stashed changes
 
-    <!-- TABS DEL MÓDULO -->
     <div class="module-tabs">
       <button class="tab-btn" [class.active]="activeTab === 'nomina'" (click)="changeTab('nomina')">
         Resumen de Nómina
@@ -70,17 +45,12 @@
     </div>
   </div>
 
-  <!-- ============================================== -->
-  <!-- TAB 1: RESUMEN DE NÓMINA -->
-  <!-- ============================================== -->
   @if (activeTab === 'nomina') {
   <div class="action-bar-simple">
     <input type="text" class="search-input" placeholder="Buscar por nombre, RUT o cargo..." (keyup)="onSearch($event)">
   </div>
   }
 
-<<<<<<< Updated upstream
-=======
   @if (isLoading) {
   <div class="table-wrapper">
     <table class="payroll-table">
@@ -99,34 +69,19 @@
       <tbody>
         @for (i of [1,2,3,4,5]; track i) {
         <tr>
-          <td>
-            <div class="skeleton-box shimmer w-40"></div>
-          </td>
+          <td><div class="skeleton-box shimmer w-40"></div></td>
           <td>
             <div class="employee-info-detailed">
               <div class="skeleton-box shimmer w-70"></div>
               <div class="skeleton-box shimmer w-50 mt-5px"></div>
             </div>
           </td>
-          <td class="cell-amount">
-            <div class="skeleton-box shimmer w-60"></div>
-          </td>
-          <td class="cell-amount hide-mobile">
-            <div class="skeleton-box shimmer w-50"></div>
-          </td>
-          <td class="cell-amount">
-            <div class="skeleton-box shimmer w-30"></div>
-          </td>
-          <td class="cell-amount total-neto">
-            <div class="skeleton-box shimmer w-70"></div>
-          </td>
-          <td class="center">
-            <div class="skeleton-box shimmer w-40"></div>
-          </td>
-
-          <td class="center">
-            <div class="skeleton-box shimmer w-40"></div>
-          </td>
+          <td class="cell-amount"><div class="skeleton-box shimmer w-60"></div></td>
+          <td class="cell-amount hide-mobile"><div class="skeleton-box shimmer w-50"></div></td>
+          <td class="cell-amount"><div class="skeleton-box shimmer w-30"></div></td>
+          <td class="cell-amount total-neto"><div class="skeleton-box shimmer w-70"></div></td>
+          <td class="center"><div class="skeleton-box shimmer w-40"></div></td>
+          <td class="center"><div class="skeleton-box shimmer w-40"></div></td>
         </tr>
         }
       </tbody>
@@ -165,33 +120,19 @@
           <td class="cell-amount">{{ formatCurrency(payroll.sueldoBase) }}</td>
           <td class="cell-amount hide-mobile">{{ formatCurrency(payroll.gratificacion) }}</td>
           <td class="cell-amount hide-mobile">
-            <span
-              title="Movilización: {{ formatCurrency(payroll.movilizacion) }} / Colación: {{ formatCurrency(payroll.colacion) }}">
+            <span title="Movilización: {{ formatCurrency(payroll.movilizacion) }} / Colación: {{ formatCurrency(payroll.colacion) }}">
               {{ formatCurrency(payroll.movilizacion + payroll.colacion) }}
             </span>
           </td>
           <td class="cell-amount fw-600 hide-mobile">{{ formatCurrency(payroll.totalHaberes) }}</td>
           <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.afp) }}</td>
           <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.salud) }}</td>
-          <td class="cell-amount">
-
-          </td>
+          <td class="cell-amount"><span class="text-muted">—</span></td>
           <td class="cell-amount total-neto">{{ formatCurrency(payroll.neto) }}</td>
-
-          <td class="center">
-            <span class="badge-danger">
-              Pendiente
-            </span>
-          </td>
-
+          <td class="center"><span class="badge-danger">Pendiente</span></td>
           <td class="cell-actions center">
-            <button class="btn-detalle" (click)="verDetalle(payroll)" title="Ver detalle">
-              Ver Detalle
-            </button>
-
-            <button class="btn-pdf" (click)="descargarPDF(payroll)" title="Descargar Liquidación">
-              PDF
-            </button>
+            <button class="btn-detalle" (click)="verDetalle(payroll)">Ver Detalle</button>
+            <button class="btn-pdf" (click)="descargarPDF(payroll)">PDF</button>
           </td>
         </tr>
         }
@@ -217,16 +158,14 @@
       <span>Mostrando {{ rangoMostradoNomina }} registros</span>
     </div>
     <div class="pagination-actions">
-      <select class="page-size-select" (change)="cambiarItemsPorPagina($event)" title="Items por página"
-        aria-label="Items por página">
+      <select class="page-size-select" (change)="cambiarItemsPorPagina($event)" title="Items por página" aria-label="Items por página">
         @for (op of opcionesPorPagina; track op) {
         <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
         }
       </select>
       <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
       <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasNomina }}</span>
-      <button class="btn-page" (click)="siguientePaginaActiva()"
-        [disabled]="paginaActual === totalPaginasNomina">Siguiente →</button>
+      <button class="btn-page" (click)="siguientePaginaActiva()" [disabled]="paginaActual === totalPaginasNomina">Siguiente →</button>
     </div>
   </div>
   } @else {
@@ -240,184 +179,138 @@
 
   <div class="remuneraciones-info">
     <span class="info-badge">{{ payrollData.length }} empleados</span>
-
     @if (payrollData.length > 0) {
-    <span class="info-text">
-      Período: {{ payrollData[0].mes }}/{{ payrollData[0].anio }}
-    </span>
+    <span class="info-text">Período: {{ payrollData[0].mes }}/{{ payrollData[0].anio }}</span>
     }
   </div>
 
-
-
->>>>>>> Stashed changes
-  <!-- ============================================== -->
-  <!-- TAB 2: HORAS EXTRA -->
-  <!-- ============================================== -->
   @if (activeTab === 'horasExtra') {
   <div class="he-layout">
-
-    <!-- CARD RESUMEN MENSUAL -->
     <div class="he-summary-card">
       @if (isLoading) {
-      @for (i of [1,2,3]; track i) {
+        @for (i of [1,2,3]; track i) {
+        <div class="summary-item">
+          <div class="skeleton-box shimmer w-40"></div>
+          <div class="skeleton-box shimmer w-70 mt-5px"></div>
+        </div>
+        @if (i < 3) {<div class="summary-divider"></div>}
+        }
+      } @else {
       <div class="summary-item">
-        <div class="skeleton-box shimmer w-40"></div>
-        <div class="skeleton-box shimmer w-70 mt-5px"></div>
+        <span class="summary-label">Registros del Mes</span>
+        <span class="summary-value">{{ historialHorasExtra.length }}</span>
       </div>
-
-      @if (i < 3) { <div class="summary-divider">
-    </div>
-    }
-    }
-    } @else {
-    <div class="summary-item">
-      <span class="summary-label">Registros del Mes</span>
-      <span class="summary-value">{{ historialHorasExtra.length }}</span>
-    </div>
-    <div class="summary-divider"></div>
-    <div class="summary-item">
-      <span class="summary-label">Total Horas Autorizadas</span>
-      <span class="summary-value">{{ getTotalHorasMes() }} hrs</span>
-    </div>
-    <div class="summary-divider"></div>
-    <div class="summary-item accent">
-      <span class="summary-label">Total a Pagar este Mes</span>
-      <span class="summary-value">{{ formatCurrency(getTotalHorasExtraMes()) }}</span>
-    </div>
-    }
-  </div>
-
-  <!-- TABLA DE REVISIÓN (CON MONTOS) -->
-  <div class="he-history">
-    <h3>Revisión de Registros — Abril 2026</h3>
-    <p class="he-info-note">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="16" x2="12" y2="12" />
-        <line x1="12" y1="8" x2="12.01" y2="8" />
-      </svg>
-      Los registros son ingresados por RRHH. Desde aquí solo se revisan y validan para la liquidación del mes.
-    </p>
-
-    @if (isLoading) {
-    <div class="table-wrapper">
-      <table class="payroll-table">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Empleado</th>
-            <th class="center">Horas</th>
-            <th class="amount">Monto</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (i of [1,2,3]; track i) {
-          <tr>
-            <td>
-              <div class="skeleton-box shimmer w-40"></div>
-            </td>
-            <td>
-              <div class="skeleton-box shimmer w-80"></div>
-            </td>
-            <td class="center">
-              <div class="skeleton-box shimmer w-20"></div>
-            </td>
-            <td class="cell-amount">
-              <div class="skeleton-box shimmer w-60"></div>
-            </td>
-          </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-    } @else {
-    @if (historialHorasExtra.length > 0) {
-    <div class="table-wrapper">
-      <table class="payroll-table">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Empleado</th>
-            <th class="center">Tipo de Día</th>
-            <th class="center">Horas</th>
-            <th class="center hide-mobile">Recargo</th>
-            <th class="amount">Monto</th>
-            <th class="hide-mobile">Autorizado Por</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (registro of horasExtraPaginadas; track registro.id) {
-          <tr>
-            <td>{{ formatDate(registro.fecha) }}</td>
-            <td class="cell-nombre">{{ registro.empleado }}</td>
-            <td class="center">
-              @if (registro.tipoDia === 'laboral') {
-              <span class="badge-tipo-laboral">Laboral</span>
-              } @else {
-              <span class="badge-tipo-finde">Fin de Semana</span>
-              }
-            </td>
-            <td class="center"><strong>{{ registro.horas }}</strong> hrs</td>
-            <td class="center hide-mobile">
-              <span class="status-badge status-active">{{ registro.recargo }}%</span>
-            </td>
-            <td class="cell-amount fw-600">{{ formatCurrency(registro.montoTotal) }}</td>
-            <td class="cell-cargo hide-mobile">{{ registro.autorizadoPor }}</td>
-          </tr>
-          }
-        </tbody>
-        <tfoot>
-          <tr class="totals-row">
-            <td colspan="5">TOTAL HORAS EXTRA</td>
-            <td class="cell-amount total-neto">{{ formatCurrency(getTotalHorasExtraMes()) }}</td>
-            <td class="hide-mobile"></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-    <div class="pagination-controls">
-      <div class="pagination-info">
-        <span>Mostrando {{ rangoMostradoHorasExtra }} registros</span>
+      <div class="summary-divider"></div>
+      <div class="summary-item">
+        <span class="summary-label">Total Horas Autorizadas</span>
+        <span class="summary-value">{{ getTotalHorasMes() }} hrs</span>
       </div>
-      <div class="pagination-actions">
-        <select class="page-size-select" (change)="cambiarItemsPorPagina($event)" title="Items por página"
-          aria-label="Items por página">
-          @for (op of opcionesPorPagina; track op) {
-          <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
-          }
-        </select>
-        <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
-        <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasHorasExtra }}</span>
-        <button class="btn-page" (click)="siguientePaginaActiva()"
-          [disabled]="paginaActual === totalPaginasHorasExtra">Siguiente →</button>
+      <div class="summary-divider"></div>
+      <div class="summary-item accent">
+        <span class="summary-label">Total a Pagar este Mes</span>
+        <span class="summary-value">{{ formatCurrency(getTotalHorasExtraMes()) }}</span>
       </div>
+      }
     </div>
-    } @else {
-    <div class="empty-state-wrapper">
-      <div class="empty-state-visual">⌛</div>
-      <h3 class="empty-state-title">Sin registros pendientes</h3>
-      <p class="empty-state-desc">
-        No hay horas extra autorizadas por RRHH para este período.
+
+    <div class="he-history">
+      <h3>Revisión de Registros</h3>
+      <p class="he-info-note">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        Los registros son ingresados por RRHH. Desde aquí solo se revisan y validan para la liquidación del mes.
       </p>
+
+      @if (isLoading) {
+      <div class="table-wrapper">
+        <table class="payroll-table">
+          <thead><tr><th>Fecha</th><th>Empleado</th><th class="center">Horas</th><th class="amount">Monto</th></tr></thead>
+          <tbody>
+            @for (i of [1,2,3]; track i) {
+            <tr>
+              <td><div class="skeleton-box shimmer w-40"></div></td>
+              <td><div class="skeleton-box shimmer w-80"></div></td>
+              <td class="center"><div class="skeleton-box shimmer w-20"></div></td>
+              <td class="cell-amount"><div class="skeleton-box shimmer w-60"></div></td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      } @else {
+      @if (historialHorasExtra.length > 0) {
+      <div class="table-wrapper">
+        <table class="payroll-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Empleado</th>
+              <th class="center">Tipo de Día</th>
+              <th class="center">Horas</th>
+              <th class="center hide-mobile">Recargo</th>
+              <th class="amount">Monto</th>
+              <th class="hide-mobile">Autorizado Por</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (registro of horasExtraPaginadas; track registro.id) {
+            <tr>
+              <td>{{ formatDate(registro.fecha) }}</td>
+              <td class="cell-nombre">{{ registro.empleado }}</td>
+              <td class="center">
+                @if (registro.tipoDia === 'laboral') {
+                <span class="badge-tipo-laboral">Laboral</span>
+                } @else {
+                <span class="badge-tipo-finde">Fin de Semana</span>
+                }
+              </td>
+              <td class="center"><strong>{{ registro.horas }}</strong> hrs</td>
+              <td class="center hide-mobile"><span class="status-badge status-active">{{ registro.recargo }}%</span></td>
+              <td class="cell-amount fw-600">{{ formatCurrency(registro.montoTotal) }}</td>
+              <td class="cell-cargo hide-mobile">{{ registro.autorizadoPor }}</td>
+            </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="totals-row">
+              <td colspan="5">TOTAL HORAS EXTRA</td>
+              <td class="cell-amount total-neto">{{ formatCurrency(getTotalHorasExtraMes()) }}</td>
+              <td class="hide-mobile"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="pagination-controls">
+        <div class="pagination-info"><span>Mostrando {{ rangoMostradoHorasExtra }} registros</span></div>
+        <div class="pagination-actions">
+          <select class="page-size-select" (change)="cambiarItemsPorPagina($event)" title="Items por página" aria-label="Items por página">
+            @for (op of opcionesPorPagina; track op) {
+            <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+            }
+          </select>
+          <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+          <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasHorasExtra }}</span>
+          <button class="btn-page" (click)="siguientePaginaActiva()" [disabled]="paginaActual === totalPaginasHorasExtra">Siguiente →</button>
+        </div>
+      </div>
+      } @else {
+      <div class="empty-state-wrapper">
+        <div class="empty-state-visual">⌛</div>
+        <h3 class="empty-state-title">Sin registros pendientes</h3>
+        <p class="empty-state-desc">No hay horas extra autorizadas por RRHH para este período.</p>
+      </div>
+      }
+      }
     </div>
-    }
-    }
   </div>
-
-</div>
-}
+  }
 </div>
 
-// otra venta modal para detalle de liquidación, con desglose de haberes y descuentos, y opción de descargar PDF
-individualmente//
-Reemplaza solo las secciones de métricas y los títulos de las cards. Aquí el modal completo actualizado:
-html@if (mostrarModal && detalleSeleccionado) {
+@if (mostrarModal && detalleSeleccionado) {
 <div class="modal-overlay" (click)="cerrarModal()">
   <div class="nomina-modal" (click)="$event.stopPropagation()">
 
-    <!-- HEADER -->
     <div class="empleado-header">
       <div class="avatar">{{ detalleSeleccionado.nombre.charAt(0) }}</div>
       <div class="empleado-info">
@@ -432,14 +325,11 @@ html@if (mostrarModal && detalleSeleccionado) {
       </div>
     </div>
 
-    <!-- MÉTRICAS -->
     <div class="metricas">
       <div class="metrica-card metrica-green">
         <div class="metrica-icon icon-green">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-            <line x1="1" y1="10" x2="23" y2="10" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
           </svg>
         </div>
         <div>
@@ -448,14 +338,10 @@ html@if (mostrarModal && detalleSeleccionado) {
           <small>Ingresos totales</small>
         </div>
       </div>
-
       <div class="metrica-card metrica-red">
         <div class="metrica-icon icon-red">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
         </div>
         <div>
@@ -464,13 +350,10 @@ html@if (mostrarModal && detalleSeleccionado) {
           <small>Descuentos totales</small>
         </div>
       </div>
-
       <div class="metrica-card metrica-blue">
         <div class="metrica-icon icon-blue">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-            <line x1="1" y1="10" x2="23" y2="10" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
           </svg>
         </div>
         <div>
@@ -481,66 +364,45 @@ html@if (mostrarModal && detalleSeleccionado) {
       </div>
     </div>
 
-    <!-- DETALLE -->
     <div class="detalle-grid">
-
-      <!-- HABERES -->
       <div class="card">
         <h4 class="card-titulo-icon">
           <div class="card-icon icon-green">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-              <polyline points="17 6 23 6 23 12" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
             </svg>
           </div>
           HABERES
         </h4>
-
         <p class="seccion-label">Haberes Imponibles</p>
-        <div class="fila"><span>Sueldo Base</span><span>{{ formatCurrency(detalleSeleccionado.sueldoBase) }}</span>
-        </div>
-        <div class="fila"><span>Gratificación Legal</span><span>{{ formatCurrency(detalleSeleccionado.gratificacion)
-            }}</span></div>
-        <div class="fila"><span>Horas Extra</span><span>{{ formatCurrency(detalleSeleccionado.horasExtra) }}</span>
-        </div>
-
+        <div class="fila"><span>Sueldo Base</span><span>{{ formatCurrency(detalleSeleccionado.sueldoBase) }}</span></div>
+        <div class="fila"><span>Gratificación Legal</span><span>{{ formatCurrency(detalleSeleccionado.gratificacion) }}</span></div>
+        <div class="fila"><span>Horas Extra</span><span>{{ formatCurrency(detalleSeleccionado.horasExtra) }}</span></div>
         <p class="seccion-label">Haberes No Imponibles</p>
-        <div class="fila"><span>Movilización</span><span>{{ formatCurrency(detalleSeleccionado.movilizacion) }}</span>
-        </div>
+        <div class="fila"><span>Movilización</span><span>{{ formatCurrency(detalleSeleccionado.movilizacion) }}</span></div>
         <div class="fila"><span>Colación</span><span>{{ formatCurrency(detalleSeleccionado.colacion) }}</span></div>
-
         <div class="fila fila-total">
           <span>Total Haberes</span>
           <span class="success">{{ formatCurrency(detalleSeleccionado.totalHaberes) }}</span>
         </div>
       </div>
 
-      <!-- DESCUENTOS -->
       <div class="card card-descuentos">
         <h4 class="card-titulo-icon">
           <div class="card-icon icon-red">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="8" y1="12" x2="16" y2="12" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>
             </svg>
           </div>
           DESCUENTOS LEGALES
         </h4>
-
-        <div class="fila"><span>AFP</span><span class="danger">-{{ formatCurrency(detalleSeleccionado.afp) }}</span>
-        </div>
-        <div class="fila"><span>Salud (Isapre/Fonasa)</span><span class="danger">-{{
-            formatCurrency(detalleSeleccionado.salud) }}</span></div>
-        <div class="fila"><span>Seguro Cesantía</span><span class="danger">-{{
-            formatCurrency(detalleSeleccionado.seguroCesantia) }}</span></div>
-
+        <div class="fila"><span>AFP</span><span class="danger">-{{ formatCurrency(detalleSeleccionado.afp) }}</span></div>
+        <div class="fila"><span>Salud (Isapre/Fonasa)</span><span class="danger">-{{ formatCurrency(detalleSeleccionado.salud) }}</span></div>
+        <div class="fila"><span>Seguro Cesantía</span><span class="danger">-{{ formatCurrency(detalleSeleccionado.seguroCesantia) }}</span></div>
         <div class="fila fila-total">
           <span>Total Descuentos</span>
           <span class="danger">-{{ formatCurrency(detalleSeleccionado.totalDescuentos) }}</span>
         </div>
-
         <div class="fila fila-liquido">
           <span>Sueldo Líquido</span>
           <span class="primary">{{ formatCurrency(detalleSeleccionado.neto) }}</span>
@@ -548,14 +410,11 @@ html@if (mostrarModal && detalleSeleccionado) {
       </div>
     </div>
 
-    <!-- FOOTER -->
     <div class="footer-modal">
       <button class="btn-cerrar" (click)="cerrarModal()">← Volver</button>
       <button class="btn-pdf-modal" (click)="descargarPDF(detalleSeleccionado)">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
         </svg>
         Descargar PDF
       </button>
