@@ -376,4 +376,4 @@ def api_horas_extra(request, mes=None, anio=None):
             return JsonResponse({"success": False, "data": [], "message": "Método no permitido"}, status=405)
             
     except Exception as e:
-        return JsonResponse({"success": False, "data": [], "message": str(e)}, status=500)
+        return JsonResponse({"success": False, "data": [], "message": str(e)}, status=500)

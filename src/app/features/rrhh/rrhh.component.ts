@@ -10,7 +10,7 @@ import { RrhhService } from './rrhh.service';
 // INTERFACES ANTIGUAS
 // ==========================================
 export interface Employee {
-  id: number;
+  id: string | number;
   rut: string;
   nombre: string;
   correo: string;
@@ -29,8 +29,8 @@ export interface Employee {
 }
 
 export interface RegistroHorasExtra {
-  id: number;
-  empleadoId: number;
+  id: string | number;
+  empleadoId: string | number;
   empleado: string;
   cargo: string;
   rut: string;
@@ -387,14 +387,20 @@ export class RrhhComponent implements OnInit {
         this.employees = datosReales.map((emp: any) => ({
           id: emp._id,
           rut: emp.rut,
-          nombre: emp.nombre_completo,
+          nombre: emp.nombre_completo || emp.nombre || 'Sin nombre',
           correo: emp.correo || 'No registrado',
           departamento: emp.departamento || 'Sin departamento',
           cargo: emp.cargo,
           tipo_contrato: emp.tipo_contrato,
-          fechaIngreso: new Date(emp.fecha_ingreso),
+          fechaIngreso: emp.fecha_ingreso ? new Date(emp.fecha_ingreso) : (emp.fechaIngreso ? new Date(emp.fechaIngreso) : new Date()),
           estado: emp.estado || 'inactivo',
-          config_remuneracion: emp.config_remuneracion || { sueldo_base: 0, afp: '', salud: '', movilizacion: 0, colacion: 0 }
+          config_remuneracion: emp.config_remuneracion || { 
+            sueldo_base: emp.sueldo_base || 0, 
+            afp: emp.afp || '', 
+            salud: emp.salud || '', 
+            movilizacion: emp.movilizacion || 0, 
+            colacion: emp.colacion || 0 
+          }
         }));
 
         this.filteredEmployees = [...this.employees];
@@ -497,7 +503,12 @@ export class RrhhComponent implements OnInit {
     this.selectedEmployee = employee;
     this.employeeForm.patchValue({
       ...employee,
-      fechaIngreso: employee.fechaIngreso.toISOString().split('T')[0]
+      fechaIngreso: employee.fechaIngreso.toISOString().split('T')[0],
+      sueldo_base: employee.config_remuneracion?.sueldo_base || 0,
+      afp: employee.config_remuneracion?.afp || '',
+      salud: employee.config_remuneracion?.salud || '',
+      movilizacion: employee.config_remuneracion?.movilizacion || 0,
+      colacion: employee.config_remuneracion?.colacion || 0
     });
     this.viewingForm = true;
   }
@@ -510,35 +521,74 @@ export class RrhhComponent implements OnInit {
     if (this.employeeForm.invalid) return;
 
     this.isSaving = true;
+    const rawData = this.employeeForm.getRawValue();
 
-    setTimeout(() => {
-      if (this.isEditing) {
-        const index = this.employees.findIndex(e => e.id === this.employeeForm.value.id);
-        if (index > -1) {
-          this.employees[index] = { ...this.employees[index], ...this.employeeForm.value };
-        }
-        this.toastService.show('Empleado actualizado correctamente', 'success');
-      } else {
-        const newEmp: Employee = {
-          ...this.employeeForm.value,
-          id: this.employees.length > 0 ? Math.max(...this.employees.map(e => e.id)) + 1 : 1
-        };
-        this.employees.push(newEmp);
-        this.toastService.show('Empleado registrado correctamente', 'success');
+    // Adaptar los datos al formato que espera el backend (y que tienen los registros antiguos)
+    const empleadoData = {
+      ...rawData,
+      nombre_completo: rawData.nombre,
+      fecha_ingreso: rawData.fechaIngreso,
+      config_remuneracion: {
+        sueldo_base: rawData.sueldo_base,
+        afp: rawData.afp,
+        salud: rawData.salud,
+        movilizacion: rawData.movilizacion,
+        colacion: rawData.colacion
       }
+    };
 
-      this.isSaving = false;
-      this.closeForm();
-      this.filteredEmployees = [...this.employees];
-      this.cdr.detectChanges();
-    }, 1500);
+    // Opcional: Eliminar los campos planos para no ensuciar la BD
+    delete empleadoData.sueldo_base;
+    delete empleadoData.afp;
+    delete empleadoData.salud;
+    delete empleadoData.movilizacion;
+    delete empleadoData.colacion;
+
+    if (this.isEditing) {
+      this.rrhhService.actualizarEmpleado(empleadoData.rut, empleadoData).subscribe({
+        next: (res) => {
+          this.toastService.show('Empleado actualizado correctamente', 'success');
+          this.isSaving = false;
+          this.closeForm();
+          this.cargarDatosEmpleados();
+        },
+        error: (err) => {
+          this.isSaving = false;
+          const msg = err.error?.error || 'Error al actualizar empleado';
+          this.toastService.show(msg, 'error');
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.rrhhService.crearEmpleado(empleadoData).subscribe({
+        next: (res) => {
+          this.toastService.show('Empleado registrado correctamente', 'success');
+          this.isSaving = false;
+          this.closeForm();
+          this.cargarDatosEmpleados();
+        },
+        error: (err) => {
+          this.isSaving = false;
+          const msg = err.error?.error || 'Error al registrar empleado';
+          this.toastService.show(msg, 'error');
+          this.cdr.detectChanges();
+        }
+      });
+    }
   }
 
-  deleteEmployee(id: number) {
-    if (confirm('¿Está seguro de eliminar este empleado?')) {
-      this.employees = this.employees.filter(e => e.id !== id);
-      this.filteredEmployees = [...this.employees];
-      this.toastService.show('Registro de empleado eliminado.', 'warning');
+  deleteEmployee(rut: string) {
+    if (confirm('¿Está seguro de dar de baja este empleado?')) {
+      this.rrhhService.darDeBajaEmpleado(rut).subscribe({
+        next: () => {
+          this.toastService.show('Empleado dado de baja exitosamente.', 'success');
+          this.cargarDatosEmpleados();
+        },
+        error: (err: any) => {
+          const msg = err.error?.error || 'Error al dar de baja empleado';
+          this.toastService.show(msg, 'error');
+        }
+      });
     }
   }
 
@@ -599,7 +649,7 @@ export class RrhhComponent implements OnInit {
     }, 1500);
   }
 
-  eliminarRegistroHE(id: number) {
+  eliminarRegistroHE(id: string | number) {
     this.historialHorasExtra = this.historialHorasExtra.filter(h => h.id !== id);
     this.toastService.show('Registro eliminado.', 'warning');
   }
