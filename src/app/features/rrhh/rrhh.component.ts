@@ -280,17 +280,25 @@ export class RrhhComponent implements OnInit {
   // ==========================================
 
   obtenerAsistencia(): void {
-    let url = `http://127.0.0.1:8000/api/asistencia/${this.mesSeleccionado}/${this.anioSeleccionado}`;
+    let url = `http://127.0.0.1:8000/api/asistencia/${this.mesSeleccionado}/${this.anioSeleccionado}/`;
 
     // Si hay un empleado seleccionado, se pasa como query param
     if (this.empleadoSeleccionado) {
-      url += `?empleadoId=${this.empleadoSeleccionado}`;
+      url += `?rut=${this.empleadoSeleccionado}`;
     }
 
-    this.http.get<{ empleados: EmpleadoCalendario[], asistencia: AsistenciaDia[] }>(url).subscribe({
+    this.http.get<any>(url).subscribe({
       next: (response) => {
-        this.empleadosCalendario = response.empleados || [];
-        this.asistenciaMensual = response.asistencia || [];
+        const registros = response.data || [];
+        this.asistenciaMensual = registros.map((reg: any) => ({
+          fecha: reg.fecha,
+          estado: reg.estado
+        }));
+
+        this.empleadosCalendario = this.employees.map(e => ({
+          rut: e.rut,
+          nombre_completo: e.nombre
+        }));
 
         // EXPERIENCIA DE USUARIO: Si es la primera carga y no hay empleado seleccionado, 
         // seleccionamos el primero automáticamente para que el calendario no se vea vacío.
@@ -370,8 +378,9 @@ export class RrhhComponent implements OnInit {
   cargarDatosEmpleados(): void {
     this.isLoading = true;
     this.rrhhService.obtenerEmpleados(this.mostrarSoloActivos).subscribe({
-      next: (datosReales: any[]) => {
-        this.employees = datosReales.map((emp: any) => ({
+      next: (datosReales: any) => {
+        const data = datosReales.data || datosReales;
+        this.employees = data.map((emp: any) => ({
           id: emp._id,
           rut: emp.rut,
           nombre: emp.nombre_completo,
@@ -487,7 +496,7 @@ export class RrhhComponent implements OnInit {
     const empleadoData = this.employeeForm.getRawValue();
 
     if (this.isEditing) {
-      this.rrhhService.actualizarEmpleado(empleadoData.id, empleadoData).subscribe({
+      this.rrhhService.actualizarEmpleado(empleadoData.rut, empleadoData).subscribe({
         next: (res) => {
           this.toastService.show('Empleado actualizado correctamente', 'success');
           this.isSaving = false;
@@ -519,14 +528,14 @@ export class RrhhComponent implements OnInit {
     }
   }
 
-  deleteEmployee(id: string | number) {
+  deleteEmployee(rut: string) {
     if (confirm('¿Está seguro de dar de baja este empleado?')) {
-      this.rrhhService.darDeBajaEmpleado(id).subscribe({
+      this.rrhhService.darDeBajaEmpleado(rut).subscribe({
         next: () => {
           this.toastService.show('Empleado dado de baja exitosamente.', 'success');
           this.cargarDatosEmpleados();
         },
-        error: (err) => {
+        error: (err: any) => {
           const msg = err.error?.error || 'Error al dar de baja empleado';
           this.toastService.show(msg, 'error');
         }
