@@ -1,37 +1,120 @@
 import calendar
+import json
+from bson.objectid import ObjectId
 from datetime import datetime
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from core.db_connection import db, col_empleados, col_asistencia
 
 # ==========================================
 # CÓDIGO ORIGINAL (NO SE TOCÓ LA LÓGICA)
 # ==========================================
 
+@csrf_exempt
 def lista_empleados(request):
     coleccion_empleados = db['empleados']
     
-    filtro = {}
-    if request.GET.get('activo') == 'true':
-        filtro['estado'] = 'activo'
+    if request.method == 'GET':
+        filtro = {}
+        if request.GET.get('activo') == 'true':
+            filtro['estado'] = 'activo'
 
-    empleados_db = coleccion_empleados.find(filtro)
-    
-    datos_formateados = []
-    for emp in empleados_db:
-        datos_formateados.append({
-            '_id': str(emp.get('_id')),
-            'nombre_completo': emp.get('nombre_completo', ''),
-            'rut': emp.get('rut', ''),
-            'correo': emp.get('correo', 'No registrado'),
-            'departamento': emp.get('departamento', 'Sin departamento'),
-            'cargo': emp.get('cargo', ''),
-            'tipo_contrato': emp.get('tipo_contrato', ''),
-            'fecha_ingreso': emp.get('fecha_ingreso', ''),
-            'estado': emp.get('estado', 'inactivo'),
-            'config_remuneracion': emp.get('config_remuneracion', {})
-        })
+        empleados_db = coleccion_empleados.find(filtro)
+        
+        datos_formateados = []
+        for emp in empleados_db:
+            datos_formateados.append({
+                '_id': str(emp.get('_id')),
+                'nombre_completo': emp.get('nombre_completo', ''),
+                'rut': emp.get('rut', ''),
+                'correo': emp.get('correo', 'No registrado'),
+                'departamento': emp.get('departamento', 'Sin departamento'),
+                'cargo': emp.get('cargo', ''),
+                'tipo_contrato': emp.get('tipo_contrato', ''),
+                'fecha_ingreso': emp.get('fecha_ingreso', ''),
+                'estado': emp.get('estado', 'inactivo'),
+                'config_remuneracion': emp.get('config_remuneracion', {})
+            })
 
-    return JsonResponse(datos_formateados, safe=False)
+        return JsonResponse(datos_formateados, safe=False)
+
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            # Validar RUT único
+            if coleccion_empleados.find_one({'rut': data.get('rut')}):
+                return JsonResponse({'error': 'El RUT ya está registrado'}, status=409)
+            
+            nuevo_empleado = {
+                'nombre_completo': data.get('nombre'),
+                'rut': data.get('rut'),
+                'correo': data.get('correo'),
+                'departamento': data.get('departamento'),
+                'cargo': data.get('cargo'),
+                'tipo_contrato': data.get('tipo_contrato'),
+                'fecha_ingreso': data.get('fechaIngreso'),
+                'estado': data.get('estado', 'activo'),
+                'config_remuneracion': {
+                    'sueldo_base': data.get('sueldo_base', 0),
+                    'afp': data.get('afp', ''),
+                    'salud': data.get('salud', ''),
+                    'movilizacion': data.get('movilizacion', 0),
+                    'colacion': data.get('colacion', 0)
+                }
+            }
+            
+            result = coleccion_empleados.insert_one(nuevo_empleado)
+            return JsonResponse({'mensaje': 'Empleado creado', 'id': str(result.inserted_id)}, status=201)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    elif request.method == 'PUT':
+        try:
+            empleado_id = request.GET.get('id')
+            if not empleado_id:
+                return JsonResponse({'error': 'ID no proporcionado'}, status=400)
+                
+            data = json.loads(request.body)
+            
+            # Validar RUT único ignorando al empleado actual
+            if coleccion_empleados.find_one({'rut': data.get('rut'), '_id': {'$ne': ObjectId(empleado_id)}}):
+                return JsonResponse({'error': 'El RUT ya está registrado por otro empleado'}, status=409)
+                
+            actualizacion = {
+                'nombre_completo': data.get('nombre'),
+                'rut': data.get('rut'),
+                'correo': data.get('correo'),
+                'departamento': data.get('departamento'),
+                'cargo': data.get('cargo'),
+                'tipo_contrato': data.get('tipo_contrato'),
+                'fecha_ingreso': data.get('fechaIngreso'),
+                'estado': data.get('estado'),
+                'config_remuneracion': {
+                    'sueldo_base': data.get('sueldo_base', 0),
+                    'afp': data.get('afp', ''),
+                    'salud': data.get('salud', ''),
+                    'movilizacion': data.get('movilizacion', 0),
+                    'colacion': data.get('colacion', 0)
+                }
+            }
+            
+            coleccion_empleados.update_one({'_id': ObjectId(empleado_id)}, {'$set': actualizacion})
+            return JsonResponse({'mensaje': 'Empleado actualizado'}, status=200)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    elif request.method == 'PATCH':
+        try:
+            empleado_id = request.GET.get('id')
+            if not empleado_id:
+                return JsonResponse({'error': 'ID no proporcionado'}, status=400)
+                
+            coleccion_empleados.update_one({'_id': ObjectId(empleado_id)}, {'$set': {'estado': 'inactivo'}})
+            return JsonResponse({'mensaje': 'Empleado dado de baja'}, status=200)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+            
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 def asistencia_mensual(request):
     coleccion_asistencia = db['asistencia']

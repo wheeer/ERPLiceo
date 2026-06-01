@@ -10,7 +10,7 @@ import { RrhhService } from './rrhh.service';
 // INTERFACES ANTIGUAS
 // ==========================================
 export interface Employee {
-  id: number;
+  id: string | number;
   rut: string;
   nombre: string;
   correo: string;
@@ -29,8 +29,8 @@ export interface Employee {
 }
 
 export interface RegistroHorasExtra {
-  id: number;
-  empleadoId: number;
+  id: string | number;
+  empleadoId: string | number;
   empleado: string;
   cargo: string;
   rut: string;
@@ -484,35 +484,53 @@ export class RrhhComponent implements OnInit {
     if (this.employeeForm.invalid) return;
 
     this.isSaving = true;
+    const empleadoData = this.employeeForm.getRawValue();
 
-    setTimeout(() => {
-      if (this.isEditing) {
-        const index = this.employees.findIndex(e => e.id === this.employeeForm.value.id);
-        if (index > -1) {
-          this.employees[index] = { ...this.employees[index], ...this.employeeForm.value };
+    if (this.isEditing) {
+      this.rrhhService.actualizarEmpleado(empleadoData.id, empleadoData).subscribe({
+        next: (res) => {
+          this.toastService.show('Empleado actualizado correctamente', 'success');
+          this.isSaving = false;
+          this.closeForm();
+          this.cargarDatosEmpleados();
+        },
+        error: (err) => {
+          this.isSaving = false;
+          const msg = err.error?.error || 'Error al actualizar empleado';
+          this.toastService.show(msg, 'error');
+          this.cdr.detectChanges();
         }
-        this.toastService.show('Empleado actualizado correctamente', 'success');
-      } else {
-        const newEmp: Employee = {
-          ...this.employeeForm.value,
-          id: this.employees.length > 0 ? Math.max(...this.employees.map(e => e.id)) + 1 : 1
-        };
-        this.employees.push(newEmp);
-        this.toastService.show('Empleado registrado correctamente', 'success');
-      }
-
-      this.isSaving = false;
-      this.closeForm();
-      this.filteredEmployees = [...this.employees];
-      this.cdr.detectChanges();
-    }, 1500);
+      });
+    } else {
+      this.rrhhService.crearEmpleado(empleadoData).subscribe({
+        next: (res) => {
+          this.toastService.show('Empleado registrado correctamente', 'success');
+          this.isSaving = false;
+          this.closeForm();
+          this.cargarDatosEmpleados();
+        },
+        error: (err) => {
+          this.isSaving = false;
+          const msg = err.error?.error || 'Error al registrar empleado';
+          this.toastService.show(msg, 'error');
+          this.cdr.detectChanges();
+        }
+      });
+    }
   }
 
-  deleteEmployee(id: number) {
-    if (confirm('¿Está seguro de eliminar este empleado?')) {
-      this.employees = this.employees.filter(e => e.id !== id);
-      this.filteredEmployees = [...this.employees];
-      this.toastService.show('Registro de empleado eliminado.', 'warning');
+  deleteEmployee(id: string | number) {
+    if (confirm('¿Está seguro de dar de baja este empleado?')) {
+      this.rrhhService.darDeBajaEmpleado(id).subscribe({
+        next: () => {
+          this.toastService.show('Empleado dado de baja exitosamente.', 'success');
+          this.cargarDatosEmpleados();
+        },
+        error: (err) => {
+          const msg = err.error?.error || 'Error al dar de baja empleado';
+          this.toastService.show(msg, 'error');
+        }
+      });
     }
   }
 
@@ -573,7 +591,7 @@ export class RrhhComponent implements OnInit {
     }, 1500);
   }
 
-  eliminarRegistroHE(id: number) {
+  eliminarRegistroHE(id: string | number) {
     this.historialHorasExtra = this.historialHorasExtra.filter(h => h.id !== id);
     this.toastService.show('Registro eliminado.', 'warning');
   }
