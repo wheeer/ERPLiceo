@@ -65,6 +65,10 @@ export class InventarioComponent implements OnInit {
   filteredItems: InventoryItem[] = [];
   showIncidenciasModal = false;
   selectedItem: InventoryItem | null = null;
+  
+  // Filtros
+  verSoloCriticos = false;
+  currentSearchQuery = '';
 
   // ==========================================
   // PAGINACIÓN
@@ -221,7 +225,7 @@ export class InventarioComponent implements OnInit {
             ultimo_mantenimiento: item.ultimo_mantenimiento || null,
             incidencias: item.incidencias || []
           }));
-          this.filteredItems = [...this.inventoryItems];
+          this.aplicarFiltros();
         }
         this.isLoading = false;
         this.cdr.detectChanges();
@@ -259,13 +263,40 @@ export class InventarioComponent implements OnInit {
   }
   
   onSearch(event: Event) {
-    const query = (event.target as HTMLInputElement).value.toLowerCase();
-    this.filteredItems = this.inventoryItems.filter(item => 
-      item.codigo.toLowerCase().includes(query) || 
-      item.nombre.toLowerCase().includes(query) ||
-      item.categoria.toLowerCase().includes(query)
-    );
-    this.paginaActual = 1; // Resetear a página 1 al buscar
+    this.currentSearchQuery = (event.target as HTMLInputElement).value.toLowerCase();
+    this.aplicarFiltros();
+  }
+
+  toggleCriticos() {
+    this.verSoloCriticos = !this.verSoloCriticos;
+    this.aplicarFiltros();
+  }
+
+  aplicarFiltros() {
+    let filtrados = this.inventoryItems;
+    
+    if (this.currentSearchQuery) {
+      filtrados = filtrados.filter(item => 
+        item.codigo.toLowerCase().includes(this.currentSearchQuery) || 
+        item.nombre.toLowerCase().includes(this.currentSearchQuery) ||
+        item.categoria.toLowerCase().includes(this.currentSearchQuery)
+      );
+    }
+
+    if (this.verSoloCriticos) {
+      filtrados = filtrados.filter(item => item.stock_disponible <= item.stock_minimo);
+    }
+
+    this.filteredItems = filtrados;
+    this.paginaActual = 1; // Resetear a página 1 al filtrar
+  }
+
+  formatFecha(dateString: string | null): string {
+    if (!dateString) return 'Sin registro';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Sin registro';
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   }
 
   // ==========================================
@@ -333,7 +364,7 @@ export class InventarioComponent implements OnInit {
             this.toastService.show('Producto actualizado correctamente', 'success');
             this.isSaving = false;
             this.closeModal();
-            this.filteredItems = [...this.inventoryItems];
+            this.aplicarFiltros();
             this.cdr.detectChanges();
           }
         },
@@ -356,7 +387,7 @@ export class InventarioComponent implements OnInit {
             this.toastService.show('Producto registrado correctamente', 'success');
             this.isSaving = false;
             this.closeModal();
-            this.filteredItems = [...this.inventoryItems];
+            this.aplicarFiltros();
             this.cdr.detectChanges();
           }
         },
@@ -390,7 +421,7 @@ export class InventarioComponent implements OnInit {
         next: (response) => {
           if (response.success) {
             this.inventoryItems = this.inventoryItems.filter(i => i.id !== id);
-            this.filteredItems = [...this.inventoryItems];
+            this.aplicarFiltros();
             this.toastService.show('Producto eliminado del inventario.', 'warning');
             this.cdr.detectChanges();
           }
