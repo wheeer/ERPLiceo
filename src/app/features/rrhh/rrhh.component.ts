@@ -383,14 +383,20 @@ export class RrhhComponent implements OnInit {
         this.employees = data.map((emp: any) => ({
           id: emp._id,
           rut: emp.rut,
-          nombre: emp.nombre_completo,
+          nombre: emp.nombre_completo || emp.nombre || 'Sin nombre',
           correo: emp.correo || 'No registrado',
           departamento: emp.departamento || 'Sin departamento',
           cargo: emp.cargo,
           tipo_contrato: emp.tipo_contrato,
-          fechaIngreso: new Date(emp.fecha_ingreso),
+          fechaIngreso: emp.fecha_ingreso ? new Date(emp.fecha_ingreso) : (emp.fechaIngreso ? new Date(emp.fechaIngreso) : new Date()),
           estado: emp.estado || 'inactivo',
-          config_remuneracion: emp.config_remuneracion || { sueldo_base: 0, afp: '', salud: '', movilizacion: 0, colacion: 0 }
+          config_remuneracion: emp.config_remuneracion || { 
+            sueldo_base: emp.sueldo_base || 0, 
+            afp: emp.afp || '', 
+            salud: emp.salud || '', 
+            movilizacion: emp.movilizacion || 0, 
+            colacion: emp.colacion || 0 
+          }
         }));
 
         this.filteredEmployees = [...this.employees];
@@ -480,7 +486,12 @@ export class RrhhComponent implements OnInit {
     this.selectedEmployee = employee;
     this.employeeForm.patchValue({
       ...employee,
-      fechaIngreso: employee.fechaIngreso.toISOString().split('T')[0]
+      fechaIngreso: employee.fechaIngreso.toISOString().split('T')[0],
+      sueldo_base: employee.config_remuneracion?.sueldo_base || 0,
+      afp: employee.config_remuneracion?.afp || '',
+      salud: employee.config_remuneracion?.salud || '',
+      movilizacion: employee.config_remuneracion?.movilizacion || 0,
+      colacion: employee.config_remuneracion?.colacion || 0
     });
     this.viewingForm = true;
   }
@@ -493,7 +504,28 @@ export class RrhhComponent implements OnInit {
     if (this.employeeForm.invalid) return;
 
     this.isSaving = true;
-    const empleadoData = this.employeeForm.getRawValue();
+    const rawData = this.employeeForm.getRawValue();
+
+    // Adaptar los datos al formato que espera el backend (y que tienen los registros antiguos)
+    const empleadoData = {
+      ...rawData,
+      nombre_completo: rawData.nombre,
+      fecha_ingreso: rawData.fechaIngreso,
+      config_remuneracion: {
+        sueldo_base: rawData.sueldo_base,
+        afp: rawData.afp,
+        salud: rawData.salud,
+        movilizacion: rawData.movilizacion,
+        colacion: rawData.colacion
+      }
+    };
+
+    // Opcional: Eliminar los campos planos para no ensuciar la BD
+    delete empleadoData.sueldo_base;
+    delete empleadoData.afp;
+    delete empleadoData.salud;
+    delete empleadoData.movilizacion;
+    delete empleadoData.colacion;
 
     if (this.isEditing) {
       this.rrhhService.actualizarEmpleado(empleadoData.rut, empleadoData).subscribe({
