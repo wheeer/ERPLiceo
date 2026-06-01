@@ -160,7 +160,7 @@ def api_empleados(request):
                 
             rut = body.get('rut')
             if rut and col_empleados.find_one({"rut": rut}):
-                return JsonResponse({"success": False, "data": [], "message": f"El RUT ya está registrado"}, status=409)
+                return JsonResponse({"success": False, "data": [], "message": f"El empleado con RUT {rut} ya existe"}, status=400)
                 
             result = col_empleados.insert_one(body)
             body['_id'] = str(result.inserted_id)
@@ -185,14 +185,8 @@ def api_empleado_detalle(request, rut):
             
         elif request.method == 'PUT':
             body = parse_request_body(request)
-            nuevo_rut = body.get('rut')
-            if nuevo_rut and nuevo_rut != rut:
-                if col_empleados.find_one({"rut": nuevo_rut}):
-                    return JsonResponse({"success": False, "data": [], "message": "El RUT ya está registrado por otro empleado"}, status=409)
-                    
             col_empleados.update_one({"rut": rut}, {"$set": body})
-            rut_busqueda = nuevo_rut if nuevo_rut else rut
-            empleado_actualizado = col_empleados.find_one({"rut": rut_busqueda})
+            empleado_actualizado = col_empleados.find_one({"rut": rut})
             return JsonResponse({"success": True, "data": [format_mongo_doc(empleado_actualizado)], "message": "Empleado actualizado con éxito"}, status=200)
             
         elif request.method == 'DELETE':
@@ -382,4 +376,4 @@ def api_horas_extra(request, mes=None, anio=None):
             return JsonResponse({"success": False, "data": [], "message": "Método no permitido"}, status=405)
             
     except Exception as e:
-        return JsonResponse({"success": False, "data": [], "message": str(e)}, status=500)
+        return JsonResponse({"success": False, "data": [], "message": str(e)}, status=500)

@@ -282,19 +282,23 @@ export class RrhhComponent implements OnInit {
   obtenerAsistencia(): void {
     let url = `http://127.0.0.1:8000/api/asistencia/${this.mesSeleccionado}/${this.anioSeleccionado}/`;
 
-    // Si hay un empleado seleccionado, se pasa como query param
     if (this.empleadoSeleccionado) {
       url += `?rut=${this.empleadoSeleccionado}`;
     }
 
     this.http.get<any>(url).subscribe({
       next: (response) => {
+        // En el nuevo API, la asistencia viene en response.data
         const registros = response.data || [];
+
+        // Mapear los registros al formato esperado por el frontend
+        // Si no hay empleado seleccionado, mostramos todos; de lo contrario filtramos (aunque el backend ya lo filtra)
         this.asistenciaMensual = registros.map((reg: any) => ({
           fecha: reg.fecha,
           estado: reg.estado
         }));
 
+        // Poblamos los empleados del calendario desde la lista global ya cargada
         this.empleadosCalendario = this.employees.map(e => ({
           rut: e.rut,
           nombre_completo: e.nombre
@@ -378,9 +382,9 @@ export class RrhhComponent implements OnInit {
   cargarDatosEmpleados(): void {
     this.isLoading = true;
     this.rrhhService.obtenerEmpleados(this.mostrarSoloActivos).subscribe({
-      next: (datosReales: any) => {
-        const data = datosReales.data || datosReales;
-        this.employees = data.map((emp: any) => ({
+      next: (response: any) => {
+        const datosReales = response.data ? response.data : response;
+        this.employees = datosReales.map((emp: any) => ({
           id: emp._id,
           rut: emp.rut,
           nombre: emp.nombre_completo || emp.nombre || 'Sin nombre',
@@ -400,6 +404,19 @@ export class RrhhComponent implements OnInit {
         }));
 
         this.filteredEmployees = [...this.employees];
+
+        // Populate the calendar dropdown from the real employees list
+        this.empleadosCalendario = this.employees.map(e => ({
+          rut: e.rut,
+          nombre_completo: e.nombre
+        }));
+
+        // If no employee is selected in the calendar yet, select the first one and fetch its specific attendance
+        if (!this.empleadoSeleccionado && this.empleadosCalendario.length > 0) {
+          this.empleadoSeleccionado = this.empleadosCalendario[0].rut;
+          this.obtenerAsistencia();
+        }
+
         this.isLoading = false;
         this.cdr.detectChanges();
       },
