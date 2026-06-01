@@ -32,4 +32,16 @@ export class RrhhService {
     
     return this.http.get<any>(url, { params });
   }
+
+  crearEmpleado(empleadoData: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl, empleadoData);
+  }
+
+  actualizarEmpleado(rut: string, empleadoData: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}${rut}/`, empleadoData);
+  }
+
+  darDeBajaEmpleado(rut: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}${rut}/`);
+  }
 }

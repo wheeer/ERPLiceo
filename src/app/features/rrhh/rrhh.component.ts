@@ -546,13 +546,13 @@ export class RrhhComponent implements OnInit {
 
     if (this.isEditing) {
       this.rrhhService.actualizarEmpleado(empleadoData.rut, empleadoData).subscribe({
-        next: (res) => {
+        next: (res: any) => {
           this.toastService.show('Empleado actualizado correctamente', 'success');
           this.isSaving = false;
           this.closeForm();
           this.cargarDatosEmpleados();
         },
-        error: (err) => {
+        error: (err: any) => {
           this.isSaving = false;
           const msg = err.error?.error || 'Error al actualizar empleado';
           this.toastService.show(msg, 'error');
@@ -561,13 +561,13 @@ export class RrhhComponent implements OnInit {
       });
     } else {
       this.rrhhService.crearEmpleado(empleadoData).subscribe({
-        next: (res) => {
+        next: (res: any) => {
           this.toastService.show('Empleado registrado correctamente', 'success');
           this.isSaving = false;
           this.closeForm();
           this.cargarDatosEmpleados();
         },
-        error: (err) => {
+        error: (err: any) => {
           this.isSaving = false;
           const msg = err.error?.error || 'Error al registrar empleado';
           this.toastService.show(msg, 'error');
