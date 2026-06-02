@@ -21,8 +21,16 @@
   <!-- TAB 1: VISTA DE STOCK -->
   <!-- ============================================== -->
   @if (activeTab === 'stock') {
-    <div class="action-bar-simple">
-      <input type="text" class="search-input" placeholder="Buscar por código, nombre o categoría..." (keyup)="onSearch($event)">
+    <div class="action-bar-simple action-bar-stock">
+      <input type="text" class="search-input stock-search" placeholder="Buscar por código, nombre o categoría..." (keyup)="onSearch($event)" [value]="currentSearchQuery">
+      <button class="btn-toggle-criticos" [class.active]="verSoloCriticos" (click)="toggleCriticos()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span>Ver solo críticos</span>
+      </button>
     </div>
 
     @if (isLoading) {
@@ -36,6 +44,7 @@
               <th class="amount">Disponible</th>
               <th class="amount">Reparación</th>
               <th class="amount">Baja</th>
+              <th>Último Mant.</th>
               <th>Ubicación</th>
               <th class="center">Incidencias</th>
             </tr>
@@ -49,6 +58,7 @@
                 <td><div class="skeleton-box shimmer w-30"></div></td>
                 <td><div class="skeleton-box shimmer w-30"></div></td>
                 <td><div class="skeleton-box shimmer w-30"></div></td>
+                <td><div class="skeleton-box shimmer w-50"></div></td>
                 <td><div class="skeleton-box shimmer w-50"></div></td>
                 <td><div class="skeleton-box shimmer w-70"></div></td>
               </tr>
@@ -68,6 +78,7 @@
                 <th class="amount">Disponible</th>
                 <th class="amount">Reparación</th>
                 <th class="amount">Baja</th>
+                <th>Último Mant.</th>
                 <th>Ubicación</th>
                 <th class="center">Incidencias</th>
               </tr>
@@ -106,6 +117,13 @@
                       <span class="badge-baja">{{ item.stock_baja }}</span>
                     } @else {
                       <span class="text-muted">—</span>
+                    }
+                  </td>
+                  <td class="cell-mantenimiento">
+                    @if (item.ultimo_mantenimiento) {
+                      <span class="mantenimiento-date">{{ formatFecha(item.ultimo_mantenimiento) }}</span>
+                    } @else {
+                      <span class="text-muted" style="font-size: 0.8rem;">Sin registro</span>
                     }
                   </td>
                   <td class="cell-ubicacion">{{ item.ubicacion }}</td>
