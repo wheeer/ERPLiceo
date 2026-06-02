@@ -244,19 +244,16 @@ def api_asistencia(request, mes=None, anio=None):
                 "Vacaciones", "Permiso S/Goce", "Finde", "Sin registro"
             ]
             
-            procesados = 0
-            datos_guardados = []
-            
+            # PASS 1: Validación y preparación de datos (Evitar inserciones parciales)
+            registros_a_procesar = []
             for reg in registros:
                 estado = reg.get('estado')
                 horas_extra = reg.get('horas_extra', 0)
                 rut_empleado = reg.get('rut') or reg.get('empleado_rut')
                 
-                # Omitir registros sin estado válido o sin rut
                 if not estado or estado not in estados_validos or not rut_empleado:
                     continue
                     
-                # Ignorar días que no se trabajan
                 if estado in ["Finde", "Sin registro"]:
                     continue
                     
@@ -269,8 +266,15 @@ def api_asistencia(request, mes=None, anio=None):
                     horas_extra = 0
                     
                 reg['horas_extra'] = horas_extra
+
+                if estado in ["Presente", "Atraso"]:
+                    if not reg.get('hora_entrada'):
+                        reg['hora_entrada'] = "08:00"
+                    if not reg.get('hora_salida'):
+                        reg['hora_salida'] = "17:00"
+                    if reg.get('horas_trabajadas') is None:
+                        reg['horas_trabajadas'] = 9
                 
-                # Aseguramos parseo real de fecha a datetime
                 fecha_obj = None
                 if 'fecha' in reg and isinstance(reg['fecha'], str):
                     try:
@@ -284,7 +288,7 @@ def api_asistencia(request, mes=None, anio=None):
                 if not fecha_obj:
                     continue
                     
-                # Validación de duplicados
+                # Validación de duplicados PREVIA a cualquier inserción
                 inicio_dia = datetime(fecha_obj.year, fecha_obj.month, fecha_obj.day, 0, 0, 0)
                 fin_dia = datetime(fecha_obj.year, fecha_obj.month, fecha_obj.day, 23, 59, 59)
                 
@@ -294,12 +298,22 @@ def api_asistencia(request, mes=None, anio=None):
                 })
                 
                 if duplicado:
-                    continue # Ignoramos el registro si ya existe
+                    return JsonResponse({
+                        "success": False,
+                        "data": [],
+                        "message": f"Conflicto: Ya existe un registro de asistencia para el RUT {rut_empleado} en la fecha {fecha_obj.strftime('%Y-%m-%d')}."
+                    }, status=409)
                     
-                # Aseguramos que empleado_rut exista si envían rut
                 if 'rut' in reg and 'empleado_rut' not in reg:
                     reg['empleado_rut'] = reg['rut']
                     
+                registros_a_procesar.append(reg)
+
+            # PASS 2: Inserción segura
+            procesados = 0
+            datos_guardados = []
+            
+            for reg in registros_a_procesar:
                 result = col_asistencia.insert_one(reg)
                 reg['_id'] = str(result.inserted_id)
                 
@@ -309,7 +323,7 @@ def api_asistencia(request, mes=None, anio=None):
                 datos_guardados.append(reg)
                 procesados += 1
                 
-            mensaje = f"Se procesaron {procesados} registros correctamente" if procesados > 0 else "No se procesaron registros nuevos (todos eran duplicados o inválidos)"
+            mensaje = f"Se procesaron {procesados} registros correctamente" if procesados > 0 else "No se procesaron registros nuevos (todos eran inválidos)"
             
             return JsonResponse({"success": True, "data": datos_guardados, "message": mensaje, "procesados": procesados}, status=201)
             

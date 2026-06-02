@@ -395,7 +395,7 @@
                     <span class="status-badge" 
                           [class.status-active]="emp.estado === 'Presente'"
                           [class.status-warning]="emp.estado === 'Atraso'"
-                          [class.status-inactive]="emp.estado === 'Ausente Injustificado'"
+                          [class.status-absent]="emp.estado === 'Ausente Injustificado'"
                           [class.status-leave]="emp.estado === 'Licencia Médica' || emp.estado === 'Vacaciones' || emp.estado === 'Permiso S/Goce'">
                       {{ emp.estado }}
                     </span>

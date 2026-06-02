@@ -723,13 +723,17 @@ export class RrhhComponent implements OnInit {
     const estadoFinal = estadosMap[tipo] || 'Ausente Injustificado';
     const fechaFmt = `${this.fechaHoy.getFullYear()}-${(this.fechaHoy.getMonth() + 1).toString().padStart(2, '0')}-${this.fechaHoy.getDate().toString().padStart(2, '0')}`;
 
-    const payload = [{
+    const payload: any[] = [{
       rut: emp.rut,
       estado: estadoFinal,
       fecha: fechaFmt,
       horas_extra: 0,
       comentario: formValue.justificativo || ''
     }];
+
+    if (tipo === 'atraso' && formValue.horaEntradaReal) {
+      payload[0].hora_entrada = formValue.horaEntradaReal;
+    }
 
     this.rrhhService.registrarAsistenciaDiaria(payload).subscribe({
       next: (res) => {
