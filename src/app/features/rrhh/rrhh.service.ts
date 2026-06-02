@@ -14,22 +14,34 @@ export class RrhhService {
 
   obtenerEmpleados(soloActivos: boolean = false): Observable<any> {
     let params = new HttpParams();
-    
+
     if (soloActivos) {
       params = params.set('activo', 'true');
     }
-    
+
     return this.http.get<any>(this.apiUrl, { params });
   }
 
   obtenerAsistencia(mes: number, anio: number, rut?: string): Observable<any> {
     let url = `${this.asistenciaUrl}${mes}/${anio}/`;
     let params = new HttpParams();
-    
+
     if (rut) {
       params = params.set('rut', rut);
     }
-    
+
     return this.http.get<any>(url, { params });
+  }
+
+  crearEmpleado(empleadoData: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl, empleadoData);
+  }
+
+  actualizarEmpleado(rut: string, empleadoData: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}${rut}/`, empleadoData);
+  }
+
+  darDeBajaEmpleado(rut: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}${rut}/`);
   }
 }
