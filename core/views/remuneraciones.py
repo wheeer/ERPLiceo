@@ -595,6 +595,7 @@ def obtener_remuneraciones(request, mes, anio):
 
                 "colacion": liquidacion["haberes"]["no_imponibles"]["colacion"],
 
+<<<<<<< HEAD
                 "afp": liquidacion["descuentos_legales"]["afp"],
 
                 "salud": liquidacion["descuentos_legales"]["salud"],
@@ -606,6 +607,19 @@ def obtener_remuneraciones(request, mes, anio):
 =======
                "seguroCesantia": liquidacion["descuentos_legales"]["seguro_cesantia"],
 >>>>>>> Stashed changes
+=======
+               "afp": ( liquidacion["descuentos_legales"]["afp"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"]["afp"], dict)
+                else liquidacion["descuentos_legales"]["afp"] ),
+
+               "salud": ( liquidacion["descuentos_legales"]["salud"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"]["salud"], dict)
+                else liquidacion["descuentos_legales"]["salud"] ),
+
+                "seguroCesantia": ( liquidacion["descuentos_legales"]["seguro_cesantia"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"]["seguro_cesantia"], dict)
+                else liquidacion["descuentos_legales"]["seguro_cesantia"] ),
+>>>>>>> origin/main
 
                 "totalHaberes": liquidacion["totales"]["total_haberes"],
 
