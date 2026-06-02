@@ -284,7 +284,7 @@ export class InventarioComponent implements OnInit {
     }
 
     if (this.verSoloCriticos) {
-      filtrados = filtrados.filter(item => item.stock_disponible <= item.stock_minimo);
+      filtrados = filtrados.filter(item => item.stock_disponible <= item.stock_minimo || item.estado === 'Crítico');
     }
 
     this.filteredItems = filtrados;
@@ -293,10 +293,18 @@ export class InventarioComponent implements OnInit {
 
   formatFecha(dateString: string | null): string {
     if (!dateString) return 'Sin registro';
+    
+    // Si es formato ISO fecha corta (ej: 2026-02-10) parsearlo manualmente para evitar problemas de zona horaria local
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString.trim())) {
+      const parts = dateString.trim().split('-');
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      return `${parseInt(parts[2], 10)} ${months[parseInt(parts[1], 10) - 1]} ${parts[0]}`;
+    }
+
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Sin registro';
     const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    return `${date.getUTCDate()} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
   }
 
   // ==========================================

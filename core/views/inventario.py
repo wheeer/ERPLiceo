@@ -76,9 +76,12 @@ def inventario_lista(request):
 def inventario_criticos(request):
     if request.method == 'GET':
         try:
-            # Encuentra items donde stock_disponible <= stock_minimo
+            # Encuentra items donde stock_disponible <= stock_minimo o estado es Crítico
             items = list(col_inventario.find({
-                "$expr": { "$lte": ["$stock_disponible", "$stock_minimo"] }
+                "$or": [
+                    {"$expr": { "$lte": ["$stock_disponible", "$stock_minimo"] }},
+                    {"estado": "Crítico"}
+                ]
             }))
             
             for item in items:
