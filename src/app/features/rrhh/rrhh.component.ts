@@ -413,7 +413,7 @@ export class RrhhComponent implements OnInit {
       next: (response: any) => {
         const datosReales = response.data ? response.data : response;
         this.employees = datosReales.map((emp: any) => ({
-          id: emp._id,
+          id: emp._id || emp.id,
           rut: emp.rut,
           nombre: emp.nombre_completo || emp.nombre || 'Sin nombre',
           correo: emp.correo || 'No registrado',
@@ -432,6 +432,20 @@ export class RrhhComponent implements OnInit {
         }));
 
         this.filteredEmployees = [...this.employees];
+
+        // Mapear los empleados reales a la lista de asistencia diaria (Modo Zen por defecto)
+        this.asistenciaList = this.employees.map((emp: any) => ({
+          id: emp.id,
+          rut: emp.rut,
+          nombre: emp.nombre,
+          cargo: emp.cargo,
+          estado: 'Presente',
+          entrada: '08:00',
+          salida: '17:00',
+          diasVacaciones: 15,
+          inasistenciasInjustificadas: 0
+        }));
+        this.filteredAsistenciaList = [...this.asistenciaList];
 
         // Populate the calendar dropdown from the real employees list
         this.empleadosCalendario = this.employees.map(e => ({
