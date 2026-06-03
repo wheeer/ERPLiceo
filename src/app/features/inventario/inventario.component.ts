@@ -4,6 +4,8 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute } from '@angular/router';
 import { InventarioService } from '../../core/services/inventario.service';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface InventoryItem {
   id: string; // Updated from number to string for ObjectId
@@ -40,6 +42,7 @@ export class InventarioComponent implements OnInit {
   // Tabs
   activeTab: 'stock' | 'gestion' = 'stock';
   isLoading = true;
+  isGeneratingPDF = false;
 
   // Estado CRUD
   showModal = false;
@@ -289,6 +292,81 @@ export class InventarioComponent implements OnInit {
 
     this.filteredItems = filtrados;
     this.paginaActual = 1; // Resetear a página 1 al filtrar
+  }
+
+  generarReportePDF() {
+    this.isGeneratingPDF = true;
+    this.inventarioService.getArticulosCriticos().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.crearPDF(response.data);
+        } else {
+          this.toastService.show('Error al obtener datos para el reporte', 'warning');
+          this.isGeneratingPDF = false;
+          this.cdr.detectChanges();
+        }
+      },
+      error: (error) => {
+        console.error('Error obteniendo críticos para PDF:', error);
+        this.toastService.show('Error de conexión al generar reporte', 'error');
+        this.isGeneratingPDF = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private crearPDF(articulos: any[]) {
+    try {
+      const doc = new jsPDF();
+      
+      // Título
+      doc.setFontSize(18);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Reporte de Artículos Críticos - ERPLiceo', 14, 22);
+      
+      // Subtítulo / Fecha
+      doc.setFontSize(11);
+      doc.setTextColor(100, 100, 100);
+      const fechaActual = new Date().toLocaleDateString('es-CL', {
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+      doc.text(`Fecha de emisión: ${fechaActual}`, 14, 30);
+
+      // Tabla
+      const bodyData = articulos.map(item => [
+        item.codigo,
+        item.nombre,
+        item.categoria,
+        `${item.stock_disponible} / ${item.stock_minimo}`,
+        item.estado === 'Crítico' || item.stock_disponible <= 0 ? 'Crítico' : 'Advertencia',
+        this.formatFecha(item.ultimo_mantenimiento),
+        item.ubicacion
+      ]);
+
+      autoTable(doc, {
+        startY: 35,
+        head: [['Código', 'Nombre', 'Categoría', 'Stock (Disp/Mín)', 'Estado', 'Últ. Mant.', 'Ubicación']],
+        body: bodyData,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246] }, // Azul primario
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+          0: { fontStyle: 'bold' },
+          3: { halign: 'center' },
+          4: { fontStyle: 'bold', textColor: [220, 38, 38] }
+        }
+      });
+
+      doc.save('reporte_articulos_criticos.pdf');
+      this.toastService.show('Reporte descargado exitosamente', 'success');
+    } catch (e) {
+      console.error('Error generando PDF:', e);
+      this.toastService.show('Hubo un problema al crear el archivo PDF', 'error');
+    } finally {
+      this.isGeneratingPDF = false;
+      this.cdr.detectChanges();
+    }
   }
 
   formatFecha(dateString: string | null): string {
