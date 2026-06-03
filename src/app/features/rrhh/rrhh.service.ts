@@ -33,6 +33,10 @@ export class RrhhService {
     return this.http.get<any>(url, { params });
   }
 
+  registrarAsistenciaDiaria(registros: any[]): Observable<any> {
+    return this.http.post<any>(this.asistenciaUrl, registros);
+  }
+
   crearEmpleado(empleadoData: any): Observable<any> {
     return this.http.post<any>(this.apiUrl, empleadoData);
   }

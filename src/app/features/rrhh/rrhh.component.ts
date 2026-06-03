@@ -312,8 +312,8 @@ export class RrhhComponent implements OnInit {
           return;
         }
 
-        this.calcularTotales();
         this.generarCalendario();
+        this.calcularTotales();
         this.cdr.detectChanges();
       },
       error: (error: any) => {
@@ -328,10 +328,10 @@ export class RrhhComponent implements OnInit {
     this.totalTardanzas = 0;
     this.totalLicencias = 0;
 
-    this.asistenciaMensual.forEach(dia => {
+    this.diasCalendario.forEach(dia => {
       const estado = dia.estado ? dia.estado.toLowerCase() : '';
 
-      // Ignorar fines de semana y días sin registro
+      // Ignorar fines de semana y días vacíos/sin registro
       if (!estado || estado === 'sin registro' || estado === 'finde') return;
 
       if (estado.includes('presente')) {
@@ -340,39 +340,67 @@ export class RrhhComponent implements OnInit {
         this.totalAusentes++;
       } else if (estado.includes('atraso') || estado.includes('tardanza')) {
         this.totalTardanzas++;
-      } else if (estado.includes('licencia')) {
-        this.totalLicencias++;
+      } else if (estado.includes('licencia') || estado.includes('vacaciones') || estado.includes('goce')) {
+        this.totalLicencias++; // agrupar licencias y permisos
       }
     });
   }
 
   generarCalendario(): void {
     this.diasCalendario = [];
-    if (this.asistenciaMensual.length === 0) return;
 
+    // Cantidad de días en el mes seleccionado
+    const diasEnMes = new Date(this.anioSeleccionado, this.mesSeleccionado, 0).getDate();
+    
     const primerDiaFecha = new Date(this.anioSeleccionado, this.mesSeleccionado - 1, 1);
     let diaSemana = primerDiaFecha.getDay();
 
+    // Ajustar para que la semana empiece en Lunes (0)
     diaSemana = diaSemana === 0 ? 6 : diaSemana - 1;
 
+    // Rellenar espacios vacíos al principio
     for (let i = 0; i < diaSemana; i++) {
       this.diasCalendario.push({ vacio: true });
     }
 
-    this.asistenciaMensual.forEach(dia => {
-      const partesFecha = dia.fecha.split('-');
-      const numeroDia = parseInt(partesFecha[2], 10);
+    // Mapa de asistencias guardadas en BD (día -> estado)
+    const asistenciaMap: Record<number, string> = {};
+    if (this.asistenciaMensual && this.asistenciaMensual.length > 0) {
+      this.asistenciaMensual.forEach(dia => {
+        const partesFecha = dia.fecha.split('-');
+        const numeroDia = parseInt(partesFecha[2], 10);
+        asistenciaMap[numeroDia] = dia.estado;
+      });
+    }
 
-      const fechaObj = new Date(this.anioSeleccionado, this.mesSeleccionado - 1, numeroDia);
+    const hoy = new Date();
+    const esMesActual = this.anioSeleccionado === hoy.getFullYear() && this.mesSeleccionado === (hoy.getMonth() + 1);
+    const diaActual = hoy.getDate();
+    const esMesPasado = this.anioSeleccionado < hoy.getFullYear() || (this.anioSeleccionado === hoy.getFullYear() && this.mesSeleccionado < (hoy.getMonth() + 1));
+
+    // Generar cada día del mes
+    for (let i = 1; i <= diasEnMes; i++) {
+      const fechaObj = new Date(this.anioSeleccionado, this.mesSeleccionado - 1, i);
       const esFinde = fechaObj.getDay() === 0 || fechaObj.getDay() === 6;
+
+      let estadoFinal = 'Sin registro';
+
+      if (asistenciaMap[i]) {
+        estadoFinal = asistenciaMap[i]; // Si hay registro en BD, este manda.
+      } else if (esFinde) {
+        estadoFinal = 'Finde';
+      } else if (esMesPasado || (esMesActual && i <= diaActual)) {
+        // Modo Zen: Si el día ya pasó, no es finde y no tiene registro negativo en BD, se asume presente por defecto.
+        estadoFinal = 'Presente';
+      }
 
       this.diasCalendario.push({
         vacio: false,
-        numero: numeroDia,
-        fechaCompleta: dia.fecha,
-        estado: esFinde ? 'Finde' : dia.estado
+        numero: i,
+        fechaCompleta: `${this.anioSeleccionado}-${this.mesSeleccionado.toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`,
+        estado: estadoFinal
       });
-    });
+    }
   }
 
   // ==========================================
@@ -385,7 +413,7 @@ export class RrhhComponent implements OnInit {
       next: (response: any) => {
         const datosReales = response.data ? response.data : response;
         this.employees = datosReales.map((emp: any) => ({
-          id: emp._id,
+          id: emp._id || emp.id,
           rut: emp.rut,
           nombre: emp.nombre_completo || emp.nombre || 'Sin nombre',
           correo: emp.correo || 'No registrado',
@@ -404,6 +432,20 @@ export class RrhhComponent implements OnInit {
         }));
 
         this.filteredEmployees = [...this.employees];
+
+        // Mapear los empleados reales a la lista de asistencia diaria (Modo Zen por defecto)
+        this.asistenciaList = this.employees.map((emp: any) => ({
+          id: emp.id,
+          rut: emp.rut,
+          nombre: emp.nombre,
+          cargo: emp.cargo,
+          estado: 'Presente',
+          entrada: '08:00',
+          salida: '17:00',
+          diasVacaciones: 15,
+          inasistenciasInjustificadas: 0
+        }));
+        this.filteredAsistenciaList = [...this.asistenciaList];
 
         // Populate the calendar dropdown from the real employees list
         this.empleadosCalendario = this.employees.map(e => ({
@@ -675,37 +717,66 @@ export class RrhhComponent implements OnInit {
 
     this.isSaving = true;
 
-    setTimeout(() => {
-      const formValue = this.excepcionForm.getRawValue();
-      const emp = this.selectedAsistencia;
-      if (!emp) return;
-
-      const tipo = formValue.tipoExcepcion;
-
-      const estadosMap: Record<string, string> = {
-        'atraso': 'Atraso',
-        'ausente': 'Ausente Injustificado',
-        'licencia': 'Licencia Médica',
-        'vacaciones': 'Vacaciones',
-        'sin_goce': 'Permiso S/Goce'
-      };
-
-      emp.estado = estadosMap[tipo] || emp.estado;
-
-      if (tipo === 'atraso') {
-        emp.entrada = formValue.horaEntradaReal;
-        this.toastService.show(`Atraso de ${formValue.minutosAtraso} min registrado para ${emp.nombre}`, 'warning');
-      } else if (tipo === 'vacaciones') {
-        emp.diasVacaciones = Math.max(0, emp.diasVacaciones - 1);
-        this.toastService.show(`Día de vacaciones descontado a ${emp.nombre}. Saldo: ${emp.diasVacaciones}`, 'info');
-      } else {
-        emp.inasistenciasInjustificadas += 1;
-        this.toastService.show(`Excepción ${estadosMap[tipo]} registrada.`, 'info');
-      }
-
+    const formValue = this.excepcionForm.getRawValue();
+    const emp = this.selectedAsistencia;
+    if (!emp) {
       this.isSaving = false;
-      this.closeExcepcionModal();
-      this.cdr.detectChanges();
-    }, 1200);
+      return;
+    }
+
+    const tipo = formValue.tipoExcepcion;
+
+    const estadosMap: Record<string, string> = {
+      'atraso': 'Atraso',
+      'ausente': 'Ausente Injustificado',
+      'licencia': 'Licencia Médica',
+      'vacaciones': 'Vacaciones',
+      'sin_goce': 'Permiso S/Goce'
+    };
+
+    const estadoFinal = estadosMap[tipo] || 'Ausente Injustificado';
+    const fechaFmt = `${this.fechaHoy.getFullYear()}-${(this.fechaHoy.getMonth() + 1).toString().padStart(2, '0')}-${this.fechaHoy.getDate().toString().padStart(2, '0')}`;
+
+    const payload: any[] = [{
+      rut: emp.rut,
+      estado: estadoFinal,
+      fecha: fechaFmt,
+      horas_extra: 0,
+      comentario: formValue.justificativo || ''
+    }];
+
+    if (tipo === 'atraso' && formValue.horaEntradaReal) {
+      payload[0].hora_entrada = formValue.horaEntradaReal;
+    }
+
+    this.rrhhService.registrarAsistenciaDiaria(payload).subscribe({
+      next: (res) => {
+        emp.estado = estadoFinal;
+
+        if (tipo === 'atraso') {
+          emp.entrada = formValue.horaEntradaReal;
+          this.toastService.show(`Atraso de ${formValue.minutosAtraso} min registrado para ${emp.nombre}`, 'warning');
+        } else if (tipo === 'vacaciones') {
+          emp.diasVacaciones = Math.max(0, emp.diasVacaciones - 1);
+          this.toastService.show(`Día de vacaciones descontado a ${emp.nombre}. Saldo: ${emp.diasVacaciones}`, 'info');
+        } else {
+          emp.inasistenciasInjustificadas += 1;
+          this.toastService.show(`Excepción ${estadoFinal} registrada.`, 'info');
+        }
+
+        this.isSaving = false;
+        this.closeExcepcionModal();
+        
+        // Refrescar calendario para que se vea reflejado el cambio
+        this.obtenerAsistencia();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.isSaving = false;
+        const msg = err.error?.message || 'Error al guardar la excepción. Posible duplicado.';
+        this.toastService.show(msg, 'error');
+        this.cdr.detectChanges();
+      }
+    });
   }
 }

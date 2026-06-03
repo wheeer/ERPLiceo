@@ -232,38 +232,100 @@ def api_asistencia(request, mes=None, anio=None):
             
         elif request.method == 'POST':
             body = parse_request_body(request)
-            estado = body.get('estado')
-            horas_extra = body.get('horas_extra', 0)
             
-            estados_validos = ["Presente", "Ausente", "Tardanza", "Licencia"]
-            if estado not in estados_validos:
-                return JsonResponse({"success": False, "data": [], "message": f"Estado inválido. Valores permitidos: {', '.join(estados_validos)}"}, status=400)
+            if not isinstance(body, list):
+                registros = [body]
+            else:
+                registros = body
                 
-            try:
-                horas_extra = int(horas_extra)
-            except (ValueError, TypeError):
-                horas_extra = 0
-                
-            if horas_extra < 0 or horas_extra > 2:
-                return JsonResponse({"success": False, "data": [], "message": "Las horas extra deben ser un entero entre 0 y 2"}, status=400)
-                
-            body['horas_extra'] = horas_extra
+            estados_validos = [
+                "Presente", "Ausente", "Tardanza", "Licencia", 
+                "Atraso", "Ausente Injustificado", "Licencia Médica", 
+                "Vacaciones", "Permiso S/Goce", "Finde", "Sin registro"
+            ]
             
-            # Aseguramos parseo real de fecha a datetime (Issue 3)
-            if 'fecha' in body and isinstance(body['fecha'], str):
+            # PASS 1: Validación y preparación de datos (Evitar inserciones parciales)
+            registros_a_procesar = []
+            for reg in registros:
+                estado = reg.get('estado')
+                horas_extra = reg.get('horas_extra', 0)
+                rut_empleado = reg.get('rut') or reg.get('empleado_rut')
+                
+                if not estado or estado not in estados_validos or not rut_empleado:
+                    continue
+                    
+                if estado in ["Finde", "Sin registro"]:
+                    continue
+                    
                 try:
-                    fecha_obj = datetime.strptime(body['fecha'], "%Y-%m-%d")
-                    body['fecha'] = fecha_obj
-                except ValueError:
-                    pass
-            
-            result = col_asistencia.insert_one(body)
-            body['_id'] = str(result.inserted_id)
-            
-            if isinstance(body.get('fecha'), datetime):
-                body['fecha'] = body['fecha'].strftime("%Y-%m-%d")
+                    horas_extra = int(horas_extra)
+                except (ValueError, TypeError):
+                    horas_extra = 0
+                    
+                if horas_extra < 0 or horas_extra > 2:
+                    horas_extra = 0
+                    
+                reg['horas_extra'] = horas_extra
+
+                if estado in ["Presente", "Atraso"]:
+                    if not reg.get('hora_entrada'):
+                        reg['hora_entrada'] = "08:00"
+                    if not reg.get('hora_salida'):
+                        reg['hora_salida'] = "17:00"
+                    if reg.get('horas_trabajadas') is None:
+                        reg['horas_trabajadas'] = 9
                 
-            return JsonResponse({"success": True, "data": [body], "message": "Asistencia registrada con éxito"}, status=201)
+                fecha_obj = None
+                if 'fecha' in reg and isinstance(reg['fecha'], str):
+                    try:
+                        fecha_obj = datetime.strptime(reg['fecha'], "%Y-%m-%d")
+                        reg['fecha'] = fecha_obj
+                    except ValueError:
+                        pass
+                elif 'fecha' in reg and isinstance(reg['fecha'], datetime):
+                    fecha_obj = reg['fecha']
+                    
+                if not fecha_obj:
+                    continue
+                    
+                # Validación de duplicados PREVIA a cualquier inserción
+                inicio_dia = datetime(fecha_obj.year, fecha_obj.month, fecha_obj.day, 0, 0, 0)
+                fin_dia = datetime(fecha_obj.year, fecha_obj.month, fecha_obj.day, 23, 59, 59)
+                
+                duplicado = col_asistencia.find_one({
+                    "$or": [{"empleado_rut": rut_empleado}, {"rut": rut_empleado}],
+                    "fecha": {"$gte": inicio_dia, "$lte": fin_dia}
+                })
+                
+                if duplicado:
+                    return JsonResponse({
+                        "success": False,
+                        "data": [],
+                        "message": f"Conflicto: Ya existe un registro de asistencia para el RUT {rut_empleado} en la fecha {fecha_obj.strftime('%Y-%m-%d')}."
+                    }, status=409)
+                    
+                if 'rut' in reg and 'empleado_rut' not in reg:
+                    reg['empleado_rut'] = reg['rut']
+                    
+                registros_a_procesar.append(reg)
+
+            # PASS 2: Inserción segura
+            procesados = 0
+            datos_guardados = []
+            
+            for reg in registros_a_procesar:
+                result = col_asistencia.insert_one(reg)
+                reg['_id'] = str(result.inserted_id)
+                
+                if isinstance(reg.get('fecha'), datetime):
+                    reg['fecha'] = reg['fecha'].strftime("%Y-%m-%d")
+                    
+                datos_guardados.append(reg)
+                procesados += 1
+                
+            mensaje = f"Se procesaron {procesados} registros correctamente" if procesados > 0 else "No se procesaron registros nuevos (todos eran inválidos)"
+            
+            return JsonResponse({"success": True, "data": datos_guardados, "message": mensaje, "procesados": procesados}, status=201)
             
         else:
             return JsonResponse({"success": False, "data": [], "message": "Método no permitido"}, status=405)

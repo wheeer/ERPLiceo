@@ -395,7 +395,7 @@
                     <span class="status-badge" 
                           [class.status-active]="emp.estado === 'Presente'"
                           [class.status-warning]="emp.estado === 'Atraso'"
-                          [class.status-inactive]="emp.estado === 'Ausente Injustificado'"
+                          [class.status-absent]="emp.estado === 'Ausente Injustificado'"
                           [class.status-leave]="emp.estado === 'Licencia Médica' || emp.estado === 'Vacaciones' || emp.estado === 'Permiso S/Goce'">
                       {{ emp.estado }}
                     </span>
@@ -905,76 +905,5 @@
     </div>
   }
 
-  <!-- ============================================== -->
-  <!-- MODAL DE EXCEPCIÓN DE ASISTENCIA               -->
-  <!-- ============================================== -->
-  @if (showAsistenciaModal && selectedAsistencia) {
-    <div class="modal-overlay glass-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Registrar Excepción</h2>
-          <button class="btn-close" (click)="closeExcepcionModal()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        
-        <div class="modal-subheader glass-panel">
-          <p><strong>Funcionario:</strong> {{ selectedAsistencia.nombre }}</p>
-          <p><strong>Horario Teórico:</strong> 08:00 - 17:00</p>
-        </div>
-
-        <form [formGroup]="excepcionForm" (ngSubmit)="saveExcepcion()" class="crud-form">
-          <div class="form-group">
-            <label>Tipo de Excepción</label>
-            <select formControlName="tipoExcepcion">
-              <option value="atraso">Atraso</option>
-              <option value="ausente">Ausente Injustificado</option>
-              <option value="licencia">Licencia Médica</option>
-              <option value="vacaciones">Vacaciones</option>
-              <option value="sin_goce">Permiso sin goce de sueldo</option>
-            </select>
-          </div>
-
-          @if (excepcionForm.get('tipoExcepcion')?.value === 'atraso') {
-            <div class="form-row exception-panel">
-              <div class="form-group">
-                <label>Hora de Ingreso Real</label>
-                <input type="time" formControlName="horaEntradaReal">
-              </div>
-              <div class="form-group">
-                <label>Minutos de Atraso Calculados</label>
-                <input type="number" formControlName="minutosAtraso" class="read-only-input" readonly>
-              </div>
-            </div>
-          }
-
-          @if (excepcionForm.get('tipoExcepcion')?.value === 'vacaciones') {
-            <div class="exception-panel info-panel">
-              <p>Días de Vacaciones Disponibles: <strong>{{ selectedAsistencia.diasVacaciones }}</strong></p>
-              @if (selectedAsistencia.diasVacaciones === 0) {
-                <p class="error-text">⚠️ El empleado no tiene días disponibles o es Docente (Vacaciones de verano).</p>
-              }
-            </div>
-          }
-
-          @if (excepcionForm.get('tipoExcepcion')?.value !== 'atraso' && excepcionForm.get('tipoExcepcion')?.value !== 'vacaciones') {
-            <div class="form-group">
-              <label>Observación Interna</label>
-              <textarea formControlName="justificativo" 
-                [placeholder]="excepcionForm.get('tipoExcepcion')?.value === 'ausente' ? 'Ej: Tercera falta del mes, comunicar a Dirección.' : 'Ej: Licencia Folio 123456 / Motivo del permiso'"
-                rows="2"></textarea>
-            </div>
-          }
-
-          <div class="modal-footer">
-            <button type="button" class="btn-secondary" (click)="closeExcepcionModal()">Cancelar</button>
-            <button type="submit" class="btn-primary btn-danger-action">Confirmar Excepción</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  }
-
-
-
 </div>
+
