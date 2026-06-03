@@ -27,3 +27,22 @@ col_remuneraciones = db["remuneraciones"]
 col_inventario = db["inventario"]
 col_roles = db["roles"]
 col_horas_extra = db["horas_extra"]
+col_auditoria = db["auditoria"]
+
+from datetime import datetime, UTC
+
+def registrar_auditoria(usuario_rut, usuario_nombre, modulo, accion, descripcion):
+    """
+    Función modular para registrar cualquier actividad en el sistema.
+    Debe ser importada y llamada por otros módulos cuando realicen acciones importantes.
+    """
+    log_entry = {
+        "usuario_rut": usuario_rut,
+        "usuario_nombre": usuario_nombre,
+        "modulo": modulo,
+        "accion": accion,
+        "descripcion": descripcion,
+        "timestamp": datetime.now(UTC)
+    }
+    col_auditoria.insert_one(log_entry)
+
