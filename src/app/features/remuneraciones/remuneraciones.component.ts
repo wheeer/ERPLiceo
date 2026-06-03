@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
@@ -6,6 +6,9 @@ import { ActivatedRoute } from '@angular/router';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Component, inject, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+
+
 
 interface Payroll {
   id: number;
@@ -26,6 +29,7 @@ interface Payroll {
   anio: number;
   horasExtra: number;
   estadoPago: string;
+  descuentoAsistencia: number;
 }
 
 interface HorasExtraRecord {
@@ -55,16 +59,19 @@ export class RemuneracionesComponent implements OnInit {
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
 
   isLoading = true;
   isFetching = false;
+  isGenerating = false;
+  isLoadingData = false;
   liquidacionesActivo = false;
   paginaActual = 1;
   activeTab: 'nomina' | 'horasExtra' = 'nomina';
   mesSeleccionado: number = 5;
   anioSeleccionado: number = 2026;
-  itemsPorPagina: number = 5;
-  opcionesPorPagina: number[] = [5, 10, 20];
+  itemsPorPagina: number = 10;
+  opcionesPorPagina: number[] = [10, 20, 50, 100];
 
   meses: any[] = [
     { value: 1, nombre: 'Enero' }, { value: 2, nombre: 'Febrero' },
@@ -92,12 +99,14 @@ export class RemuneracionesComponent implements OnInit {
   cargarRemuneraciones() {
     const token = localStorage.getItem('erp_token');
     if (!token) {
-      this.toastService.show('Sesión expirada.', 'warning');
+      setTimeout(() => this.toastService.show('Sesión expirada.', 'warning'), 0);
       return;
     }
 
-    this.isFetching = true;
-    this.isLoading = true;
+    setTimeout(() => {
+      this.isLoading = true;
+      this.cdr.detectChanges();
+    }, 0);
 
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
@@ -108,15 +117,18 @@ export class RemuneracionesComponent implements OnInit {
       next: (response) => {
         this.payrollData = response.data;
         this.filteredPayrollData = response.data;
-        this.isFetching = false;
-        this.isLoading = false;
-        this.cdr.detectChanges();
+        setTimeout(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        }, 0);
       },
       error: (error) => {
         console.error('Error al obtener remuneraciones', error);
-        this.toastService.show('Error al cargar remuneraciones.', 'warning');
-        this.isFetching = false;
-        this.isLoading = false;
+        setTimeout(() => {
+          this.toastService.show('Error al cargar remuneraciones.', 'warning');
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        }, 0);
       }
     });
   }
@@ -327,15 +339,19 @@ export class RemuneracionesComponent implements OnInit {
 
     const finalYHaberes = (doc as any).lastAutoTable.finalY;
 
+    const descuentosBody: any[] = [
+      ['AFP', `-${this.formatCurrency(payroll.afp)}`],
+      ['Salud', `-${this.formatCurrency(payroll.salud)}`],
+      ['Seguro Cesantía', `-${this.formatCurrency(payroll.seguroCesantia)}`],
+    ];
+    if (payroll.descuentoAsistencia > 0) {
+      descuentosBody.push(['Dcto. Asistencia', `-${this.formatCurrency(payroll.descuentoAsistencia)}`]);
+    }
+
     autoTable(doc, {
       startY: tablaY,
       head: [['DESCUENTOS', 'MONTO']],
-      body: [
-        ['AFP', `-${this.formatCurrency(payroll.afp)}`],
-        ['Salud', `-${this.formatCurrency(payroll.salud)}`],
-        ['Seguro Cesantía', `-${this.formatCurrency(payroll.seguroCesantia)}`],
-        ['Dcto. Asistencia', '-$0'],
-      ],
+      body: descuentosBody,
       headStyles: { fillColor: azulOscuro, textColor: blanco, fontSize: 8, fontStyle: 'bold' },
       bodyStyles: { fontSize: 8, textColor: [30, 41, 59] },
       alternateRowStyles: { fillColor: grisClaro },
@@ -395,23 +411,18 @@ export class RemuneracionesComponent implements OnInit {
     this.detalleSeleccionado = null;
   }
 
+  // ✅ Punto 1: eliminada validación payrollData.length === 0
   generarLiquidaciones() {
-    this.liquidacionesActivo = true;
-
-    if (this.payrollData.length === 0) {
-      this.toastService.show('No hay empleados cargados.', 'warning');
-      this.liquidacionesActivo = false;
-      return;
-    }
-
     const token = localStorage.getItem('erp_token');
     if (!token) {
-      this.toastService.show('Sesión expirada.', 'warning');
-      this.liquidacionesActivo = false;
+      setTimeout(() => this.toastService.show('Sesión expirada.', 'warning'), 0);
       return;
     }
 
-    this.isFetching = true;
+    this.isGenerating = true;
+    this.liquidacionesActivo = true;
+    this.cdr.detectChanges();
+
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
     this.http.post<any>(
@@ -420,21 +431,25 @@ export class RemuneracionesComponent implements OnInit {
       { headers }
     ).subscribe({
       next: (response) => {
-        this.toastService.show('Liquidaciones generadas correctamente.', 'success');
-        this.isFetching = false;
+        this.isGenerating = false;
         this.liquidacionesActivo = false;
+        this.cdr.detectChanges();
+        setTimeout(() => {
+          this.toastService.show('Liquidaciones generadas correctamente.', 'success');
+        }, 0);
         this.cargarRemuneraciones();
       },
       error: (error) => {
-        this.isFetching = false;
+        this.isGenerating = false;
         this.liquidacionesActivo = false;
-        if (error.status === 400 && error.error?.message?.includes('Ya existen')) {
-          this.toastService.show('Ya existen liquidaciones para este período.', 'info');
-        } else {
-          console.error('Error al generar liquidaciones', error);
-          this.toastService.show('Error al generar liquidaciones.', 'warning');
-        }
+        this.cdr.detectChanges();
+        setTimeout(() => {
+          const mensaje = error.error?.message || 'Error al generar liquidaciones.';
+          this.toastService.show(mensaje, 'warning');
+        }, 0);
       }
     });
   }
 }
+
+

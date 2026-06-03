@@ -63,9 +63,9 @@ def calcular_remuneraciones(request):
 
         ausencias_por_rut = {}
         for registro in asistencias:
-            rut = registro.get("rut_empleado") or registro.get("rut")
+            rut = registro.get("empleado_rut") or registro.get("rut_empleado") or registro.get("rut")
             estado = registro.get("estado", "").lower()
-            if estado in ["ausente", "inasistencia", "falta"]:
+            if estado in ["ausente", "inasistencia", "falta", "licencia"]: # ✅ agregado licencia
                 ausencias_por_rut[rut] = ausencias_por_rut.get(rut, 0) + 1
 
         empleados = list(col_empleados.find({
@@ -83,22 +83,18 @@ def calcular_remuneraciones(request):
             afp_nombre = config.get("afp", "ProVida")
             salud_nombre = config.get("salud", "Fonasa")
 
-            # Descuento por ausencias
             dias_ausentes = ausencias_por_rut.get(rut, 0)
             valor_dia = round(sueldo_base / num_dias)
             descuento_asistencia = valor_dia * dias_ausentes
 
-            # Gratificación: sueldo_base × 0.25
             gratificacion = min(round(sueldo_base * 0.25), 205000)
 
-            # Horas extra
             horas_extra_empleado = list(col_horas_extra.find({
                 "$or": [{"rut_empleado": rut}, {"rut": rut}],
                 "mes": mes_int,
                 "anio": anio_int
             }))
 
-            # Valor hora: sueldo_base / 160
             valor_hora = sueldo_base / 160
             total_horas_extra = 0
             cantidad_horas_extra = 0
@@ -106,35 +102,23 @@ def calcular_remuneraciones(request):
             for hora_extra in horas_extra_empleado:
                 horas = hora_extra.get("horas") or hora_extra.get("cantidad_horas") or 0
                 cantidad_horas_extra += horas
-                # Recargo fijo 1.5 (Ley 21.561)
                 total_horas_extra += round(horas * valor_hora * 1.5)
 
-            # Total imponible: sueldo_base + gratificacion + horas_extra
             total_imponible = sueldo_base + gratificacion + total_horas_extra
-
-            # AFP: total_imponible × 0.115
             afp = round(total_imponible * 0.115)
-
-            # Salud: total_imponible × 0.07
             salud = round(total_imponible * 0.07)
 
-            # Cesantía: total_imponible × 0.006
             tipo_contrato = empleado.get("tipo_contrato", "").lower()
             seguro_cesantia = round(total_imponible * 0.006) if tipo_contrato == "indefinido" else 0
 
             total_descuentos = afp + salud + seguro_cesantia + descuento_asistencia
             total_haberes = total_imponible + movilizacion + colacion
-
-            # Líquido: total_haberes - total_descuentos
             sueldo_liquido = total_haberes - total_descuentos
 
             liquidacion = {
                 "empleado_rut": rut,
                 "estado_pago": "Pendiente",
-                "periodo": {
-                    "mes": mes_int,
-                    "anio": anio_int
-                },
+                "periodo": {"mes": mes_int, "anio": anio_int},
                 "empleado": {
                     "nombre": empleado.get("nombre_completo", ""),
                     "cargo": empleado.get("cargo", ""),
@@ -144,24 +128,15 @@ def calcular_remuneraciones(request):
                     "imponibles": {
                         "sueldo_base": sueldo_base,
                         "gratificacion_legal": gratificacion,
-                        "horas_extra": {
-                            "cantidad": cantidad_horas_extra,
-                            "monto": total_horas_extra
-                        }
+                        "horas_extra": {"cantidad": cantidad_horas_extra, "monto": total_horas_extra}
                     },
-                    "no_imponibles": {
-                        "movilizacion": movilizacion,
-                        "colacion": colacion
-                    }
+                    "no_imponibles": {"movilizacion": movilizacion, "colacion": colacion}
                 },
                 "descuentos_legales": {
                     "afp": {"nombre": afp_nombre, "monto": afp},
                     "salud": {"nombre": salud_nombre, "monto": salud},
                     "seguro_cesantia": {"monto": seguro_cesantia},
-                    "asistencia": {
-                        "dias_ausentes": dias_ausentes,
-                        "monto": descuento_asistencia
-                    }
+                    "asistencia": {"dias_ausentes": dias_ausentes, "monto": descuento_asistencia}
                 },
                 "totales": {
                     "total_haberes": total_haberes,
@@ -187,6 +162,55 @@ def calcular_remuneraciones(request):
             "message": f"Error al calcular remuneraciones: {str(e)}",
             "data": None
         }, status=500)
+
+
+def _serializar_liquidacion(liquidacion, empleado):
+    """Helper para serializar liquidación al formato frontend."""
+    try:
+        seguro_cesantia = liquidacion["descuentos_legales"]["seguro_cesantia"]
+        seguro_cesantia_monto = seguro_cesantia["monto"] if isinstance(seguro_cesantia, dict) else seguro_cesantia
+
+        return {
+            "id": str(liquidacion["_id"]),
+            "rut": liquidacion["empleado_rut"],
+            "nombre": empleado.get("nombre_completo", "") if empleado else "",
+            "cargo": empleado.get("cargo", "") if empleado else "",
+            "mes": liquidacion["periodo"]["mes"],
+            "anio": liquidacion["periodo"]["anio"],
+            "estadoPago": liquidacion.get("estado_pago", "Pendiente"),
+            "sueldoBase": liquidacion["haberes"]["imponibles"]["sueldo_base"],
+            "gratificacion": liquidacion["haberes"]["imponibles"]["gratificacion_legal"],
+            "horasExtra": (
+                liquidacion["haberes"]["imponibles"]["horas_extra"]["monto"]
+                if isinstance(liquidacion["haberes"]["imponibles"]["horas_extra"], dict)
+                else liquidacion["haberes"]["imponibles"]["horas_extra"]
+            ),
+            "movilizacion": liquidacion["haberes"]["no_imponibles"]["movilizacion"],
+            "colacion": liquidacion["haberes"]["no_imponibles"]["colacion"],
+            "afp": (
+                liquidacion["descuentos_legales"]["afp"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"]["afp"], dict)
+                else liquidacion["descuentos_legales"]["afp"]
+            ),
+            "salud": (
+                liquidacion["descuentos_legales"]["salud"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"]["salud"], dict)
+                else liquidacion["descuentos_legales"]["salud"]
+            ),
+            "seguroCesantia": seguro_cesantia_monto,
+            "descuentoAsistencia": (
+                liquidacion["descuentos_legales"]["asistencia"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"].get("asistencia"), dict)
+                else 0
+            ),
+            "totalHaberes": liquidacion["totales"]["total_haberes"],
+            "totalDescuentos": liquidacion["totales"]["total_descuentos"],
+            "neto": liquidacion["totales"]["sueldo_liquido"]
+        }
+    except Exception as e:
+        print(f"Error serializando liquidacion {liquidacion.get('_id')}: {e}")
+        return None
+
 
 @csrf_exempt
 @jwt_required
@@ -218,47 +242,10 @@ def obtener_pdf_liquidacion(request, id):
 
         empleado = col_empleados.find_one({"rut": liquidacion["empleado_rut"]}) or {}
 
-        liquidacion_frontend = {
-            "id": str(liquidacion["_id"]),
-            "rut": liquidacion["empleado_rut"],
-            "nombre": empleado.get("nombre_completo", ""),
-            "cargo": empleado.get("cargo", ""),
-            "mes": liquidacion["periodo"]["mes"],
-            "anio": liquidacion["periodo"]["anio"],
-            "estadoPago": liquidacion.get("estado_pago", "Pendiente"),
-            "sueldoBase": liquidacion["haberes"]["imponibles"]["sueldo_base"],
-            "gratificacion": liquidacion["haberes"]["imponibles"]["gratificacion_legal"],
-            "horasExtra": (
-                liquidacion["haberes"]["imponibles"]["horas_extra"]["monto"]
-                if isinstance(liquidacion["haberes"]["imponibles"]["horas_extra"], dict)
-                else liquidacion["haberes"]["imponibles"]["horas_extra"]
-            ),
-            "movilizacion": liquidacion["haberes"]["no_imponibles"]["movilizacion"],
-            "colacion": liquidacion["haberes"]["no_imponibles"]["colacion"],
-            "afp": (
-                liquidacion["descuentos_legales"]["afp"]["monto"]
-                if isinstance(liquidacion["descuentos_legales"]["afp"], dict)
-                else liquidacion["descuentos_legales"]["afp"]
-            ),
-            "salud": (
-                liquidacion["descuentos_legales"]["salud"]["monto"]
-                if isinstance(liquidacion["descuentos_legales"]["salud"], dict)
-                else liquidacion["descuentos_legales"]["salud"]
-            ),
-            "seguroCesantia": (
-                liquidacion["descuentos_legales"]["seguro_cesantia"]["monto"]
-                if isinstance(liquidacion["descuentos_legales"]["seguro_cesantia"], dict)
-                else liquidacion["descuentos_legales"]["seguro_cesantia"]
-            ),
-            "totalHaberes": liquidacion["totales"]["total_haberes"],
-            "totalDescuentos": liquidacion["totales"]["total_descuentos"],
-            "neto": liquidacion["totales"]["sueldo_liquido"]
-        }
-
         return JsonResponse({
             "success": True,
             "message": "Datos PDF obtenidos correctamente.",
-            "data": liquidacion_frontend
+            "data": _serializar_liquidacion(liquidacion, empleado)
         }, status=200)
 
     except Exception as e:
@@ -296,47 +283,10 @@ def obtener_liquidacion_empleado(request, rut, mes, anio):
 
         empleado = col_empleados.find_one({"rut": rut}) or {}
 
-        liquidacion_frontend = {
-            "id": str(liquidacion["_id"]),
-            "rut": liquidacion["empleado_rut"],
-            "nombre": empleado.get("nombre_completo", ""),
-            "cargo": empleado.get("cargo", ""),
-            "mes": liquidacion["periodo"]["mes"],
-            "anio": liquidacion["periodo"]["anio"],
-            "estadoPago": liquidacion.get("estado_pago", "Pendiente"),
-            "sueldoBase": liquidacion["haberes"]["imponibles"]["sueldo_base"],
-            "gratificacion": liquidacion["haberes"]["imponibles"]["gratificacion_legal"],
-            "horasExtra": (
-                liquidacion["haberes"]["imponibles"]["horas_extra"]["monto"]
-                if isinstance(liquidacion["haberes"]["imponibles"]["horas_extra"], dict)
-                else liquidacion["haberes"]["imponibles"]["horas_extra"]
-            ),
-            "movilizacion": liquidacion["haberes"]["no_imponibles"]["movilizacion"],
-            "colacion": liquidacion["haberes"]["no_imponibles"]["colacion"],
-            "afp": (
-                liquidacion["descuentos_legales"]["afp"]["monto"]
-                if isinstance(liquidacion["descuentos_legales"]["afp"], dict)
-                else liquidacion["descuentos_legales"]["afp"]
-            ),
-            "salud": (
-                liquidacion["descuentos_legales"]["salud"]["monto"]
-                if isinstance(liquidacion["descuentos_legales"]["salud"], dict)
-                else liquidacion["descuentos_legales"]["salud"]
-            ),
-            "seguroCesantia": (
-                liquidacion["descuentos_legales"]["seguro_cesantia"]["monto"]
-                if isinstance(liquidacion["descuentos_legales"]["seguro_cesantia"], dict)
-                else liquidacion["descuentos_legales"]["seguro_cesantia"]
-            ),
-            "totalHaberes": liquidacion["totales"]["total_haberes"],
-            "totalDescuentos": liquidacion["totales"]["total_descuentos"],
-            "neto": liquidacion["totales"]["sueldo_liquido"]
-        }
-
         return JsonResponse({
             "success": True,
             "message": "Liquidación obtenida correctamente.",
-            "data": liquidacion_frontend
+            "data": _serializar_liquidacion(liquidacion, empleado)
         }, status=200)
 
     except Exception as e:
@@ -365,46 +315,11 @@ def obtener_remuneraciones(request, mes, anio):
         }))
 
         liquidaciones_frontend = []
-
         for liquidacion in liquidaciones_bd:
             empleado = col_empleados.find_one({"rut": liquidacion["empleado_rut"]}) or {}
-
-            liquidaciones_frontend.append({
-                "id": str(liquidacion["_id"]),
-                "rut": liquidacion["empleado_rut"],
-                "nombre": empleado.get("nombre_completo", ""),
-                "cargo": empleado.get("cargo", ""),
-                "mes": liquidacion["periodo"]["mes"],
-                "anio": liquidacion["periodo"]["anio"],
-                "estadoPago": liquidacion.get("estado_pago", "Pendiente"),
-                "sueldoBase": liquidacion["haberes"]["imponibles"]["sueldo_base"],
-                "gratificacion": liquidacion["haberes"]["imponibles"]["gratificacion_legal"],
-                "horasExtra": (
-                    liquidacion["haberes"]["imponibles"]["horas_extra"]["monto"]
-                    if isinstance(liquidacion["haberes"]["imponibles"]["horas_extra"], dict)
-                    else liquidacion["haberes"]["imponibles"]["horas_extra"]
-                ),
-                "movilizacion": liquidacion["haberes"]["no_imponibles"]["movilizacion"],
-                "colacion": liquidacion["haberes"]["no_imponibles"]["colacion"],
-                "afp": (
-                    liquidacion["descuentos_legales"]["afp"]["monto"]
-                    if isinstance(liquidacion["descuentos_legales"]["afp"], dict)
-                    else liquidacion["descuentos_legales"]["afp"]
-                ),
-                "salud": (
-                    liquidacion["descuentos_legales"]["salud"]["monto"]
-                    if isinstance(liquidacion["descuentos_legales"]["salud"], dict)
-                    else liquidacion["descuentos_legales"]["salud"]
-                ),
-                "seguroCesantia": (
-                    liquidacion["descuentos_legales"]["seguro_cesantia"]["monto"]
-                    if isinstance(liquidacion["descuentos_legales"]["seguro_cesantia"], dict)
-                    else liquidacion["descuentos_legales"]["seguro_cesantia"]
-                ),
-                "totalHaberes": liquidacion["totales"]["total_haberes"],
-                "totalDescuentos": liquidacion["totales"]["total_descuentos"],
-                "neto": liquidacion["totales"]["sueldo_liquido"]
-            })
+            resultado = _serializar_liquidacion(liquidacion, empleado)
+            if resultado:  # ✅ filtra los None
+                liquidaciones_frontend.append(resultado)
 
         return JsonResponse({
             "success": True,
@@ -438,7 +353,6 @@ def obtener_horas_extra(request, mes, anio):
         }))
 
         horas_extra_frontend = []
-
         for he in horas_extra_bd:
             horas_extra_frontend.append({
                 "id": str(he["_id"]),

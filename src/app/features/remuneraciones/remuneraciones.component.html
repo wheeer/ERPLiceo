@@ -8,28 +8,26 @@
       <div class="periodo-selector">
         <select [(ngModel)]="mesSeleccionado" title="Seleccionar Mes" aria-label="Seleccionar Mes">
           @for (mes of meses; track mes.value) {
-            <option [value]="mes.value">{{ mes.nombre }}</option>
+          <option [value]="mes.value">{{ mes.nombre }}</option>
           }
         </select>
         <select [(ngModel)]="anioSeleccionado" title="Seleccionar Año" aria-label="Seleccionar Año">
           @for (anio of anios; track anio) {
-            <option [value]="anio">{{ anio }}</option>
+          <option [value]="anio">{{ anio }}</option>
           }
         </select>
-        <button class="btn-generar" (click)="cargarRemuneraciones()" [disabled]="isFetching">
-          @if (isFetching) {
-            <span class="spinner-btn"></span> Cargando...
+        <button class="btn-generar" (click)="cargarRemuneraciones()" [disabled]="isLoadingData">
+          @if (isLoadingData) {
+          <span class="spinner-btn"></span> Cargando...
           } @else {
-            Cargar
+          Cargar
           }
         </button>
       </div>
     </div>
 
     @if (activeTab === 'nomina') {
-      <input type="text" class="search-input"
-             placeholder="Buscar por nombre, RUT o cargo..."
-             (keyup)="onSearch($event)">
+    <input type="text" class="search-input" placeholder="Buscar por nombre, RUT o cargo..." (keyup)="onSearch($event)">
     }
 
   </div>
@@ -44,241 +42,61 @@
       </button>
     </div>
 
-    <button class="btn-generar-liquidaciones"
-            (click)="generarLiquidaciones()"
-            [disabled]="isFetching">
-      @if (isFetching) {
-        <span class="spinner-btn"></span> Generando...
+    <button class="btn-generar-liquidaciones" [class.active]="liquidacionesActivo" (click)="generarLiquidaciones()"
+      [disabled]="isGenerating">
+      @if (isGenerating) {
+      <span class="spinner-btn"></span> Generando...
       } @else {
-        Generar Liquidaciones
+      Generar Liquidaciones
       }
     </button>
 
   </div>
-
-@if (isLoading) {
-<div class="table-wrapper">
-  <table class="payroll-table">
-    <thead>
-      <tr>
-        <th>RUT</th>
-        <th>Nombre / Cargo</th>
-        <th class="amount">Sueldo Base</th>
-        <th class="amount hide-mobile">Gratif. Legal</th>
-        <th class="amount">Dcto. Asist.</th>
-        <th class="amount total">Neto</th>
-        <th class="center">Estado</th>
-        <th class="center">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (i of [1,2,3,4,5]; track i) {
-      <tr>
-        <td>
-          <div class="skeleton-box shimmer w-40"></div>
-        </td>
-        <td>
-          <div class="employee-info-detailed">
-            <div class="skeleton-box shimmer w-70"></div>
-            <div class="skeleton-box shimmer w-50 mt-5px"></div>
-          </div>
-        </td>
-        <td class="cell-amount">
-          <div class="skeleton-box shimmer w-60"></div>
-        </td>
-        <td class="cell-amount hide-mobile">
-          <div class="skeleton-box shimmer w-50"></div>
-        </td>
-        <td class="cell-amount">
-          <div class="skeleton-box shimmer w-30"></div>
-        </td>
-        <td class="cell-amount total-neto">
-          <div class="skeleton-box shimmer w-70"></div>
-        </td>
-        <td class="center">
-          <div class="skeleton-box shimmer w-40"></div>
-        </td>
-        <td class="center">
-          <div class="skeleton-box shimmer w-40"></div>
-        </td>
-      </tr>
-      }
-    </tbody>
-  </table>
-</div>
-} @else {
-@if (filteredPayrollData.length > 0) {
-<div class="table-wrapper">
-  <table class="payroll-table">
-    <thead>
-      <tr>
-        <th>RUT</th>
-        <th>Nombre / Cargo</th>
-        <th class="amount">Sueldo Base</th>
-        <th class="amount hide-mobile">Gratif. Legal</th>
-        <th class="amount hide-mobile">No Imponible</th>
-        <th class="amount hide-mobile">Total Haberes</th>
-        <th class="amount hide-mobile">AFP</th>
-        <th class="amount hide-mobile">Salud</th>
-        <th class="amount">Dcto. Asist.</th>
-        <th class="amount total">Neto</th>
-        <th class="center">Estado</th>
-        <th class="center">PDF</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (payroll of nominaPaginada; track payroll.id) {
-      <tr>
-        <td class="cell-rut">{{ payroll.rut }}</td>
-        <td class="cell-nombre">
-          <div class="employee-info-detailed">
-            <span class="employee-name">{{ payroll.nombre }}</span>
-            <span class="employee-role">{{ payroll.cargo }}</span>
-          </div>
-        </td>
-        <td class="cell-amount">{{ formatCurrency(payroll.sueldoBase) }}</td>
-        <td class="cell-amount hide-mobile">{{ formatCurrency(payroll.gratificacion) }}</td>
-        <td class="cell-amount hide-mobile">
-          <span
-            title="Movilización: {{ formatCurrency(payroll.movilizacion) }} / Colación: {{ formatCurrency(payroll.colacion) }}">
-            {{ formatCurrency(payroll.movilizacion + payroll.colacion) }}
-          </span>
-        </td>
-        <td class="cell-amount fw-600 hide-mobile">{{ formatCurrency(payroll.totalHaberes) }}</td>
-        <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.afp) }}</td>
-        <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.salud) }}</td>
-        <td class="cell-amount"><span class="text-muted">—</span></td>
-        <td class="cell-amount total-neto">{{ formatCurrency(payroll.neto) }}</td>
-        <td class="center">
-          @if (payroll.estadoPago === 'Pagado') {
-          <span class="badge-success">Pagado</span>
-          } @else {
-          <span class="badge-danger">Pendiente</span>
-          }
-        </td>
-        <td class="cell-actions center">
-          <button class="btn-detalle" (click)="verDetalle(payroll)">Ver Detalle</button>
-          <button class="btn-pdf" (click)="descargarPDF(payroll)">PDF</button>
-        </td>
-      </tr>
-      }
-    </tbody>
-    <tfoot>
-      <tr class="totals-row">
-        <td colspan="3">TOTALES</td>
-        <td class="cell-amount hide-mobile">-</td>
-        <td class="cell-amount hide-mobile">-</td>
-        <td class="cell-amount fw-600 hide-mobile">{{ formatCurrency(getTotalSueldo()) }}</td>
-        <td class="cell-amount hide-mobile">-</td>
-        <td class="cell-amount hide-mobile">-</td>
-        <td class="cell-amount">-</td>
-        <td class="cell-amount total-neto">{{ formatCurrency(getTotalNeto()) }}</td>
-        <td></td>
-        <td></td>
-      </tr>
-    </tfoot>
-  </table>
-</div>
-<div class="pagination-controls">
-  <div class="pagination-info">
-    <span>Mostrando {{ rangoMostradoNomina }} registros</span>
-  </div>
-  <div class="pagination-actions">
-    <select class="page-size-select" (change)="cambiarItemsPorPagina($event)" title="Items por página"
-      aria-label="Items por página">
-      @for (op of opcionesPorPagina; track op) {
-      <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
-      }
-    </select>
-    <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
-    <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasNomina }}</span>
-    <button class="btn-page" (click)="siguientePaginaActiva()"
-      [disabled]="paginaActual === totalPaginasNomina">Siguiente →</button>
-  </div>
-</div>
-} @else {
-<div class="empty-state-wrapper">
-  <div class="empty-state-visual">📄</div>
-  <h3 class="empty-state-title">Nómina no generada</h3>
-  <p class="empty-state-desc">Aún no hay registros de remuneraciones para el período actual.</p>
-</div>
-}
-}
-
-<div class="remuneraciones-info">
-  <span class="info-badge">{{ payrollData.length }} empleados</span>
-  @if (payrollData.length > 0) {
-  <span class="info-text">Período: {{ payrollData[0].mes }}/{{ payrollData[0].anio }}</span>
-  }
-</div>
-
-@if (activeTab === 'horasExtra') {
-<div class="he-layout">
-  <div class="he-summary-card">
-    @if (isLoading) {
-    @for (i of [1,2,3]; track i) {
-    <div class="summary-item">
-      <div class="skeleton-box shimmer w-40"></div>
-      <div class="skeleton-box shimmer w-70 mt-5px"></div>
-    </div>
-    @if (i < 3) {<div class="summary-divider">
-  </div>}
-  }
-  } @else {
-  <div class="summary-item">
-    <span class="summary-label">Registros del Mes</span>
-    <span class="summary-value">{{ historialHorasExtra.length }}</span>
-  </div>
-  <div class="summary-divider"></div>
-  <div class="summary-item">
-    <span class="summary-label">Total Horas Autorizadas</span>
-    <span class="summary-value">{{ getTotalHorasMes() }} hrs</span>
-  </div>
-  <div class="summary-divider"></div>
-  <div class="summary-item accent">
-    <span class="summary-label">Total a Pagar este Mes</span>
-    <span class="summary-value">{{ formatCurrency(getTotalHorasExtraMes()) }}</span>
-  </div>
-  }
-</div>
-
-<div class="he-history">
-  <h3>Revisión de Registros</h3>
-  <p class="he-info-note">
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="16" x2="12" y2="12" />
-      <line x1="12" y1="8" x2="12.01" y2="8" />
-    </svg>
-    Los registros son ingresados por RRHH. Desde aquí solo se revisan y validan para la liquidación del mes.
-  </p>
 
   @if (isLoading) {
   <div class="table-wrapper">
     <table class="payroll-table">
       <thead>
         <tr>
-          <th>Fecha</th>
-          <th>Empleado</th>
-          <th class="center">Horas</th>
-          <th class="amount">Monto</th>
+          <th>RUT</th>
+          <th>Nombre / Cargo</th>
+          <th class="amount">Sueldo Base</th>
+          <th class="amount hide-mobile">Gratif. Legal</th>
+          <th class="amount">Dcto. Asist.</th>
+          <th class="amount total">Neto</th>
+          <th class="center">Estado</th>
+          <th class="center">Acciones</th>
         </tr>
       </thead>
       <tbody>
-        @for (i of [1,2,3]; track i) {
+        @for (i of [1,2,3,4,5]; track i) {
         <tr>
           <td>
             <div class="skeleton-box shimmer w-40"></div>
           </td>
           <td>
-            <div class="skeleton-box shimmer w-80"></div>
-          </td>
-          <td class="center">
-            <div class="skeleton-box shimmer w-20"></div>
+            <div class="employee-info-detailed">
+              <div class="skeleton-box shimmer w-70"></div>
+              <div class="skeleton-box shimmer w-50 mt-5px"></div>
+            </div>
           </td>
           <td class="cell-amount">
             <div class="skeleton-box shimmer w-60"></div>
+          </td>
+          <td class="cell-amount hide-mobile">
+            <div class="skeleton-box shimmer w-50"></div>
+          </td>
+          <td class="cell-amount">
+            <div class="skeleton-box shimmer w-30"></div>
+          </td>
+          <td class="cell-amount total-neto">
+            <div class="skeleton-box shimmer w-70"></div>
+          </td>
+          <td class="center">
+            <div class="skeleton-box shimmer w-40"></div>
+          </td>
+          <td class="center">
+            <div class="skeleton-box shimmer w-40"></div>
           </td>
         </tr>
         }
@@ -286,50 +104,89 @@
     </table>
   </div>
   } @else {
-  @if (historialHorasExtra.length > 0) {
+  @if (filteredPayrollData.length > 0) {
   <div class="table-wrapper">
     <table class="payroll-table">
       <thead>
         <tr>
-          <th>Fecha</th>
-          <th>Empleado</th>
-          <th class="center">Tipo de Día</th>
-          <th class="center">Horas</th>
-          <th class="center hide-mobile">Recargo</th>
-          <th class="amount">Monto</th>
-          <th class="hide-mobile">Autorizado Por</th>
+          <th>RUT</th>
+          <th>Nombre / Cargo</th>
+          <th class="amount">Sueldo Base</th>
+          <th class="amount hide-mobile">Gratif. Legal</th>
+          <th class="amount hide-mobile">No Imponible</th>
+          <th class="amount hide-mobile">Total Haberes</th>
+          <th class="amount hide-mobile">AFP</th>
+          <th class="amount hide-mobile">Salud</th>
+          <th class="amount">Dcto. Asist.</th>
+          <th class="amount total">Neto</th>
+          <th class="center">Estado</th>
+          <th class="center">PDF</th>
         </tr>
       </thead>
       <tbody>
-        @for (registro of horasExtraPaginadas; track registro.id) {
+        @for (payroll of nominaPaginada; track payroll.id) {
         <tr>
-          <td>{{ formatDate(registro.fecha) }}</td>
-          <td class="cell-nombre">{{ registro.empleado }}</td>
-          <td class="center">
-            @if (registro.tipoDia === 'laboral') {
-            <span class="badge-tipo-laboral">Laboral</span>
+          <td class="cell-rut">{{ payroll.rut }}</td>
+          <td class="cell-nombre">
+            <div class="employee-info-detailed">
+              <span class="employee-name">{{ payroll.nombre }}</span>
+              <span class="employee-role">{{ payroll.cargo }}</span>
+            </div>
+          </td>
+          <td class="cell-amount">{{ formatCurrency(payroll.sueldoBase) }}</td>
+          <td class="cell-amount hide-mobile">{{ formatCurrency(payroll.gratificacion) }}</td>
+          <td class="cell-amount hide-mobile">
+            <span
+              title="Movilización: {{ formatCurrency(payroll.movilizacion) }} / Colación: {{ formatCurrency(payroll.colacion) }}">
+              {{ formatCurrency(payroll.movilizacion + payroll.colacion) }}
+            </span>
+          </td>
+          <td class="cell-amount fw-600 hide-mobile">{{ formatCurrency(payroll.totalHaberes) }}</td>
+          <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.afp) }}</td>
+          <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.salud) }}</td>
+          <!-- ✅ Punto 2: descuento asistencia dinámico -->
+          <td class="cell-amount">
+            @if (payroll.descuentoAsistencia > 0) {
+            <span class="danger">-{{ formatCurrency(payroll.descuentoAsistencia) }}</span>
             } @else {
-            <span class="badge-tipo-finde">Fin de Semana</span>
+            <span class="text-muted">—</span>
             }
           </td>
-          <td class="center"><strong>{{ registro.horas }}</strong> hrs</td>
-          <td class="center hide-mobile"><span class="status-badge status-active">{{ registro.recargo }}%</span></td>
-          <td class="cell-amount fw-600">{{ formatCurrency(registro.montoTotal) }}</td>
-          <td class="cell-cargo hide-mobile">{{ registro.autorizadoPor }}</td>
+          <td class="cell-amount total-neto">{{ formatCurrency(payroll.neto) }}</td>
+          <td class="center">
+            @if (payroll.estadoPago === 'Pagado') {
+            <span class="badge-success">Pagado</span>
+            } @else {
+            <span class="badge-danger">Pendiente</span>
+            }
+          </td>
+          <td class="cell-actions center">
+            <button class="btn-detalle" (click)="verDetalle(payroll)">Ver Detalle</button>
+            <button class="btn-pdf" (click)="descargarPDF(payroll)">PDF</button>
+          </td>
         </tr>
         }
       </tbody>
       <tfoot>
         <tr class="totals-row">
-          <td colspan="5">TOTAL HORAS EXTRA</td>
-          <td class="cell-amount total-neto">{{ formatCurrency(getTotalHorasExtraMes()) }}</td>
-          <td class="hide-mobile"></td>
+          <td colspan="3">TOTALES</td>
+          <td class="cell-amount hide-mobile">-</td>
+          <td class="cell-amount hide-mobile">-</td>
+          <td class="cell-amount fw-600 hide-mobile">{{ formatCurrency(getTotalSueldo()) }}</td>
+          <td class="cell-amount hide-mobile">-</td>
+          <td class="cell-amount hide-mobile">-</td>
+          <td class="cell-amount">-</td>
+          <td class="cell-amount total-neto">{{ formatCurrency(getTotalNeto()) }}</td>
+          <td></td>
+          <td></td>
         </tr>
       </tfoot>
     </table>
   </div>
   <div class="pagination-controls">
-    <div class="pagination-info"><span>Mostrando {{ rangoMostradoHorasExtra }} registros</span></div>
+    <div class="pagination-info">
+      <span>Mostrando {{ rangoMostradoNomina }} registros</span>
+    </div>
     <div class="pagination-actions">
       <select class="page-size-select" (change)="cambiarItemsPorPagina($event)" title="Items por página"
         aria-label="Items por página">
@@ -338,20 +195,167 @@
         }
       </select>
       <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
-      <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasHorasExtra }}</span>
+      <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasNomina }}</span>
       <button class="btn-page" (click)="siguientePaginaActiva()"
-        [disabled]="paginaActual === totalPaginasHorasExtra">Siguiente →</button>
+        [disabled]="paginaActual === totalPaginasNomina">Siguiente →</button>
     </div>
   </div>
   } @else {
   <div class="empty-state-wrapper">
-    <div class="empty-state-visual">⌛</div>
-    <h3 class="empty-state-title">Sin registros pendientes</h3>
-    <p class="empty-state-desc">No hay horas extra autorizadas por RRHH para este período.</p>
+    <div class="empty-state-visual">📄</div>
+    <h3 class="empty-state-title">Nómina no generada</h3>
+    <p class="empty-state-desc">Aún no hay registros de remuneraciones para el período actual.</p>
   </div>
   }
   }
-</div>
+
+  <div class="remuneraciones-info">
+    <span class="info-badge">{{ payrollData.length }} empleados</span>
+    @if (payrollData.length > 0) {
+    <span class="info-text">Período: {{ payrollData[0].mes }}/{{ payrollData[0].anio }}</span>
+    }
+  </div>
+
+  @if (activeTab === 'horasExtra') {
+  <div class="he-layout">
+    <div class="he-summary-card">
+      @if (isLoading) {
+      @for (i of [1,2,3]; track i) {
+      <div class="summary-item">
+        <div class="skeleton-box shimmer w-40"></div>
+        <div class="skeleton-box shimmer w-70 mt-5px"></div>
+      </div>
+      @if (i < 3) {<div class="summary-divider">
+    </div>}
+    }
+    } @else {
+    <div class="summary-item">
+      <span class="summary-label">Registros del Mes</span>
+      <span class="summary-value">{{ historialHorasExtra.length }}</span>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-item">
+      <span class="summary-label">Total Horas Autorizadas</span>
+      <span class="summary-value">{{ getTotalHorasMes() }} hrs</span>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-item accent">
+      <span class="summary-label">Total a Pagar este Mes</span>
+      <span class="summary-value">{{ formatCurrency(getTotalHorasExtraMes()) }}</span>
+    </div>
+    }
+  </div>
+
+  <div class="he-history">
+    <h3>Revisión de Registros</h3>
+    <p class="he-info-note">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="16" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12.01" y2="8" />
+      </svg>
+      Los registros son ingresados por RRHH. Desde aquí solo se revisan y validan para la liquidación del mes.
+    </p>
+
+    @if (isLoading) {
+    <div class="table-wrapper">
+      <table class="payroll-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Empleado</th>
+            <th class="center">Horas</th>
+            <th class="amount">Monto</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of [1,2,3]; track i) {
+          <tr>
+            <td>
+              <div class="skeleton-box shimmer w-40"></div>
+            </td>
+            <td>
+              <div class="skeleton-box shimmer w-80"></div>
+            </td>
+            <td class="center">
+              <div class="skeleton-box shimmer w-20"></div>
+            </td>
+            <td class="cell-amount">
+              <div class="skeleton-box shimmer w-60"></div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    } @else {
+    @if (historialHorasExtra.length > 0) {
+    <div class="table-wrapper">
+      <table class="payroll-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Empleado</th>
+            <th class="center">Tipo de Día</th>
+            <th class="center">Horas</th>
+            <th class="center hide-mobile">Recargo</th>
+            <th class="amount">Monto</th>
+            <th class="hide-mobile">Autorizado Por</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (registro of horasExtraPaginadas; track registro.id) {
+          <tr>
+            <td>{{ formatDate(registro.fecha) }}</td>
+            <td class="cell-nombre">{{ registro.empleado }}</td>
+            <td class="center">
+              @if (registro.tipoDia === 'laboral') {
+              <span class="badge-tipo-laboral">Laboral</span>
+              } @else {
+              <span class="badge-tipo-finde">Fin de Semana</span>
+              }
+            </td>
+            <td class="center"><strong>{{ registro.horas }}</strong> hrs</td>
+            <td class="center hide-mobile"><span class="status-badge status-active">{{ registro.recargo }}%</span></td>
+            <td class="cell-amount fw-600">{{ formatCurrency(registro.montoTotal) }}</td>
+            <td class="cell-cargo hide-mobile">{{ registro.autorizadoPor }}</td>
+          </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr class="totals-row">
+            <td colspan="5">TOTAL HORAS EXTRA</td>
+            <td class="cell-amount total-neto">{{ formatCurrency(getTotalHorasExtraMes()) }}</td>
+            <td class="hide-mobile"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="pagination-controls">
+      <div class="pagination-info"><span>Mostrando {{ rangoMostradoHorasExtra }} registros</span></div>
+      <div class="pagination-actions">
+        <select class="page-size-select" (change)="cambiarItemsPorPagina($event)" title="Items por página"
+          aria-label="Items por página">
+          @for (op of opcionesPorPagina; track op) {
+          <option [value]="op" [selected]="op === itemsPorPagina">{{ op }} por página</option>
+          }
+        </select>
+        <button class="btn-page" (click)="paginaAnterior()" [disabled]="paginaActual === 1">← Anterior</button>
+        <span class="page-indicator">pág. {{ paginaActual }} / {{ totalPaginasHorasExtra }}</span>
+        <button class="btn-page" (click)="siguientePaginaActiva()"
+          [disabled]="paginaActual === totalPaginasHorasExtra">Siguiente →</button>
+      </div>
+    </div>
+    } @else {
+    <div class="empty-state-wrapper">
+      <div class="empty-state-visual">⌛</div>
+      <h3 class="empty-state-title">Sin registros pendientes</h3>
+      <p class="empty-state-desc">No hay horas extra autorizadas por RRHH para este período.</p>
+    </div>
+    }
+    }
+  </div>
 </div>
 }
 </div>
@@ -466,6 +470,11 @@
             formatCurrency(detalleSeleccionado.salud) }}</span></div>
         <div class="fila"><span>Seguro Cesantía</span><span class="danger">-{{
             formatCurrency(detalleSeleccionado.seguroCesantia) }}</span></div>
+        <!-- ✅ Punto 2: descuento asistencia en modal -->
+        @if (detalleSeleccionado.descuentoAsistencia > 0) {
+        <div class="fila"><span>Dcto. Asistencia</span><span class="danger">-{{
+            formatCurrency(detalleSeleccionado.descuentoAsistencia) }}</span></div>
+        }
         <div class="fila fila-total">
           <span>Total Descuentos</span>
           <span class="danger">-{{ formatCurrency(detalleSeleccionado.totalDescuentos) }}</span>
