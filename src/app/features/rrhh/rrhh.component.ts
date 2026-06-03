@@ -351,7 +351,7 @@ export class RrhhComponent implements OnInit {
 
     // Cantidad de días en el mes seleccionado
     const diasEnMes = new Date(this.anioSeleccionado, this.mesSeleccionado, 0).getDate();
-    
+
     const primerDiaFecha = new Date(this.anioSeleccionado, this.mesSeleccionado - 1, 1);
     let diaSemana = primerDiaFecha.getDay();
 
@@ -422,12 +422,12 @@ export class RrhhComponent implements OnInit {
           tipo_contrato: emp.tipo_contrato,
           fechaIngreso: emp.fecha_ingreso ? new Date(emp.fecha_ingreso) : (emp.fechaIngreso ? new Date(emp.fechaIngreso) : new Date()),
           estado: emp.estado || 'inactivo',
-          config_remuneracion: emp.config_remuneracion || { 
-            sueldo_base: emp.sueldo_base || 0, 
-            afp: emp.afp || '', 
-            salud: emp.salud || '', 
-            movilizacion: emp.movilizacion || 0, 
-            colacion: emp.colacion || 0 
+          config_remuneracion: emp.config_remuneracion || {
+            sueldo_base: emp.sueldo_base || 0,
+            afp: emp.afp || '',
+            salud: emp.salud || '',
+            movilizacion: emp.movilizacion || 0,
+            colacion: emp.colacion || 0
           }
         }));
 
@@ -766,7 +766,7 @@ export class RrhhComponent implements OnInit {
 
         this.isSaving = false;
         this.closeExcepcionModal();
-        
+
         // Refrescar calendario para que se vea reflejado el cambio
         this.obtenerAsistencia();
         this.cdr.detectChanges();

@@ -343,31 +343,57 @@ def api_asistencia_resumen(request, mes, anio):
             primer_dia = datetime(anio_int, mes_int, 1)
             ultimo_dia = datetime(anio_int, mes_int, num_dias, 23, 59, 59)
             
-            asistencias = list(col_asistencia.find({"fecha": {"$gte": primer_dia, "$lte": ultimo_dia}}))
-            
+            # 1. Obtener empleados activos y pre-inicializar resumen
+            empleados_activos = list(col_empleados.find({"estado": {"$ne": "inactivo"}}))
             resumen = {}
-            for asis in asistencias:
-                rut = asis.get('empleado_rut') or asis.get('rut')
-                if not rut:
-                    continue
-                    
-                if rut not in resumen:
+            for emp in empleados_activos:
+                rut = emp.get("rut")
+                if rut:
                     resumen[rut] = {
-                        "empleado_rut": rut,
-                        "Presente": 0,
-                        "Ausente": 0,
-                        "Tardanza": 0,
-                        "Licencia": 0,
-                        "Total": 0
+                        "rut": rut,
+                        "nombre_completo": emp.get("nombre_completo", ""),
+                        "dias_trabajados": 0,
+                        "ausencias": 0,
+                        "tardanzas": 0,
+                        "licencias": 0,
+                        "horas_extra_total": 0,
+                        "tipo_dia_he": "laboral"
                     }
                     
+            # 2. Contar estados desde los registros diarios reales (como pidió el frontend)
+            asistencias = list(col_asistencia.find({"fecha": {"$gte": primer_dia, "$lte": ultimo_dia}}))
+            for asis in asistencias:
+                rut = asis.get('empleado_rut') or asis.get('rut')
+                if not rut or rut not in resumen:
+                    continue
+                    
                 estado = asis.get('estado')
-                if estado in resumen[rut]:
-                    resumen[rut][estado] += 1
-                resumen[rut]["Total"] += 1
+                if estado == 'Presente':
+                    resumen[rut]['dias_trabajados'] += 1
+                elif estado in ['Ausente', 'Ausente Injustificado']:
+                    resumen[rut]['ausencias'] += 1
+                elif estado in ['Atraso', 'Tardanza']:
+                    resumen[rut]['tardanzas'] += 1
+                elif estado in ['Licencia', 'Licencia Médica']:
+                    resumen[rut]['licencias'] += 1
+                    
+            # 3. Procesar horas extra
+            horas_extras = list(col_horas_extra.find({"mes": mes_int, "anio": anio_int}))
+            for he in horas_extras:
+                rut = he.get('rut') or he.get('rut_empleado') or he.get('empleado_rut')
+                if not rut or rut not in resumen:
+                    continue
+                    
+                horas = he.get("horas") or he.get("cantidad_horas") or 0
+                tipo = he.get("tipo", "laboral").lower()
                 
+                resumen[rut]["horas_extra_total"] += horas
+                if tipo == "festivo":
+                    resumen[rut]["tipo_dia_he"] = "festivo"
+                
+            # 4. Retornar los datos
             data = list(resumen.values())
-            return JsonResponse({"success": True, "data": data, "message": "Resumen de asistencia obtenido con éxito"}, status=200)
+            return JsonResponse({"success": True, "data": data, "message": "Resumen mensual consolidado obtenido con éxito"}, status=200)
         else:
             return JsonResponse({"success": False, "data": [], "message": "Método no permitido"}, status=405)
             
