@@ -370,11 +370,11 @@ def api_asistencia_resumen(request, mes, anio):
                 estado = asis.get('estado')
                 if estado == 'Presente':
                     resumen[rut]['dias_trabajados'] += 1
-                elif estado == 'Ausente Injustificado':
+                elif estado in ['Ausente', 'Ausente Injustificado']:
                     resumen[rut]['ausencias'] += 1
-                elif estado == 'Atraso':
+                elif estado in ['Atraso', 'Tardanza']:
                     resumen[rut]['tardanzas'] += 1
-                elif estado == 'Licencia Médica':
+                elif estado in ['Licencia', 'Licencia Médica']:
                     resumen[rut]['licencias'] += 1
                     
             # 3. Procesar horas extra
