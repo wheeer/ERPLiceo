@@ -6,8 +6,6 @@
       <h1 class="rrhh-title">Remuneraciones</h1>
       <p class="rrhh-subtitle">Nómina y cálculo de honorarios — Ley 21.561</p>
     </div>
- 
-    <!-- TABS + GENERAR LIQUIDACIONES EN LA MISMA FILA -->
     <div class="module-tabs">
       <button class="tab-btn" [class.active]="activeTab === 'nomina'" (click)="changeTab('nomina')">
         Resumen de Nómina
@@ -26,7 +24,7 @@
     </div>
   </div>
  
-  <!-- ACTION BAR DEBAJO -->
+  <!-- ACTION BAR -->
   <div class="action-bar">
     <div class="bar-left">
       <div class="periodo-selector">
@@ -105,7 +103,6 @@
           <th class="amount hide-mobile">Total Haberes</th>
           <th class="amount hide-mobile">AFP</th>
           <th class="amount hide-mobile">Salud</th>
-          <!-- AJUSTE #25: Renombrado de "Dcto. Asist." a "Ajuste Asist." para reflejar que no es descuento legal -->
           <th class="amount">Ajuste Asist.</th>
           <th class="amount total">Neto</th>
           <th class="center">Estado</th>
@@ -132,7 +129,6 @@
           <td class="cell-amount fw-600 hide-mobile">{{ formatCurrency(payroll.totalHaberes) }}</td>
           <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.afp) }}</td>
           <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.salud) }}</td>
-          <!-- AJUSTE #25: Mostrar ajuste por asistencia con tooltip de días ausentes -->
           <td class="cell-amount">
             @if (payroll.descuentoAsistencia > 0) {
             <span class="warning" title="{{ payroll.diasAusentes }} día(s) ausente(s)">
@@ -345,6 +341,7 @@
 <div class="modal-overlay" (click)="cerrarModal()">
   <div class="nomina-modal" (click)="$event.stopPropagation()">
  
+    <!-- ENCABEZADO CON AVATAR -->
     <div class="empleado-header">
       <div class="avatar">{{ detalleSeleccionado.nombre.charAt(0) }}</div>
       <div class="empleado-info">
@@ -360,6 +357,7 @@
     </div>
 
  
+    <!-- MÉTRICAS -->
     <div class="metricas">
       <div class="metrica-card metrica-green">
         <div class="metrica-icon icon-green">
@@ -406,6 +404,7 @@
       </div>
     </div>
  
+    <!-- DETALLE GRID -->
     <div class="detalle-grid">
       <!-- HABERES -->
       <div class="card">
@@ -432,7 +431,7 @@
         </div>
       </div>
  
-      <!-- DESCUENTOS LEGALES — AJUSTE #25: sin Dcto. Asistencia -->
+      <!-- DESCUENTOS LEGALES -->
       <div class="card card-descuentos">
         <h4 class="card-titulo-icon">
           <div class="card-icon icon-red">
@@ -444,8 +443,8 @@
           </div>
           DESCUENTOS LEGALES
         </h4>
-        <div class="fila"><span>AFP ({{ detalleSeleccionado.afpNombre ?? '—' }})</span><span class="danger">-{{ formatCurrency(detalleSeleccionado.afp) }}</span></div>
-        <div class="fila"><span>Salud ({{ detalleSeleccionado.saludNombre ?? '—' }})</span><span class="danger">-{{ formatCurrency(detalleSeleccionado.salud) }}</span></div>
+        <div class="fila"><span>AFP ({{ detalleSeleccionado.afpNombre }})</span><span class="danger">-{{ formatCurrency(detalleSeleccionado.afp) }}</span></div>
+        <div class="fila"><span>Salud ({{ detalleSeleccionado.saludNombre }})</span><span class="danger">-{{ formatCurrency(detalleSeleccionado.salud) }}</span></div>
         <div class="fila"><span>Seguro Cesantía</span><span class="danger">-{{ formatCurrency(detalleSeleccionado.seguroCesantia) }}</span></div>
         <div class="fila fila-total">
           <span>Total Descuentos</span>
@@ -453,16 +452,16 @@
         </div>
       </div>
  
-      <!-- AJUSTE #25: Nuevo bloque AJUSTES POR ASISTENCIA (solo si hay ausencias) -->
+      <!-- AJUSTES POR ASISTENCIA -->
       @if (detalleSeleccionado.descuentoAsistencia > 0) {
       <div class="card card-asistencia">
         <h4 class="card-titulo-icon">
           <div class="card-icon icon-warning">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
           AJUSTES POR ASISTENCIA
@@ -479,12 +478,13 @@
       }
     </div>
  
-    <!-- Sueldo líquido fuera del grid -->
+    <!-- SUELDO LÍQUIDO -->
     <div class="fila fila-liquido">
       <span>Sueldo Líquido</span>
       <span class="primary">{{ formatCurrency(detalleSeleccionado.neto) }}</span>
     </div>
  
+    <!-- FOOTER -->
     <div class="footer-modal">
       <button class="btn-cerrar" (click)="cerrarModal()">← Volver</button>
       <button class="btn-pdf-modal" (click)="descargarPDF(detalleSeleccionado)">

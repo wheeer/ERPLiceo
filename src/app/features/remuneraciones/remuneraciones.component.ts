@@ -1,3 +1,4 @@
+ 
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
@@ -402,15 +403,15 @@ export class RemuneracionesComponent implements OnInit {
       ['Nombre', payroll.nombre],
       ['RUT', payroll.rut],
       ['Cargo', payroll.cargo],
-      ['Tipo de Contrato', payroll.tipoContrato ?? '—'],
-      ['Previsión (AFP)', payroll.afpNombre ?? '—'],
+      ['Tipo de Contrato', payroll.tipoContrato],
+      ['Previsión (AFP)', payroll.afpNombre],
     ];
     const filasDer = [
-      ['Salud', payroll.saludNombre ?? '—'],
-      ['Días Trabajados', `${payroll.diasTrabajados ?? 30} días`],
+      ['Salud', payroll.saludNombre],
+      ['Días Trabajados', `${payroll.diasTrabajados} días`],
       ['Horas Extras', payroll.horasExtra > 0 ? `${(payroll.horasExtra / (payroll.sueldoBase / 160)).toFixed(2)} hrs` : '—'],
-      ['Período', payroll.periodoTexto ?? '—'],
-      ['Estado', payroll.estadoEmpleado ?? '—'],
+      ['Período', payroll.periodoTexto],
+      ['Estado', payroll.estadoEmpleado],
     ];
  
     filasDatos.forEach((fila, i) => {
@@ -497,8 +498,8 @@ export class RemuneracionesComponent implements OnInit {
     const totalImponible = payroll.sueldoBase + payroll.gratificacion + payroll.horasExtra;
  
     const filasDescuentos: [string, string][] = [
-      [`AFP (${payroll.afpNombre ?? '—'})`, `-${this.formatCurrency(payroll.afp)}`],
-      [`Salud (${payroll.saludNombre ?? '—'})`, `-${this.formatCurrency(payroll.salud)}`],
+      [`AFP (${payroll.afpNombre})`, `-${this.formatCurrency(payroll.afp)}`],
+      [`Salud (${payroll.saludNombre})`, `-${this.formatCurrency(payroll.salud)}`],
       ['Seguro Cesantía', `-${this.formatCurrency(payroll.seguroCesantia)}`],
     ];
  
@@ -676,4 +677,3 @@ export class RemuneracionesComponent implements OnInit {
   }
  
 }
- 
