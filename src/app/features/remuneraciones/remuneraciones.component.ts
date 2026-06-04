@@ -5,13 +5,13 @@ import { ActivatedRoute } from '@angular/router';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Component, inject, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core'; // FIX: NgZone eliminado
 import { Title } from '@angular/platform-browser';
  
  
  
 interface Payroll {
-  id: string; // FIX #24: Cambiado de number a string (ObjectId de Mongo viene como string)
+  id: string;
   rut: string;
   nombre: string;
   cargo: string;
@@ -30,19 +30,29 @@ interface Payroll {
   horasExtra: number;
   estadoPago: string;
   descuentoAsistencia: number;
+  diasAusentes: number; // AJUSTE #25: días ausentes para bloque separado
+  afpNombre: string;   // Nombre real de la AFP del empleado
+  saludNombre: string; // Nombre real de la institución de salud
+  tipoContrato: string; // Tipo de contrato real del empleado
+  impPrevSalud: number;  // Base imponible prev/salud desde backend
+  impCesantia: number;   // Base imponible cesantía desde backend
+  baseTributable: number; // Base tributable desde backend
+  estadoEmpleado: string;  // Estado del empleado desde backend
+  periodoTexto: string;    // Período formateado desde backend
+  diasTrabajados: number;  // Días trabajados calculados en backend
 }
  
 interface HorasExtraRecord {
-  id: string;           // FIX #24 (⚠️3): ObjectId de Mongo viene como string
-  rut: string;          // FIX #24 (⚠️3): Campo real del backend
-  empleado: string;     // Se resuelve en frontend cruzando con payrollData
+  id: string;
+  rut: string;
+  empleado: string;
   sueldoBase: number;
   horas: number;
   recargo: number;
   montoTotal: number;
   fecha: Date;
-  tipo: 'laboral' | 'finde' | 'festivo'; // FIX #24 (⚠️3): El backend envía "tipo", no "tipoDia"
-  tipoDia: 'laboral' | 'finde' | 'festivo'; // Se mantiene para compatibilidad con el HTML existente
+  tipo: 'laboral' | 'finde' | 'festivo';
+  tipoDia: 'laboral' | 'finde' | 'festivo';
   autorizadoPor: string;
   mes: number;
   anio: number;
@@ -62,8 +72,7 @@ export class RemuneracionesComponent implements OnInit {
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
-  private cdr = inject(ChangeDetectorRef);
-  private ngZone = inject(NgZone);
+  private cdr = inject(ChangeDetectorRef); // FIX: NgZone eliminado
   private titleService = inject(Title);
  
   isLoading = true;
@@ -110,7 +119,7 @@ export class RemuneracionesComponent implements OnInit {
  
     setTimeout(() => {
       this.isLoading = true;
-      this.isLoadingData = true; // FIX #24: Activar spinner del botón "Cargar"
+      this.isLoadingData = true;
       this.cdr.detectChanges();
     }, 0);
  
@@ -124,13 +133,11 @@ export class RemuneracionesComponent implements OnInit {
         this.payrollData = response.data;
         this.filteredPayrollData = response.data;
  
-        // FIX #24 (⚠️3): Llamar al endpoint de horas extra una vez que tenemos la nómina
         this.http.get<any>(
           `http://127.0.0.1:8000/api/horas-extra/${this.mesSeleccionado}/${this.anioSeleccionado}/`,
           { headers }
         ).subscribe({
           next: (heResponse) => {
-            // Cruzar el rut con payrollData para obtener nombre y sueldoBase
             this.historialHorasExtra = (heResponse.data || []).map((he: any) => {
               const empleado = this.payrollData.find(p => p.rut === he.rut);
               return {
@@ -139,7 +146,7 @@ export class RemuneracionesComponent implements OnInit {
                 empleado: empleado?.nombre ?? he.rut,
                 sueldoBase: empleado?.sueldoBase ?? 0,
                 horas: he.horas,
-                recargo: 50, // valor por defecto, el backend no lo envía
+                recargo: 50,
                 montoTotal: empleado ? Math.round((empleado.sueldoBase / 160) * 1.5 * he.horas) : 0,
                 fecha: new Date(),
                 tipo: he.tipo ?? 'laboral',
@@ -151,12 +158,11 @@ export class RemuneracionesComponent implements OnInit {
             });
             setTimeout(() => {
               this.isLoading = false;
-              this.isLoadingData = false; // FIX #24: Desactivar spinner del botón "Cargar"
+              this.isLoadingData = false;
               this.cdr.detectChanges();
             }, 0);
           },
           error: () => {
-            // Si falla horas extra no bloqueamos la nómina, solo vaciamos el historial
             this.historialHorasExtra = [];
             setTimeout(() => {
               this.isLoading = false;
@@ -169,9 +175,10 @@ export class RemuneracionesComponent implements OnInit {
       error: (error) => {
         console.error('Error al obtener remuneraciones', error);
         setTimeout(() => {
-          this.toastService.show('Error al cargar remuneraciones.', 'warning');
+          const mensaje = error?.error?.message || 'Error al cargar remuneraciones.';
+          this.toastService.show(mensaje, 'warning');
           this.isLoading = false;
-          this.isLoadingData = false; // FIX #24: Desactivar spinner del botón "Cargar" en error
+          this.isLoadingData = false;
           this.cdr.detectChanges();
         }, 0);
       }
@@ -204,7 +211,6 @@ export class RemuneracionesComponent implements OnInit {
   calcularHorasExtra() {
     if (this.horasExtraForm.invalid) return;
     const formValues = this.horasExtraForm.value;
-    // FIX #24: Comparación con String en lugar de Number, porque id ahora es string
     const empleado = this.payrollData.find(p => p.id === String(formValues.empleadoId));
     if (!empleado) return;
  
@@ -213,19 +219,19 @@ export class RemuneracionesComponent implements OnInit {
     const montoTotal = valorHoraNormal * recargoMultiplicador * formValues.horas;
  
     const nuevoRegistro: HorasExtraRecord = {
-      id: crypto.randomUUID(),         // FIX: id debe ser string, no number
-      rut: empleado.rut,               // FIX: campo requerido por la interfaz
+      id: crypto.randomUUID(),
+      rut: empleado.rut,
       empleado: empleado.nombre,
       sueldoBase: empleado.sueldoBase,
       horas: formValues.horas,
       recargo: formValues.recargo,
       montoTotal: Math.round(montoTotal),
       fecha: new Date(),
-      tipo: 'laboral',                 // FIX: campo requerido por la interfaz
+      tipo: 'laboral',
       tipoDia: 'laboral',
       autorizadoPor: 'Registrado en Remuneraciones',
-      mes: this.mesSeleccionado,       // FIX: campo requerido por la interfaz
-      anio: this.anioSeleccionado      // FIX: campo requerido por la interfaz
+      mes: this.mesSeleccionado,
+      anio: this.anioSeleccionado
     };
  
     this.historialHorasExtra.unshift(nuevoRegistro);
@@ -323,130 +329,299 @@ export class RemuneracionesComponent implements OnInit {
   }
  
   descargarPDF(payroll: Payroll) {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const nombreMes = this.meses.find(m => m.value === payroll.mes)?.nombre ?? payroll.mes;
     const fechaEmision = new Date().toLocaleDateString('es-CL');
- 
-    const azulOscuro: [number, number, number] = [30, 41, 59];
-    const blanco: [number, number, number] = [255, 255, 255];
-    const grisClaro: [number, number, number] = [248, 250, 252];
-    const grisTexto: [number, number, number] = [100, 116, 139];
     const pageW = 210;
-    const colDiv = 108;
+    const margen = 20;
+    const colDer = pageW / 2 + 5;
+    const anchoCol = (pageW - margen * 2 - 5) / 2;
  
-    doc.setFillColor(...azulOscuro);
+    // Colores corporativos
+    const azulPrim:  [number,number,number] = [31, 45, 74];
+    const azulSec:   [number,number,number] = [42, 59, 87];
+    const blanco:    [number,number,number] = [255, 255, 255];
+    const gris1:     [number,number,number] = [51, 51, 51];
+    const gris2:     [number,number,number] = [102, 102, 102];
+    const borde:     [number,number,number] = [230, 230, 230];
+    const fondoTotal:[number,number,number] = [243, 244, 246];
+ 
+    let y = margen;
+ 
+    // ── ENCABEZADO ─────────────────────────────────────────────
+    doc.setFillColor(...azulPrim);
     doc.rect(0, 0, pageW, 28, 'F');
+ 
     doc.setTextColor(...blanco);
-    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('LIQUIDACIÓN DE SUELDO', 14, 12);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('ERP Liceos EMTP', pageW - 14, 10, { align: 'right' });
-    doc.text(`Período: ${nombreMes} ${payroll.anio}`, pageW - 14, 17, { align: 'right' });
+    doc.setFontSize(22);
+    doc.text('LIQUIDACIÓN DE SUELDO', margen, 18);
  
-    doc.setTextColor(...grisTexto);
-    doc.setFontSize(9);
-    doc.text(`Fecha emisión: ${fechaEmision}`, 14, 37);
-    doc.setDrawColor(226, 232, 240);
-    doc.line(14, 41, pageW - 14, 41);
- 
-    doc.setTextColor(30, 41, 59);
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
+    doc.text('ERP Liceos EMTP', pageW - margen, 10, { align: 'right' });
     doc.setFont('helvetica', 'normal');
-    doc.text(`Nombre: ${payroll.nombre}`, 14, 50);
-    doc.text(`RUT: ${payroll.rut}`, 14, 57);
-    doc.text(`Cargo: ${payroll.cargo}`, 14, 64);
-    doc.text(`Período: ${nombreMes} ${payroll.anio}`, 14, 71);
-    doc.line(14, 76, pageW - 14, 76);
+    doc.setFontSize(9);
+    doc.text(`Período:  ${nombreMes} ${payroll.anio}`, pageW - margen, 17, { align: 'right' });
+    doc.text(`Emisión:  ${fechaEmision}`, pageW - margen, 23, { align: 'right' });
  
-    const tablaY = 82;
+    y = 36;
  
-    autoTable(doc, {
-      startY: tablaY,
-      head: [['HABERES', 'MONTO']],
-      body: [
-        ['Sueldo Base', this.formatCurrency(payroll.sueldoBase)],
-        ['Gratificación', this.formatCurrency(payroll.gratificacion)],
-        ['Haberes No Imponibles', ''],
-        ['  Movilización', this.formatCurrency(payroll.movilizacion)],
-        ['  Colación', this.formatCurrency(payroll.colacion)],
-        ['Total Haberes', this.formatCurrency(payroll.totalHaberes)],
-      ],
-      headStyles: { fillColor: azulOscuro, textColor: blanco, fontSize: 8, fontStyle: 'bold' },
-      bodyStyles: { fontSize: 8, textColor: [30, 41, 59] },
-      alternateRowStyles: { fillColor: grisClaro },
-      columnStyles: { 0: { cellWidth: 55 }, 1: { halign: 'right', cellWidth: 30 } },
-      willDrawCell: (data) => {
-        if (data.section === 'body' && data.row.index === 2) {
-          data.cell.styles.fillColor = [226, 232, 240];
-          data.cell.styles.fontStyle = 'bold';
-        }
-      },
-      theme: 'plain',
-      tableWidth: colDiv - 18,
-      margin: { left: 14 },
+    // Línea separadora
+    doc.setDrawColor(...borde);
+    doc.setLineWidth(0.3);
+    doc.line(margen, y, pageW - margen, y);
+    y += 6;
+ 
+    // ── DATOS DEL TRABAJADOR ───────────────────────────────────
+    // Encabezado sección
+    doc.setFillColor(...azulPrim);
+    doc.rect(margen, y, pageW - margen * 2, 7, 'F');
+    doc.setTextColor(...blanco);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('DATOS DEL TRABAJADOR', margen + 3, y + 5);
+    y += 10;
+ 
+    // Borde tarjeta
+    doc.setDrawColor(...borde);
+    doc.setLineWidth(0.3);
+    const datosH = 54; // Aumentado para acomodar Período y Estado
+    doc.rect(margen, y, pageW - margen * 2, datosH, 'S');
+ 
+    // Datos columna izquierda
+    const labelX = margen + 4;
+    const valX = margen + 38;
+    const labelX2 = pageW / 2 + 4;
+    const valX2 = pageW / 2 + 38;
+ 
+    doc.setTextColor(...gris2);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    const filasDatos = [
+      ['Nombre', payroll.nombre],
+      ['RUT', payroll.rut],
+      ['Cargo', payroll.cargo],
+      ['Tipo de Contrato', payroll.tipoContrato ?? '—'],
+      ['Previsión (AFP)', payroll.afpNombre ?? '—'],
+    ];
+    const filasDer = [
+      ['Salud', payroll.saludNombre ?? '—'],
+      ['Días Trabajados', `${payroll.diasTrabajados ?? 30} días`],
+      ['Horas Extras', payroll.horasExtra > 0 ? `${(payroll.horasExtra / (payroll.sueldoBase / 160)).toFixed(2)} hrs` : '—'],
+      ['Período', payroll.periodoTexto ?? '—'],
+      ['Estado', payroll.estadoEmpleado ?? '—'],
+    ];
+ 
+    filasDatos.forEach((fila, i) => {
+      const fy = y + 5 + i * 7;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...gris2);
+      doc.text(fila[0], labelX, fy);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...gris1);
+      doc.text(fila[1], valX, fy);
     });
  
-    const finalYHaberes = (doc as any).lastAutoTable.finalY;
+    filasDer.forEach((fila, i) => {
+      const fy = y + 5 + i * 7;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...gris2);
+      doc.text(fila[0], labelX2, fy);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...gris1);
+      doc.text(fila[1], valX2, fy);
+    });
  
-    const descuentosBody: any[] = [
-      ['AFP', `-${this.formatCurrency(payroll.afp)}`],
-      ['Salud', `-${this.formatCurrency(payroll.salud)}`],
-      ['Seguro Cesantía', `-${this.formatCurrency(payroll.seguroCesantia)}`],
+    // línea divisoria vertical
+    doc.setDrawColor(...borde);
+    doc.line(pageW / 2, y, pageW / 2, y + datosH);
+    y += datosH + 8;
+ 
+    // ── HELPER: tabla simple ───────────────────────────────────
+    const drawTable = (startY: number, titulo: string, filas: [string, string][], totalLabel: string, totalVal: string, startX: number, ancho: number): number => {
+      let ty = startY;
+      // Header
+      doc.setFillColor(...azulPrim);
+      doc.rect(startX, ty, ancho, 7, 'F');
+      doc.setTextColor(...blanco);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.text(titulo, startX + 3, ty + 5);
+      doc.text('MONTO', startX + ancho - 3, ty + 5, { align: 'right' });
+      ty += 7;
+ 
+      // Filas
+      filas.forEach((fila, i) => {
+        if (i % 2 === 1) {
+          doc.setFillColor(249, 250, 251);
+          doc.rect(startX, ty, ancho, 7, 'F');
+        }
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...gris1);
+        doc.text(fila[0], startX + 3, ty + 5);
+        doc.text(fila[1], startX + ancho - 3, ty + 5, { align: 'right' });
+        ty += 7;
+      });
+ 
+      // Fila total (solo si tiene contenido)
+      if (totalLabel) {
+        doc.setFillColor(...fondoTotal);
+        doc.rect(startX, ty, ancho, 7, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...azulPrim);
+        doc.text(totalLabel, startX + 3, ty + 5);
+        doc.text(totalVal, startX + ancho - 3, ty + 5, { align: 'right' });
+        ty += 7;
+      }
+ 
+      // Borde tabla
+      doc.setDrawColor(...borde);
+      doc.setLineWidth(0.3);
+      doc.rect(startX, startY, ancho, ty - startY, 'S');
+ 
+      return ty;
+    };
+ 
+    // ── HABERES IMPONIBLES + DESCUENTOS LEGALES (fila 1) ──────
+    const filasHabImponibles: [string, string][] = [
+      ['Sueldo Base', this.formatCurrency(payroll.sueldoBase)],
+      ['Gratificación Legal', this.formatCurrency(payroll.gratificacion)],
     ];
-    if (payroll.descuentoAsistencia > 0) {
-      descuentosBody.push(['Dcto. Asistencia', `-${this.formatCurrency(payroll.descuentoAsistencia)}`]);
+    if (payroll.horasExtra > 0) {
+      filasHabImponibles.push(['Horas Extras', this.formatCurrency(payroll.horasExtra)]);
     }
  
-    autoTable(doc, {
-      startY: tablaY,
-      head: [['DESCUENTOS', 'MONTO']],
-      body: descuentosBody,
-      headStyles: { fillColor: azulOscuro, textColor: blanco, fontSize: 8, fontStyle: 'bold' },
-      bodyStyles: { fontSize: 8, textColor: [30, 41, 59] },
-      alternateRowStyles: { fillColor: grisClaro },
-      columnStyles: { 0: { cellWidth: 55 }, 1: { halign: 'right', cellWidth: 28 } },
-      theme: 'plain',
-      tableWidth: pageW - colDiv - 8,
-      margin: { left: colDiv + 2 },
+    const totalImponible = payroll.sueldoBase + payroll.gratificacion + payroll.horasExtra;
+ 
+    const filasDescuentos: [string, string][] = [
+      [`AFP (${payroll.afpNombre ?? '—'})`, `-${this.formatCurrency(payroll.afp)}`],
+      [`Salud (${payroll.saludNombre ?? '—'})`, `-${this.formatCurrency(payroll.salud)}`],
+      ['Seguro Cesantía', `-${this.formatCurrency(payroll.seguroCesantia)}`],
+    ];
+ 
+    const y1izq = drawTable(y, 'HABERES IMPONIBLES', filasHabImponibles, 'TOTAL HABERES IMPONIBLES', this.formatCurrency(totalImponible), margen, anchoCol);
+    const y1der = drawTable(y, 'DESCUENTOS LEGALES', filasDescuentos, 'TOTAL DESCUENTOS LEGALES', `-${this.formatCurrency(payroll.totalDescuentos)}`, colDer, anchoCol);
+ 
+    y = Math.max(y1izq, y1der) + 6;
+ 
+    // ── HABERES NO IMPONIBLES + AJUSTES ASISTENCIA (fila 2) ───
+    const filasNoImponibles: [string, string][] = [
+      ['Movilización', this.formatCurrency(payroll.movilizacion)],
+      ['Colación', this.formatCurrency(payroll.colacion)],
+    ];
+    const totalNoImponible = payroll.movilizacion + payroll.colacion;
+ 
+    const y2izq = drawTable(y, 'HABERES NO IMPONIBLES', filasNoImponibles, 'TOTAL HABERES NO IMPONIBLES', this.formatCurrency(totalNoImponible), margen, anchoCol);
+ 
+    // Ajustes por asistencia (solo si hay ausencias)
+    let y2der = y;
+    if (payroll.descuentoAsistencia > 0) {
+      const filasAsistencia: [string, string][] = [
+        ['Días Ausentes', `${payroll.diasAusentes} día(s)`],
+        ['Rebaja Aplicada al Imponible', `-${this.formatCurrency(payroll.descuentoAsistencia)}`],
+      ];
+      y2der = drawTable(y, 'AJUSTES POR ASISTENCIA', filasAsistencia, '', '', colDer, anchoCol);
+      // Nota informativa
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...gris2);
+      doc.text('* Informativo. La rebaja ya fue aplicada al imponible.', colDer + 2, y2der + 3);
+      y2der += 6;
+    }
+ 
+    y = Math.max(y2izq, y2der) + 6;
+ 
+    // ── TOTALES GENERALES ─────────────────────────────────────
+    const totalesH = 18;
+    doc.setFillColor(...fondoTotal);
+    doc.setDrawColor(...borde);
+    doc.rect(margen, y, pageW - margen * 2, totalesH, 'FD');
+ 
+    // línea vertical divisoria
+    doc.line(pageW / 2, y, pageW / 2, y + totalesH);
+ 
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...gris2);
+    doc.text('TOTAL HABERES', pageW / 4 + margen / 2, y + 6, { align: 'center' });
+    doc.setFontSize(13);
+    doc.setTextColor(...azulPrim);
+    doc.text(this.formatCurrency(payroll.totalHaberes), pageW / 4 + margen / 2, y + 14, { align: 'center' });
+ 
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...gris2);
+    doc.text('TOTAL DESCUENTOS', pageW * 3 / 4 - margen / 2, y + 6, { align: 'center' });
+    doc.setFontSize(13);
+    doc.setTextColor(185, 28, 28);
+    doc.text(`-${this.formatCurrency(payroll.totalDescuentos)}`, pageW * 3 / 4 - margen / 2, y + 14, { align: 'center' });
+ 
+    y += totalesH + 6;
+ 
+    // ── LÍQUIDO A RECIBIR ─────────────────────────────────────
+    doc.setFillColor(...azulPrim);
+    doc.rect(margen, y, pageW - margen * 2, 16, 'F');
+    doc.setTextColor(...blanco);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('LÍQUIDO A RECIBIR', margen + 6, y + 10);
+    doc.setFontSize(16);
+    doc.text(this.formatCurrency(payroll.neto), pageW - margen - 4, y + 10, { align: 'right' });
+ 
+    y += 22;
+ 
+    // ── RESUMEN IMPOSITIVO ────────────────────────────────────
+    const resumenH = 18;
+    doc.setFillColor(...fondoTotal);
+    doc.setDrawColor(...borde);
+    doc.rect(margen, y, pageW - margen * 2, resumenH, 'FD');
+ 
+    const col3W = (pageW - margen * 2) / 3;
+    doc.line(margen + col3W, y, margen + col3W, y + resumenH);
+    doc.line(margen + col3W * 2, y, margen + col3W * 2, y + resumenH);
+ 
+    const resumenItems = [
+      ['IMP. PREV./SALUD', this.formatCurrency(payroll.impPrevSalud)],
+      ['IMP. CESANTÍA', this.formatCurrency(payroll.impCesantia)],
+      ['BASE TRIBUTABLE', this.formatCurrency(payroll.baseTributable)],
+    ];
+ 
+    resumenItems.forEach((item, i) => {
+      const cx = margen + col3W * i + col3W / 2;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...gris2);
+      doc.text(item[0], cx, y + 6, { align: 'center' });
+      doc.setFontSize(11);
+      doc.setTextColor(...azulPrim);
+      doc.text(item[1], cx, y + 14, { align: 'center' });
     });
  
-    const finalYDescuentos = (doc as any).lastAutoTable.finalY;
-    const resumenY = Math.max(finalYHaberes, finalYDescuentos) + 8;
+    y += resumenH + 8;
  
-    doc.setFillColor(219, 234, 254);
-    doc.roundedRect(14, resumenY, 90, 14, 2, 2, 'F');
-    doc.setTextColor(37, 99, 235);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`TOTAL HABERES: ${this.formatCurrency(payroll.totalHaberes)}`, 59, resumenY + 9, { align: 'center' });
- 
-    doc.setFillColor(254, 226, 226);
-    doc.roundedRect(108, resumenY, 88, 14, 2, 2, 'F');
-    doc.setTextColor(239, 68, 68);
-    doc.text(`TOTAL DESC.: ${this.formatCurrency(payroll.totalDescuentos)}`, 152, resumenY + 9, { align: 'center' });
- 
-    const liquidoY = resumenY + 22;
-    doc.setFillColor(...azulOscuro);
-    doc.roundedRect(14, liquidoY, 182, 18, 3, 3, 'F');
-    doc.setTextColor(...blanco);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`LÍQUIDO A RECIBIR: ${this.formatCurrency(payroll.neto)}`, 105, liquidoY + 12, { align: 'center' });
- 
-    const firmaY = liquidoY + 36;
-    doc.setDrawColor(180, 180, 180);
-    doc.line(30, firmaY, 90, firmaY);
-    doc.line(120, firmaY, 180, firmaY);
-    doc.setTextColor(...grisTexto);
-    doc.setFontSize(8);
+    // ── PIE DE PÁGINA ─────────────────────────────────────────
+    doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
-    doc.text('Firma Empleador', 60, firmaY + 6, { align: 'center' });
-    doc.text('Firma Trabajador', 150, firmaY + 6, { align: 'center' });
+    doc.setTextColor(...gris2);
+    const textoCert = 'Certifico que he recibido de ERP Liceos EMTP el saldo indicado en la presente Liquidación y no tengo cargo ni cobro posterior que hacer.';
+    const lineas = doc.splitTextToSize(textoCert, pageW - margen * 2);
+    doc.text(lineas, pageW / 2, y, { align: 'center' });
  
-    doc.setFontSize(7);
-    doc.text('Documento generado automáticamente por ERP Liceos EMTP', 105, 287, { align: 'center' });
+    y += lineas.length * 4 + 10;
+ 
+    // Líneas de firma
+    doc.setDrawColor(...borde);
+    doc.setLineWidth(0.4);
+    doc.line(margen + 10, y, margen + 65, y);
+    doc.line(pageW - margen - 65, y, pageW - margen - 10, y);
+ 
+    doc.setFontSize(8);
+    doc.setTextColor(...gris2);
+    doc.text('Firma Empleador', margen + 37, y + 5, { align: 'center' });
+    doc.text('Firma Trabajador', pageW - margen - 37, y + 5, { align: 'center' });
  
     doc.save(`liquidacion_${payroll.rut}_${nombreMes}_${payroll.anio}.pdf`);
     this.toastService.show(`Liquidación de ${payroll.nombre} descargada.`, 'success');
