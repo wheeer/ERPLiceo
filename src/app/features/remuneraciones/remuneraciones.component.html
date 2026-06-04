@@ -1,10 +1,34 @@
 <div class="remuneraciones-container">
 
-  <div class="remuneraciones-header">
-    <h1 class="remuneraciones-title">Remuneraciones</h1>
-    <p class="remuneraciones-subtitle">Nómina y cálculo de honorarios — Ley 21.561</p>
+  <!-- HEADER CON TABS -->
+  <div class="rrhh-header-row">
+    <div class="rrhh-header">
+      <h1 class="rrhh-title">Remuneraciones</h1>
+      <p class="rrhh-subtitle">Nómina y cálculo de honorarios — Ley 21.561</p>
+    </div>
 
-    <div class="header-actions-row">
+    <!-- TABS + GENERAR LIQUIDACIONES EN LA MISMA FILA -->
+    <div class="module-tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'nomina'" (click)="changeTab('nomina')">
+        Resumen de Nómina
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'horasExtra'" (click)="changeTab('horasExtra')">
+        Cálculo Horas Extra
+      </button>
+      <button class="btn-generar-liquidaciones" [class.active]="liquidacionesActivo" (click)="generarLiquidaciones()"
+        [disabled]="isGenerating">
+        @if (isGenerating) {
+        <span class="spinner-btn"></span> Generando...
+        } @else {
+        Generar Liquidaciones
+        }
+      </button>
+    </div>
+  </div>
+
+  <!-- ACTION BAR DEBAJO -->
+  <div class="action-bar">
+    <div class="bar-left">
       <div class="periodo-selector">
         <select [(ngModel)]="mesSeleccionado" title="Seleccionar Mes" aria-label="Seleccionar Mes">
           @for (mes of meses; track mes.value) {
@@ -24,36 +48,15 @@
           }
         </button>
       </div>
-    </div>
-
-    @if (activeTab === 'nomina') {
-    <input type="text" class="search-input" placeholder="Buscar por nombre, RUT o cargo..." (keyup)="onSearch($event)">
-    }
-
-  </div>
-
-  <div class="navigation-row">
-    <div class="module-tabs">
-      <button class="tab-btn" [class.active]="activeTab === 'nomina'" (click)="changeTab('nomina')">
-        Resumen de Nómina
-      </button>
-      <button class="tab-btn" [class.active]="activeTab === 'horasExtra'" (click)="changeTab('horasExtra')">
-        Cálculo Horas Extra
-      </button>
-    </div>
-
-    <button class="btn-generar-liquidaciones" [class.active]="liquidacionesActivo" (click)="generarLiquidaciones()"
-      [disabled]="isGenerating">
-      @if (isGenerating) {
-      <span class="spinner-btn"></span> Generando...
-      } @else {
-      Generar Liquidaciones
+      @if (activeTab === 'nomina') {
+      <input type="text" class="search-input" placeholder="Buscar por nombre, RUT o cargo..."
+        (keyup)="onSearch($event)">
       }
-    </button>
-
+    </div>
   </div>
 
   @if (isLoading) {
+  <!-- skeleton igual que antes -->
   <div class="table-wrapper">
     <table class="payroll-table">
       <thead>
@@ -144,7 +147,6 @@
           <td class="cell-amount fw-600 hide-mobile">{{ formatCurrency(payroll.totalHaberes) }}</td>
           <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.afp) }}</td>
           <td class="cell-amount hide-mobile">-{{ formatCurrency(payroll.salud) }}</td>
-          <!-- ✅ Punto 2: descuento asistencia dinámico -->
           <td class="cell-amount">
             @if (payroll.descuentoAsistencia > 0) {
             <span class="danger">-{{ formatCurrency(payroll.descuentoAsistencia) }}</span>
@@ -470,7 +472,6 @@
             formatCurrency(detalleSeleccionado.salud) }}</span></div>
         <div class="fila"><span>Seguro Cesantía</span><span class="danger">-{{
             formatCurrency(detalleSeleccionado.seguroCesantia) }}</span></div>
-        <!-- ✅ Punto 2: descuento asistencia en modal -->
         @if (detalleSeleccionado.descuentoAsistencia > 0) {
         <div class="fila"><span>Dcto. Asistencia</span><span class="danger">-{{
             formatCurrency(detalleSeleccionado.descuentoAsistencia) }}</span></div>

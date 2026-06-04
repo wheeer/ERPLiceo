@@ -318,7 +318,7 @@ def obtener_remuneraciones(request, mes, anio):
         for liquidacion in liquidaciones_bd:
             empleado = col_empleados.find_one({"rut": liquidacion["empleado_rut"]}) or {}
             resultado = _serializar_liquidacion(liquidacion, empleado)
-            if resultado:  # ✅ filtra los None
+            if resultado:  # filtra los None
                 liquidaciones_frontend.append(resultado)
 
         return JsonResponse({
