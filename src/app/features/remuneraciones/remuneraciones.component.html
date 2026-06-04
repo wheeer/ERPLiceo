@@ -421,7 +421,7 @@
         <p class="seccion-label">Haberes Imponibles</p>
         <div class="fila"><span>Sueldo Base</span><span>{{ formatCurrency(detalleSeleccionado.sueldoBase) }}</span></div>
         <div class="fila"><span>Gratificación Legal</span><span>{{ formatCurrency(detalleSeleccionado.gratificacion) }}</span></div>
-        <div class="fila"><span>Horas Extra <small class="text-muted">({{ detalleSeleccionado.horasExtra > 0 ? (detalleSeleccionado.horasExtra / (detalleSeleccionado.sueldoBase / 160)).toFixed(2) : 0 }} hrs)</small></span><span>{{ formatCurrency(detalleSeleccionado.horasExtra) }}</span></div>
+        <div class="fila"><span>Horas Extra <small class="text-muted">({{ detalleSeleccionado.horasExtra > 0 ? (detalleSeleccionado.horasExtra / (detalleSeleccionado.sueldoBase / 160 * 1.5)).toFixed(1) : 0 }} hrs)</small></span><span>{{ formatCurrency(detalleSeleccionado.horasExtra) }}</span></div>
         <p class="seccion-label">Haberes No Imponibles</p>
         <div class="fila"><span>Movilización</span><span>{{ formatCurrency(detalleSeleccionado.movilizacion) }}</span></div>
         <div class="fila"><span>Colación</span><span>{{ formatCurrency(detalleSeleccionado.colacion) }}</span></div>
