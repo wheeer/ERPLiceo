@@ -273,19 +273,53 @@ def api_asistencia(request, mes=None, anio=None):
 
 @csrf_exempt
 @jwt_required
-def api_asistencia_resumen(request, mes, anio):
+def api_asistencia_resumen(request, mes=None, anio=None):
     try:
         if request.method == 'GET':
-            mes_int, anio_int = int(mes), int(anio)
-            _, num_dias = calendar.monthrange(anio_int, mes_int)
-            primer_dia = datetime(anio_int, mes_int, 1)
-            ultimo_dia = datetime(anio_int, mes_int, num_dias, 23, 59, 59)
+            from datetime import timedelta, UTC
+            rango = request.GET.get('rango')
+            ahora = datetime.now()
+            
+            if rango:
+                if rango == 'semanal':
+                    primer_dia = ahora - timedelta(days=7)
+                    ultimo_dia = ahora
+                elif rango == 'mensual':
+                    primer_dia = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                    ultimo_dia = ahora
+                elif rango == 'anual':
+                    primer_dia = ahora.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                    ultimo_dia = ahora
+                else:
+                    return JsonResponse({"success": False, "message": "Rango no válido"}, status=400)
+            else:
+                if not mes or not anio:
+                    return JsonResponse({"success": False, "message": "Falta mes/anio o rango"}, status=400)
+                mes_int, anio_int = int(mes), int(anio)
+                _, num_dias = calendar.monthrange(anio_int, mes_int)
+                primer_dia = datetime(anio_int, mes_int, 1)
+                ultimo_dia = datetime(anio_int, mes_int, num_dias, 23, 59, 59)
             
             asistencias = list(col_asistencia.find({"fecha": {"$gte": primer_dia, "$lte": ultimo_dia}}))
             
             resumen = {}
+            resumen_cronologico = {} # Para el dashboard
+            
             for asis in asistencias:
                 rut = asis.get('empleado_rut') or asis.get('rut')
+                fecha = asis.get('fecha')
+                estado = asis.get('estado')
+                
+                # Agrupación cronológica (solo ausencias para el chart principal)
+                if isinstance(fecha, datetime):
+                    # Si es anual, agrupamos por mes. Si es mensual/semanal, por día.
+                    clave_fecha = f"{fecha.year}-{fecha.month:02d}" if rango == 'anual' else f"{fecha.year}-{fecha.month:02d}-{fecha.day:02d}"
+                    if clave_fecha not in resumen_cronologico:
+                        resumen_cronologico[clave_fecha] = 0
+                    if estado == "Ausente":
+                        resumen_cronologico[clave_fecha] += 1
+
+                # Agrupación por empleado
                 if not rut:
                     continue
                     
@@ -299,13 +333,21 @@ def api_asistencia_resumen(request, mes, anio):
                         "Total": 0
                     }
                     
-                estado = asis.get('estado')
                 if estado in resumen[rut]:
                     resumen[rut][estado] += 1
                 resumen[rut]["Total"] += 1
                 
             data = list(resumen.values())
-            return JsonResponse({"success": True, "data": data, "message": "Resumen de asistencia obtenido con éxito"}, status=200)
+            
+            # Ordenar el resumen cronológico
+            crono_sorted = [{"fecha": k, "ausencias": v} for k, v in sorted(resumen_cronologico.items())]
+            
+            return JsonResponse({
+                "success": True, 
+                "data": data,
+                "resumen_cronologico": crono_sorted,
+                "message": "Resumen de asistencia obtenido con éxito"
+            }, status=200)
         else:
             return JsonResponse({"success": False, "data": [], "message": "Método no permitido"}, status=405)
             

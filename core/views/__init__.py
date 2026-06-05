@@ -20,4 +20,7 @@ from .rrhh import (
     api_asistencia_resumen,
     api_horas_extra
 )
-from .dashboard import api_dashboard_resumen, api_dashboard_actividades
+from .dashboard import (
+    api_dashboard_resumen, 
+    api_dashboard_actividades
+)

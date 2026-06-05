@@ -6,9 +6,6 @@
   width: 100%;
   height: 100%;
   padding: 2rem 2.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
   overflow-y: auto;
   background: var(--bg-body);
 }
@@ -38,19 +35,39 @@
 /* METRICS GRID */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* CHARTS GRID */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .metrics-grid, .charts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-grid, .charts-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .metric-card {
   background: var(--bg-surface-main);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
-  gap: 1.2rem;
+  gap: 1rem;
   transition: all 0.3s ease;
   box-shadow: var(--shadow-sm);
 }
@@ -61,14 +78,263 @@
   border-color: var(--accent);
 }
 
+/* ---- SEMÁFORO DE TARJETAS DE MÉTRICAS ---- */
+
+/* Estado normal: usa las variables del tema activo (Aurora o Claro) */
+.metric-card--normal {
+  background: var(--bg-surface-main);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.metric-card--normal .metric-icon-bg {
+  background: var(--bg-body);
+  color: var(--text-muted);
+}
+
+.metric-card--normal .metric-label,
+.metric-card--normal .metric-subtext {
+  color: var(--text-muted);
+}
+
+.metric-card--normal .metric-value {
+  color: var(--text-primary);
+}
+
+/* ---- PRECAUCIÓN (warning) ----
+   La tarjeta mantiene el fondo del tema.
+   El glow ámbar se ilumina DETRÁS usando ::before (igual al login). */
+.metric-card--warning {
+  background: var(--bg-surface-main);
+  border-color: rgba(245, 158, 11, 0.55);
+  color: var(--text-primary);
+  position: relative;
+}
+
+.metric-card--warning .metric-icon-bg {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+
+.metric-card--warning::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(
+    circle,
+    rgba(245, 158, 11, 0.28) 0%,
+    rgba(245, 158, 11, 0.10) 45%,
+    rgba(245, 158, 11, 0) 70%
+  );
+  filter: blur(24px);
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  animation: glow-warning 3s ease-in-out infinite;
+}
+
+/* ---- CRÍTICO (critical) ----
+   La tarjeta mantiene el fondo del tema.
+   El glow rojo pulsa DETRÁS — más intenso que el warning. */
+.metric-card--critical {
+  background: var(--bg-surface-main);
+  border-color: rgba(239, 68, 68, 0.65);
+  color: var(--text-primary);
+  position: relative;
+}
+
+.metric-card--critical .metric-icon-bg {
+  background: rgba(239, 68, 68, 0.12);
+  color: #be123c;
+}
+
+.metric-card--critical::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(
+    circle,
+    rgba(239, 68, 68, 0.35) 0%,
+    rgba(239, 68, 68, 0.14) 45%,
+    rgba(239, 68, 68, 0) 70%
+  );
+  filter: blur(24px);
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  animation: glow-critical 2s ease-in-out infinite;
+}
+
+@keyframes glow-warning {
+  0%, 100% { opacity: 0.65; transform: translate(-50%, -50%) scale(1); }
+  50%       { opacity: 1;    transform: translate(-50%, -50%) scale(1.08); }
+}
+
+@keyframes glow-critical {
+  0%, 100% { opacity: 0.7;  transform: translate(-50%, -50%) scale(1); }
+  50%       { opacity: 1;   transform: translate(-50%, -50%) scale(1.12); }
+}
+
+/* CHART CARD — miniatura de tamaño uniforme */
+.chart-card {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+  border-radius: 16px;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  background: var(--bg-surface-main);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12);
+  border-color: var(--accent);
+}
+
+/* Variante sin cursor cuando el acceso está bloqueado por rol */
+.chart-card--locked {
+  cursor: default;
+}
+
+.chart-card--locked:hover {
+  transform: none;
+  box-shadow: var(--shadow-sm);
+  border-color: var(--border-color);
+}
+
+/* LOADING OVERLAY — cubre toda la tarjeta, respeta el tema */
+.chart-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  /* color-mix mezcla el color del tema con transparente — no afecta hijos */
+  background: color-mix(in srgb, var(--bg-surface-main) 92%, transparent);
+  gap: 0.5rem;
+}
+
+/* Spinner que usa el color de acento del tema */
+.chart-spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid var(--border-color);
+  border-bottom-color: var(--accent);
+  animation: chart-spin 0.8s linear infinite;
+}
+
+@keyframes chart-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Texto de carga que respeta el color del tema */
+.chart-loading-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* HOVER OVERLAY — pista visual de interacción */
+.chart-hover-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.04);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.chart-card:hover .chart-hover-overlay {
+  opacity: 1;
+}
+
+/* BADGE DE EXPANSIÓN */
+.chart-expand-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-surface-main);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+/* SKELETON del gráfico */
+.skeleton-chart {
+  width: 100%;
+  height: 100%;
+  background: var(--border-color);
+  border-radius: 8px;
+  opacity: 0.5;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+/* ESTADO BLOQUEADO por rol */
+.chart-locked-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.chart-locked-state svg {
+  opacity: 0.4;
+}
+
+.chart-locked-state h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.chart-locked-state p {
+  font-size: 0.85rem;
+  text-align: center;
+  color: var(--text-muted);
+  max-width: 200px;
+  margin: 0;
+}
+
 .cursor-pointer {
   cursor: pointer;
 }
 
 .metric-icon-wrapper {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,7 +352,7 @@
 }
 
 .metric-title {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-muted);
   margin: 0;
@@ -95,10 +361,10 @@
 }
 
 .metric-value {
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--text-primary);
-  margin: 0.2rem 0;
+  margin: 0.1rem 0;
   line-height: 1;
 }
 
@@ -400,4 +666,191 @@
   .activity-user {
     font-size: 0.75rem;
   }
+}
+ 
+/* ============================================================
+   SKELETON LOADING ANIMATIONS (H1)
+   ============================================================ */
+
+.skeleton-card {
+  pointer-events: none;
+  background: var(--bg-surface-main);
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+.skeleton-icon {
+  background: var(--border-color) !important;
+  opacity: 0.3;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-line {
+  background: var(--border-color);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-title {
+  width: 120px;
+  height: 0.85rem;
+  margin-bottom: 0.6rem;
+  opacity: 0.4;
+}
+
+.skeleton-value {
+  width: 60px;
+  height: 1.8rem;
+  margin-bottom: 0.6rem;
+  opacity: 0.6;
+}
+
+.skeleton-subtext {
+  width: 160px;
+  height: 0.75rem;
+  opacity: 0.3;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0.3;
+  }
+}
+
+/* =========================================
+   MODAL DE EXPANSIÓN (FASE 4)
+   ========================================= */
+
+.modal-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.8) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.modal-content {
+  background: var(--bg-surface-main);
+  border: 1px solid var(--border-color);
+}
+
+.modal-header {
+  background: var(--bg-body);
+  border-bottom-color: var(--border-color);
+}
+
+.modal-header h2 {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  background: var(--bg-surface-main);
+}
+
+.modal-footer {
+  background: var(--bg-body);
+  border-top-color: var(--border-color);
+}
+
+.modal-filter {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface-main);
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color);
+}
+
+.modal-filter label {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-right: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-filter select {
+  border: none;
+  background: var(--bg-body);
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+}
+
+.modal-filter select:focus {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.modal-btn-close {
+  padding: 0.5rem;
+  color: var(--text-muted);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.modal-btn-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-body);
+}
+
+.modal-btn-primary {
+  background: var(--accent);
+  color: #ffffff;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  border: none;
+}
+
+.modal-btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* =========================================
+   MINIATURAS DE GRÁFICOS (SPARKLINES)
+   ========================================= */
+
+.chart-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.chart-sparkline-wrapper {
+  margin-top: 0.5rem;
+  height: 120px;
+  width: 100%;
+  flex: 1;
 }

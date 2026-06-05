@@ -538,7 +538,7 @@ def obtener_liquidacion_empleado(request, rut, mes, anio):
 
 @csrf_exempt
 @jwt_required
-def obtener_remuneraciones(request, mes, anio):
+def obtener_remuneraciones(request, mes=None, anio=None):
 
     if request.method != 'GET':
         return JsonResponse({
@@ -548,15 +548,52 @@ def obtener_remuneraciones(request, mes, anio):
         }, status=405)
 
     try:
+        rango = request.GET.get('rango')
+        resumen_cronologico = {}
 
-        # CONSULTA MONGODB REAL
+        if rango:
+            import datetime
+            ahora = datetime.datetime.now()
+            if rango == 'anual':
+                # Obtener todas las remuneraciones del año actual
+                liquidaciones_bd = list(
+                    col_remuneraciones.find({"periodo.anio": ahora.year})
+                )
+            else: # mensual o semanal usamos el mes actual por ahora como fallback
+                liquidaciones_bd = list(
+                    col_remuneraciones.find({
+                        "periodo.mes": ahora.month,
+                        "periodo.anio": ahora.year
+                    })
+                )
+        else:
+            if not mes or not anio:
+                return JsonResponse({"success": False, "message": "Falta mes y año", "data": None}, status=400)
+            
+            # CONSULTA MONGODB REAL
+            liquidaciones_bd = list(
+                col_remuneraciones.find({
+                    "periodo.mes": int(mes),
+                    "periodo.anio": int(anio)
+                })
+            )
 
-        liquidaciones_bd = list(
-            col_remuneraciones.find({
-                "periodo.mes": int(mes),
-                "periodo.anio": int(anio)
-            })
-        )
+        # Agrupación cronológica para el Dashboard
+        if rango:
+            for liq in liquidaciones_bd:
+                m = liq.get("periodo", {}).get("mes", 1)
+                a = liq.get("periodo", {}).get("anio", 2026)
+                clave = f"{a}-{m:02d}"
+                
+                if clave not in resumen_cronologico:
+                    resumen_cronologico[clave] = {
+                        "fecha": clave,
+                        "total_haberes": 0,
+                        "total_descuentos": 0
+                    }
+                
+                resumen_cronologico[clave]["total_haberes"] += liq.get("totales", {}).get("total_haberes", 0)
+                resumen_cronologico[clave]["total_descuentos"] += liq.get("totales", {}).get("total_descuentos", 0)
 
         liquidaciones_frontend = []
 
@@ -611,11 +648,14 @@ def obtener_remuneraciones(request, mes, anio):
 
                 "neto": liquidacion["totales"]["sueldo_liquido"]
             })
+            
+        crono_sorted = sorted(list(resumen_cronologico.values()), key=lambda x: x["fecha"])
 
         return JsonResponse({
             "success": True,
             "message": "Remuneraciones obtenidas correctamente.",
-            "data": liquidaciones_frontend
+            "data": liquidaciones_frontend,
+            "resumen_cronologico": crono_sorted
         }, status=200)
 
     except Exception as e:

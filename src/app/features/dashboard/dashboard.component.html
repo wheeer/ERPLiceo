@@ -1,135 +1,318 @@
-<div class="dashboard-container">
-  <!-- HEADER -->
-  <div class="dashboard-header">
-    <h1 class="dashboard-title">Dashboard de {{ getRoleDisplayName() }}</h1>
-    <p class="dashboard-subtitle">Resumen de operaciones y estado actual del sistema</p>
+<div class="dashboard-container max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+  <!-- HEADER CON FILTROS INTEGRADOS -->
+  <div class="dashboard-header mb-8 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+    <div>
+      <h1 class="dashboard-title text-3xl font-bold text-slate-900 flex items-center gap-3">
+        Dashboard de {{ getRoleDisplayName() }}
+      </h1>
+      <p class="dashboard-subtitle text-slate-500 mt-2 text-lg">Resumen de operaciones y estado actual del sistema</p>
+    </div>
+    <!-- Se han trasladado los filtros al interior del Modal según la regla UX -->
+    <button id="btn-export-pdf" 
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
+            [disabled]="isExportingPdf"
+            (click)="exportToPDF()">
+      @if (isExportingPdf) {
+        <div class="chart-spinner" style="width: 16px; height: 16px; border-width: 2px;"></div> Generando...
+      } @else {
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Generar Informe PDF
+      }
+    </button>
   </div>
 
-  <!-- METRICAS MVP -->
+  <!-- FILA 1: MÉTRICAS Y ALERTAS -->
   <div class="metrics-grid">
-    @for (metric of filteredMetrics; track metric.title) {
-    <div class="metric-card cursor-pointer hover-effect" 
-         [class]="'metric-card--' + metric.color"
-         [routerLink]="metric.path">
-      <div class="metric-icon-wrapper">
-        @switch (metric.icon) {
-        @case ('users') {
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
+      @if (isLoadingMetrics) {
+        @for (i of [1, 2, 3]; track i) {
+        <div class="metric-card skeleton-card bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+          <div class="metric-icon-wrapper skeleton-icon h-12 w-12 rounded-lg animate-pulse bg-slate-200"></div>
+          <div class="metric-info flex-1">
+            <div class="skeleton-line skeleton-title h-3 w-1/2 bg-slate-200 rounded animate-pulse mb-2"></div>
+            <div class="skeleton-line skeleton-value h-6 w-3/4 bg-slate-200 rounded animate-pulse mb-2"></div>
+            <div class="skeleton-line skeleton-subtext h-3 w-full bg-slate-200 rounded animate-pulse"></div>
+          </div>
+        </div>
         }
-        @case ('alert') {
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-          <line x1="12" y1="9" x2="12" y2="13" />
-          <line x1="12" y1="17" x2="12.01" y2="17" />
-        </svg>
+      } @else {
+        @for (metric of filteredMetrics; track metric.title) {
+        <div class="metric-card"
+          [class.metric-card--normal]="metric.color === 'normal'"
+          [class.metric-card--warning]="metric.color === 'yellow'"
+          [class.metric-card--critical]="metric.color === 'red'"
+          [routerLink]="metric.path">
+          <div class="metric-icon-bg p-3 rounded-lg flex-shrink-0">
+              @switch (metric.icon) {
+                @case ('users') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                }
+                @case ('alert') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                }
+                @case ('bell') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+                }
+              }
+          </div>
+          <div>
+            <p class="metric-label text-xs font-semibold uppercase tracking-wide opacity-70 mb-1 line-clamp-1">{{ metric.title }}</p>
+            <h4 class="metric-value text-3xl font-black leading-none">{{ metric.value }}</h4>
+            <div class="mt-1 flex items-start gap-1.5">
+              @if (metric.color === 'red') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              } @else if (metric.color === 'yellow') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 flex-shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              }
+              <span class="metric-subtext text-xs font-medium opacity-90 leading-tight">{{ metric.subtext }}</span>
+            </div>
+          </div>
+        </div>
         }
-        @case ('file') {
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-          <polyline points="10 9 9 9 8 9" />
-        </svg>
-        }
-        @case ('bell') {
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-        </svg>
-        }
-        }
-      </div>
-      <div class="metric-info">
-        <h3 class="metric-title">{{ metric.title }}</h3>
-        <p class="metric-value">{{ metric.value }}</p>
-        <span class="metric-subtext">{{ metric.subtext }}</span>
-      </div>
-    </div>
-    }
+      }
   </div>
 
-  <!-- HEADER TIMELINE -->
-  <div class="dashboard-header mt-8">
-    <h2 class="dashboard-title text-xl">Actividad Reciente</h2>
-    <p class="dashboard-subtitle">Timeline de cambios y operaciones en el sistema</p>
+  <!-- FILA 2: GRÁFICOS (miniaturas 3 columnas) -->
+  <div class="charts-grid">
+      <!-- RRHH Chart -->
+      <div class="chart-card" (click)="openChartModal('rrhh')">
+        <h3 class="chart-card-title">Tendencia de Ausentismo y Atrasos</h3>
+        @if (isLoadingChartRRHH) {
+        <div class="chart-loading-overlay">
+          <div class="chart-spinner"></div>
+          <span class="chart-loading-text">Actualizando...</span>
+        </div>
+        }
+        <div class="chart-hover-overlay">
+          <span class="chart-expand-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+            Ampliar gráfico
+          </span>
+        </div>
+        @if (isLoadingChartRRHH) {
+        <div class="skeleton-chart"></div>
+        } @else {
+        <div class="chart-sparkline-wrapper">
+          <apx-chart #chartRrhh [series]="rrhhChartOptions.series" [chart]="getThumbnailChartOptions(rrhhChartOptions)" 
+            [xaxis]="getThumbnailXAxis(rrhhChartOptions)" [yaxis]="getThumbnailYAxis()" [grid]="getThumbnailGrid()"
+            [stroke]="rrhhChartOptions.stroke" [colors]="rrhhChartOptions.colors" [dataLabels]="rrhhChartOptions.dataLabels"></apx-chart>
+        </div>
+        }
+      </div>
+
+      <!-- Remuneraciones Chart -->
+      <div class="chart-card" [class.chart-card--locked]="userRole !== 'Administrador_General' && userRole !== 'Encargado_Remuneraciones'" (click)="(userRole === 'Administrador_General' || userRole === 'Encargado_Remuneraciones') ? openChartModal('remuneraciones') : null">
+        <h3 class="chart-card-title">Control del Gasto en Sueldos (CLP)</h3>
+        @if (isLoadingChartRemu) {
+        <div class="chart-loading-overlay">
+          <div class="chart-spinner"></div>
+          <span class="chart-loading-text">Actualizando...</span>
+        </div>
+        }
+        @if (userRole === 'Administrador_General' || userRole === 'Encargado_Remuneraciones') {
+          <div class="chart-hover-overlay">
+            <span class="chart-expand-badge">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+              Ampliar gráfico
+            </span>
+          </div>
+          @if (isLoadingChartRemu) {
+          <div class="skeleton-chart"></div>
+          } @else {
+          <div class="chart-sparkline-wrapper">
+            <apx-chart #chartRemu [series]="remuneracionesChartOptions.series" [chart]="getThumbnailChartOptions(remuneracionesChartOptions)"
+              [plotOptions]="remuneracionesChartOptions.plotOptions" [xaxis]="getThumbnailXAxis(remuneracionesChartOptions)" 
+              [yaxis]="getThumbnailYAxis()" [grid]="getThumbnailGrid()" [colors]="remuneracionesChartOptions.colors"></apx-chart>
+          </div>
+          }
+        } @else {
+        <div class="chart-locked-state">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <h3>Acceso Restringido</h3>
+          <p>Tu rol actual no tiene permisos para visualizar datos financieros.</p>
+        </div>
+        }
+      </div>
+
+      <!-- Inventario Chart -->
+      <div class="chart-card" (click)="openChartModal('inventario')">
+        <h3 class="chart-card-title">Estado de Equipamiento</h3>
+        @if (isLoadingChartInv) {
+        <div class="chart-loading-overlay">
+          <div class="chart-spinner"></div>
+          <span class="chart-loading-text">Actualizando...</span>
+        </div>
+        }
+        <div class="chart-hover-overlay">
+          <span class="chart-expand-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+            Ampliar gráfico
+          </span>
+        </div>
+        @if (isLoadingChartInv) {
+        <div class="skeleton-chart"></div>
+        } @else {
+        <div class="chart-sparkline-wrapper">
+          <apx-chart #chartInv [series]="inventarioChartOptions.series" [chart]="getThumbnailChartOptions(inventarioChartOptions)"
+            [plotOptions]="inventarioChartOptions.plotOptions" [xaxis]="getThumbnailXAxis(inventarioChartOptions)" 
+            [yaxis]="getThumbnailYAxis()" [grid]="getThumbnailGrid()" [colors]="inventarioChartOptions.colors"></apx-chart>
+        </div>
+        }
+      </div>
   </div>
 
-  <!-- TIMELINE DE ACTIVIDADES -->
-  <div class="activity-timeline">
-    @for (activity of filteredActivities; track activity.id; let last = $last) {
-    <div class="timeline-item" [class]="'timeline-item--' + activity.module">
-
-      <!-- CONECTOR (Línea vertical) -->
-      <div class="timeline-connector" [class.is-last]="last"></div>
-
-      <!-- INDICADOR (Punto con icono) -->
-      <div class="timeline-indicator" [class]="'timeline-indicator--' + activity.type">
-        @switch (activity.type) {
-        @case ('create') {
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        }
-        @case ('update') {
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-        </svg>
-        }
-        @case ('delete') {
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-          <line x1="10" y1="11" x2="10" y2="17" />
-          <line x1="14" y1="11" x2="14" y2="17" />
-        </svg>
-        }
-        @case ('login') {
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-          <polyline points="10 17 15 12 10 7" />
-          <line x1="15" y1="12" x2="3" y2="12" />
-        </svg>
-        }
-        @case ('export') {
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
-        }
-        }
-      </div>
-
-      <!-- CONTENIDO -->
-      <div class="timeline-content">
-        <div class="activity-header">
-          <h3 class="activity-title">{{ activity.action }}</h3>
-          <span class="activity-time">{{ formatTime(activity.timestamp) }}</span>
-        </div>
-        <p class="activity-description">{{ activity.description }}</p>
-        <div class="activity-footer">
-          <span class="activity-user">{{ activity.user }}</span>
-          <span class="activity-module" [class]="'badge--' + activity.module">{{ activity.module }}</span>
-        </div>
-      </div>
+  <!-- FILA 3: TIMELINE -->
+  <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 mb-8">
+    <div class="dashboard-header mb-6">
+      <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Actividad Reciente</h2>
+      <p class="text-slate-500 text-sm mt-1">Timeline de cambios y operaciones en el sistema</p>
     </div>
-    }
+
+    <div class="activity-timeline">
+      @for (activity of filteredActivities; track activity.id; let last = $last) {
+      <div class="timeline-item" [class]="'timeline-item--' + activity.module">
+        <div class="timeline-connector" [class.is-last]="last"></div>
+        <div class="timeline-indicator" [class]="'timeline-indicator--' + activity.type">
+          @switch (activity.type) {
+            @case ('create') {
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            }
+            @case ('update') {
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+            }
+            @case ('delete') {
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+            }
+            @case ('login') {
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></svg>
+            }
+            @case ('export') {
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+            }
+          }
+        </div>
+        <div class="timeline-content">
+          <div class="activity-header">
+            <h3 class="activity-title">{{ activity.action }}</h3>
+            <span class="activity-time">{{ formatTime(activity.timestamp) }}</span>
+          </div>
+          <p class="activity-description">{{ activity.description }}</p>
+          <div class="activity-footer">
+            <span class="activity-user">{{ activity.user }}</span>
+            <span class="activity-module" [class]="'badge--' + activity.module">{{ activity.module }}</span>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
   </div>
 </div>
+
+<!-- MODAL DE EXPANSIÓN DE GRÁFICOS -->
+@if (expandedChart) {
+<div class="modal-backdrop" (click)="closeChartModal()">
+  <div class="modal-content rounded-2xl shadow-2xl w-[95vw] md:w-[90vw] max-w-[1400px] h-[95vh] md:h-[85vh] flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-200" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:p-6 border-b border-slate-100 gap-4 md:gap-0">
+      <div class="flex items-center justify-between w-full md:w-auto">
+        <h2 class="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2 md:gap-3">
+          <i [attr.data-lucide]="expandedChart === 'rrhh' ? 'users' : expandedChart === 'remuneraciones' ? 'file' : 'alert'" class="w-5 h-5 md:w-6 md:h-6 text-slate-500"></i>
+          {{ expandedChart === 'rrhh' ? 'Detalle: Ausentismo y Atrasos' : 
+             expandedChart === 'remuneraciones' ? 'Detalle: Gasto en Sueldos' : 
+             'Detalle: Estado de Equipamiento' }}
+        </h2>
+        <button class="md:hidden modal-btn-close" (click)="closeChartModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      
+      <!-- CONTROLES DE FILTRO GRANULARES DENTRO DEL MODAL -->
+      <div class="flex items-center gap-4">
+        @if (expandedChart === 'rrhh' || expandedChart === 'remuneraciones') {
+          <div class="modal-filter">
+            <label>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Rango:
+            </label>
+            <select [value]="selectedPeriod" (change)="onFilterChange($event, 'period')">
+              <option value="semanal">Últimos 7 Días</option>
+              <option value="mensual">Este Mes</option>
+              <option value="anual">Todo el Año</option>
+            </select>
+          </div>
+        }
+        @if (expandedChart === 'inventario') {
+          <div class="modal-filter">
+            <label>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg> Categoría:
+            </label>
+            <select [value]="selectedCategory" (change)="onFilterChange($event, 'category')">
+              <option value="Todas">Todas las áreas</option>
+              <option value="Electromecánica">Electromecánica</option>
+              <option value="Informática">Informática</option>
+              <option value="Papelería">Papelería</option>
+            </select>
+          </div>
+        }
+      </div> <!-- Cerramos el div de gap-4 -->
+      <div class="flex items-center gap-2">
+        <button class="modal-btn-close flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-semibold transition-colors shadow-sm text-sm" (click)="exportModalToPDF()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span class="hidden md:inline">Exportar Datos</span>
+        </button>
+        <button class="modal-btn-close" (click)="closeChartModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+    </div>
+    <!-- Body -->
+    <div class="modal-body p-4 md:p-6 flex-1 overflow-auto flex items-center justify-center relative">
+      <div class="w-full h-full min-h-[300px] md:min-h-[550px] relative rounded-xl overflow-hidden">
+        @if (expandedChart === 'rrhh') {
+          @if (isLoadingChartRRHH) {
+            <div class="chart-loading-overlay">
+              <div class="chart-spinner"></div>
+              <span class="chart-loading-text">Actualizando...</span>
+            </div>
+          }
+          <div class="w-full h-full pb-8">
+            <apx-chart #chartModalRrhh [series]="rrhhChartOptions.series" [chart]="getModalChartOptions(rrhhChartOptions)" [xaxis]="rrhhChartOptions.xaxis"
+              [stroke]="rrhhChartOptions.stroke" [colors]="rrhhChartOptions.colors" [dataLabels]="rrhhChartOptions.dataLabels"
+              [tooltip]="rrhhChartOptions.tooltip" [fill]="rrhhChartOptions.fill"></apx-chart>
+          </div>
+        } @else if (expandedChart === 'remuneraciones') {
+          @if (isLoadingChartRemu) {
+            <div class="chart-loading-overlay">
+              <div class="chart-spinner"></div>
+              <span class="chart-loading-text">Actualizando...</span>
+            </div>
+          }
+          <div class="w-full h-full pb-8">
+            <apx-chart #chartModalRemu [series]="remuneracionesChartOptions.series" [chart]="getModalChartOptions(remuneracionesChartOptions)"
+              [plotOptions]="remuneracionesChartOptions.plotOptions" [xaxis]="remuneracionesChartOptions.xaxis"
+              [colors]="remuneracionesChartOptions.colors" [dataLabels]="remuneracionesChartOptions.dataLabels"
+              [tooltip]="remuneracionesChartOptions.tooltip" [legend]="remuneracionesChartOptions.legend"></apx-chart>
+          </div>
+        } @else if (expandedChart === 'inventario') {
+          @if (isLoadingChartInv) {
+            <div class="chart-loading-overlay">
+              <div class="chart-spinner"></div>
+              <span class="chart-loading-text">Actualizando...</span>
+            </div>
+          }
+          <div class="w-full h-full pb-8">
+            <apx-chart #chartModalInv [series]="inventarioChartOptions.series" [chart]="getModalChartOptions(inventarioChartOptions)"
+              [plotOptions]="inventarioChartOptions.plotOptions" [xaxis]="inventarioChartOptions.xaxis"
+              [colors]="inventarioChartOptions.colors" [dataLabels]="inventarioChartOptions.dataLabels"
+              [tooltip]="inventarioChartOptions.tooltip"></apx-chart>
+          </div>
+        }
+      </div>
+    </div>
+    <!-- Footer CTA -->
+    <div class="modal-footer p-4 border-t border-slate-200 flex justify-end">
+      <button class="modal-btn-primary" [routerLink]="expandedChart === 'rrhh' ? '/app/rrhh' : expandedChart === 'remuneraciones' ? '/app/remuneraciones' : '/app/inventario'" (click)="closeChartModal()">
+        Ir al Módulo Completo <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </button>
+    </div>
+  </div>
+</div>
+}

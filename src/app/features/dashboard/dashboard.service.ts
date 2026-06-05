@@ -18,11 +18,22 @@ export class DashboardService {
   private activitiesUrl = 'http://127.0.0.1:8000/api/dashboard/actividades/';
 
   getMetrics(): Observable<DashboardMetrics> {
-    // delay(800) simula carga artificial para mantener feedback visual
-    return this.http.get<DashboardMetrics>(this.apiUrl).pipe(delay(800));
+    return this.http.get<DashboardMetrics>(this.apiUrl);
   }
 
   getActivities(): Observable<any> {
     return this.http.get<any>(this.activitiesUrl);
+  }
+
+  getChartRRHH(rango: string): Observable<any> {
+    return this.http.get<any>(`http://127.0.0.1:8000/api/asistencia/resumen/?rango=${rango}`);
+  }
+
+  getChartRemuneraciones(rango: string): Observable<any> {
+    return this.http.get<any>(`http://127.0.0.1:8000/api/remuneraciones/?rango=${rango}`);
+  }
+
+  getChartInventario(categoria: string): Observable<any> {
+    return this.http.get<any>(`http://127.0.0.1:8000/api/inventario/`);
   }
 }

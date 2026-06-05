@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from datetime import datetime, timedelta, UTC
-from core.db_connection import col_empleados, col_inventario, col_asistencia, col_auditoria
+from core.db_connection import col_empleados, col_inventario, col_asistencia, col_auditoria, col_remuneraciones
 from core.jwt_middleware import jwt_required
 from django.views.decorators.csrf import csrf_exempt
 
@@ -83,3 +83,4 @@ def api_dashboard_actividades(request):
             {"error": "Error al cargar el timeline de actividades", "detalle": str(e)},
             status=500
         )
+

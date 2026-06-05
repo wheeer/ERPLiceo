@@ -11,6 +11,7 @@ urlpatterns = [
     path('remuneraciones/calcular/', views.calcular_remuneraciones, name='calcular_remuneraciones'),
     path('remuneraciones/pdf/<str:id>/', views.obtener_pdf_liquidacion, name='obtener_pdf_liquidacion'),
     path('remuneraciones/empleado/<str:rut>/<int:mes>/<int:anio>/', views.obtener_liquidacion_empleado, name='obtener_liquidacion_empleado'),
+    path('remuneraciones/', views.obtener_remuneraciones, name='obtener_remuneraciones_rango'),
     path('remuneraciones/<int:mes>/<int:anio>/', views.obtener_remuneraciones, name='obtener_remuneraciones'),
     
     # Horas Extra
@@ -26,6 +27,7 @@ urlpatterns = [
     path('empleados/<str:rut>/', views.api_empleado_detalle, name='api_empleado_detalle'),
     path('asistencia/', views.api_asistencia, name='api_asistencia_post'),
     path('asistencia/<int:mes>/<int:anio>/', views.api_asistencia, name='api_asistencia'),
+    path('asistencia/resumen/', views.api_asistencia_resumen, name='api_asistencia_resumen_rango'),
     path('asistencia/resumen/<int:mes>/<int:anio>/', views.api_asistencia_resumen, name='api_asistencia_resumen'),
     path('horas-extra/', views.api_horas_extra, name='api_horas_extra_post'),
     path('horas-extra/<int:mes>/<int:anio>/', views.api_horas_extra, name='api_horas_extra'),
@@ -33,4 +35,4 @@ urlpatterns = [
     # Dashboard
     path('dashboard/resumen/', views.api_dashboard_resumen, name='api_dashboard_resumen'),
     path('dashboard/actividades/', views.api_dashboard_actividades, name='api_dashboard_actividades'),
-]
+]
