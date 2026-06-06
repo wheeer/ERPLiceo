@@ -24,70 +24,10 @@ export class DashboardComponent implements OnInit {
   userRole: string | null = null;
   
   // Métricas MVP (Propuesta de valor)
-  metrics = [
-    { title: 'Personal Activo', value: '142', icon: 'users', color: 'blue', subtext: '+3 altas este mes' },
-    { title: 'Stock Crítico', value: '8', icon: 'alert', color: 'red', subtext: 'Insumos requieren atención' },
-    { title: 'Nómina Pendiente', value: '1', icon: 'file', color: 'emerald', subtext: 'Mes de Abril' },
-    { title: 'Alertas Sistema', value: '3', icon: 'bell', color: 'purple', subtext: 'Sin leer' }
-  ];
+  metrics: any[] = [];
 
   // TODO: Reemplazar con llamada al servicio de auditoría (backend pendiente)
-  activities: ActivityLog[] = [
-    {
-      id: 1,
-      type: 'login',
-      action: 'Inicio de Sesión',
-      description: 'Admin accedió al sistema',
-      module: 'auth',
-      user: 'Administrador',
-      timestamp: new Date(Date.now() - 5 * 60000) // Hace 5 min
-    },
-    {
-      id: 2,
-      type: 'create',
-      action: 'Empleado Registrado',
-      description: 'Se agregó nuevo empleado: Juan Pérez (RUT: 12345678-9)',
-      module: 'rrhh',
-      user: 'María González',
-      timestamp: new Date(Date.now() - 25 * 60000) // Hace 25 min
-    },
-    {
-      id: 3,
-      type: 'update',
-      action: 'Nómina Actualizada',
-      description: 'Actualización de escala salarial para 15 empleados',
-      module: 'remuneraciones',
-      user: 'Contador Principal',
-      timestamp: new Date(Date.now() - 1.5 * 3600000) // Hace 1.5 horas
-    },
-    {
-      id: 4,
-      type: 'export',
-      action: 'Reporte Exportado',
-      description: 'Exportación de inventario a Excel (2,450 items)',
-      module: 'inventario',
-      user: 'Bodeguero Senior',
-      timestamp: new Date(Date.now() - 3.5 * 3600000) // Hace 3.5 horas
-    },
-    {
-      id: 5,
-      type: 'update',
-      action: 'Stock Corregido',
-      description: 'Ajuste de inventario: Monitores Dell (Cantidad: -5)',
-      module: 'inventario',
-      user: 'Bodeguero Senior',
-      timestamp: new Date(Date.now() - 5 * 3600000) // Hace 5 horas
-    },
-    {
-      id: 6,
-      type: 'create',
-      action: 'Contrato Firmado',
-      description: 'Nuevo contrato de prácticas: Carlos Díaz (Duración: 6 meses)',
-      module: 'rrhh',
-      user: 'Jefe de RRHH',
-      timestamp: new Date(Date.now() - 1 * 86400000) // Hace 1 día
-    }
-  ];
+  activities: ActivityLog[] = [];
 
   filteredMetrics: any[] = [];
   filteredActivities: ActivityLog[] = [];
