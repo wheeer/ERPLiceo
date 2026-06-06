@@ -37,11 +37,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     return (partes[0].charAt(0) + partes[partes.length - 1].charAt(0)).toUpperCase();
   }
 
-  notificaciones = [
-    { texto: 'Inventario: 3 ítems bajo stock mínimo', leida: false },
-    { texto: 'Nómina de Abril pendiente de aprobación', leida: false },
-    { texto: 'Nuevo docente registrado en RRHH', leida: true }
-  ];
+  notificaciones: any[] = [];
 
   mostrarNotificaciones = false;
   mostrarMenuUsuario = false;
