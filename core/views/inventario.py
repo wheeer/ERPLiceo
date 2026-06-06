@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from core.db_connection import col_inventario
+from core.db_connection import col_inventario, col_empleados, registrar_auditoria
 from core.jwt_middleware import jwt_required
 
 @csrf_exempt
@@ -55,6 +55,18 @@ def inventario_lista(request):
             
             resultado = col_inventario.insert_one(nuevo_articulo)
             nuevo_articulo['_id'] = str(resultado.inserted_id)
+            
+            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+            actor_emp = col_empleados.find_one({"rut": actor_rut})
+            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+            
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="inventario",
+                accion="Ítem Registrado",
+                descripcion=f"Se agregó el ítem '{nuevo_articulo.get('nombre', '')}' ({codigo}) al inventario."
+            )
             
             return JsonResponse({
                 "success": True,
@@ -157,6 +169,18 @@ def inventario_detalle(request, codigo):
             actualizado = col_inventario.find_one({"codigo": codigo})
             actualizado['_id'] = str(actualizado['_id'])
             
+            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+            actor_emp = col_empleados.find_one({"rut": actor_rut})
+            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+            
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="inventario",
+                accion="Stock Actualizado",
+                descripcion=f"Se actualizó la información/stock del ítem {codigo}."
+            )
+            
             return JsonResponse({
                 "success": True,
                 "message": "Artículo actualizado correctamente",
@@ -176,6 +200,18 @@ def inventario_detalle(request, codigo):
                 return JsonResponse({"success": False, "message": "Artículo no encontrado", "data": None}, status=404)
                 
             col_inventario.delete_one({"codigo": codigo})
+            
+            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+            actor_emp = col_empleados.find_one({"rut": actor_rut})
+            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+            
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="inventario",
+                accion="Ítem Eliminado",
+                descripcion=f"Se eliminó el registro del ítem {codigo}."
+            )
             
             return JsonResponse({
                 "success": True,

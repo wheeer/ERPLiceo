@@ -1,9 +1,10 @@
-import { Component, EventEmitter, Output, inject, OnInit, OnDestroy, HostListener, ElementRef } from '@angular/core';
+import { Component, EventEmitter, Output, inject, OnInit, OnDestroy, HostListener, ElementRef, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
 import { AuthService } from '../../services/auth.service';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { filter, map, mergeMap, Subscription } from 'rxjs';
+import { NotificationService, AppNotification } from '../../services/notification.service';
 
 @Component({
   selector: 'app-header',
@@ -20,6 +21,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private activatedRoute = inject(ActivatedRoute);
   private elementRef = inject(ElementRef);
+  private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
 
   pageTitle = 'Dashboard Principal';
   private routerSub!: Subscription;
@@ -36,18 +39,24 @@ export class HeaderComponent implements OnInit, OnDestroy {
     if (partes.length === 1) return partes[0].charAt(0).toUpperCase();
     return (partes[0].charAt(0) + partes[partes.length - 1].charAt(0)).toUpperCase();
   }
-
-  notificaciones = [
-    { texto: 'Inventario: 3 ítems bajo stock mínimo', leida: false },
-    { texto: 'Nómina de Abril pendiente de aprobación', leida: false },
-    { texto: 'Nuevo docente registrado en RRHH', leida: true }
-  ];
+  private notificationService = inject(NotificationService);
+  userRole: string | null = null;
+  notificaciones: AppNotification[] = [];
+  private notifSub!: Subscription;
 
   mostrarNotificaciones = false;
   mostrarMenuUsuario = false;
 
   get notificacionesSinLeer(): number {
     return this.notificaciones.filter(n => !n.leida).length;
+  }
+
+  marcarComoLeida(notificacion: AppNotification) {
+    notificacion.leida = true;
+    if (notificacion.url_destino && notificacion.url_destino !== '#') {
+      this.router.navigateByUrl(notificacion.url_destino);
+      this.mostrarNotificaciones = false;
+    }
   }
 
   toggleNotificaciones() {
@@ -90,9 +99,49 @@ export class HeaderComponent implements OnInit, OnDestroy {
     ).subscribe(data => {
       this.pageTitle = data['title'] || 'ERP EMTP';
     });
+
+    this.userRole = this.authService.getUserRole();
+
+    // Función global auxiliar para probar notificaciones fácilmente desde la consola
+    (window as any).sendTestNotif = () => {
+      this.notificationService.sendMessage({
+        message: '⚠️ Alerta de Stock Crítico en Bodega Central (Prueba)',
+        modulo: 'inventario',
+        url_destino: '/app/inventario'
+      });
+      console.log('✅ Comando de prueba enviado al servidor.');
+    };
+
+    // Suscripción al WebSocket de notificaciones
+    this.notifSub = this.notificationService.getNotifications().subscribe({
+      next: (msg: AppNotification) => {
+        console.log('🔔 Notificación recibida por WebSocket:', msg);
+        
+        // Filtrado dinámico por roles
+        let mostrar = false;
+        const mod = msg.modulo;
+
+        if (this.userRole === 'Administrador_General') mostrar = true;
+        else if (this.userRole === 'Encargado_RRHH' && (mod === 'rrhh' || mod === 'general')) mostrar = true;
+        else if (this.userRole === 'Encargado_Remuneraciones' && (mod === 'remuneraciones' || mod === 'general')) mostrar = true;
+        else if (this.userRole === 'Encargado_Bodega' && (mod === 'inventario' || mod === 'general')) mostrar = true;
+
+        if (mostrar) {
+          this.ngZone.run(() => {
+            // Agregar al principio de la lista y forzar nueva referencia
+            this.notificaciones = [{ ...msg, leida: false }, ...this.notificaciones];
+            console.log('✅ Notificación aprobada y agregada para el rol:', this.userRole);
+          });
+        } else {
+          console.log('❌ Notificación ignorada (no tienes permisos para este módulo). Rol:', this.userRole, 'Módulo:', mod);
+        }
+      },
+      error: (err) => console.error('🔴 Error en WebSocket:', err)
+    });
   }
 
   ngOnDestroy() {
     if (this.routerSub) this.routerSub.unsubscribe();
+    if (this.notifSub) this.notifSub.unsubscribe();
   }
 }
