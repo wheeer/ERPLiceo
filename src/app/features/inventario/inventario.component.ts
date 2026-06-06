@@ -339,7 +339,7 @@ export class InventarioComponent implements OnInit {
         item.nombre,
         item.categoria,
         `${item.stock_disponible} / ${item.stock_minimo}`,
-        item.estado === 'Crítico' || item.stock_disponible <= 0 ? 'Crítico' : 'Advertencia',
+        item.estado === 'Crítico' || item.stock_disponible <= item.stock_minimo ? 'Crítico' : 'Advertencia',
         this.formatFecha(item.ultimo_mantenimiento),
         item.ubicacion
       ]);
