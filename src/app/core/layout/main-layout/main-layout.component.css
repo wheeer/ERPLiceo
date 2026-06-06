@@ -41,7 +41,7 @@
 
 .layout-router-area {
   flex-grow: 1;
-  overflow-y: scroll; /* Scroll siempre visible para evitar saltos de UI al cambiar pestañas de diferente altura */
+  overflow-y: auto; /* Cambiado a auto para evitar barra doble cuando no hay suficiente contenido */
   overflow-x: hidden;
   padding: clamp(1rem, 2vw, 2rem);
   /* Área de trabajo limpia para enfoque en los datos */

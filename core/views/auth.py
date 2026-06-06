@@ -5,7 +5,7 @@ import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
-from core.db_connection import (col_usuarios,col_roles, col_empleados, col_remuneraciones, col_horas_extra)
+from core.db_connection import (col_usuarios,col_roles, col_empleados, col_remuneraciones, col_horas_extra, registrar_auditoria)
 from bson import ObjectId
 from core.jwt_middleware import jwt_required
 
@@ -97,6 +97,14 @@ def login_view(request):
 
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
+        registrar_auditoria(
+            usuario_rut=rut_limpio,
+            usuario_nombre=nombre_completo,
+            modulo="auth",
+            accion="Inicio de Sesión",
+            descripcion=f"El usuario {nombre_completo} accedió al sistema."
+        )
+
         return JsonResponse({
             "message": "Login exitoso",
             "token": token,
@@ -163,6 +171,17 @@ def cambiar_clave_view(request):
         col_usuarios.update_one(
             {"rut": rut_del_token},
             {"$set": {"password_hash": nuevo_hash}}
+        )
+
+        empleado = col_empleados.find_one({"rut": rut_del_token})
+        nombre_completo = empleado.get("nombre_completo") if empleado else rut_del_token
+
+        registrar_auditoria(
+            usuario_rut=rut_del_token,
+            usuario_nombre=nombre_completo,
+            modulo="auth",
+            accion="Contraseña Actualizada",
+            descripcion="El usuario actualizó su credencial de acceso."
         )
 
         return JsonResponse({"message": "Contraseña actualizada correctamente."}, status=200)

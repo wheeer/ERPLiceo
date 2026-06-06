@@ -42,10 +42,18 @@
       @if (mostrarNotificaciones) {
         <div class="dropdown-panel notif-panel" id="panel-notificaciones">
           <h4 class="dropdown-title">Notificaciones</h4>
-          @for (n of notificaciones; track n.texto) {
-            <div class="notif-item" [class.no-leida]="!n.leida">
+          @for (n of notificaciones; track n.message) {
+            <div class="notif-item" [class.no-leida]="!n.leida" (click)="marcarComoLeida(n)" style="cursor: pointer;">
               <span class="notif-dot"></span>
-              <p>{{ n.texto }}</p>
+              <div style="flex: 1;">
+                <p style="margin-bottom: 2px;">{{ n.message }}</p>
+                <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase;">{{ n.modulo }}</span>
+              </div>
+            </div>
+          }
+          @empty {
+            <div class="notif-item" style="text-align: center; color: #94a3b8; justify-content: center;">
+              No tienes notificaciones nuevas.
             </div>
           }
         </div>

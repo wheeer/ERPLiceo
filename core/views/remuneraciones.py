@@ -2,7 +2,7 @@ import json
 import calendar
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from core.db_connection import col_empleados, col_remuneraciones, col_horas_extra, col_asistencia
+from core.db_connection import col_empleados, col_remuneraciones, col_horas_extra, col_asistencia, registrar_auditoria
 from bson import ObjectId
 from core.jwt_middleware import jwt_required
 from datetime import datetime
@@ -161,7 +161,20 @@ def calcular_remuneraciones(request):
             resultado = col_remuneraciones.insert_one(liquidacion)
             liquidacion["_id"] = str(resultado.inserted_id)
             liquidaciones_generadas.append(liquidacion)
- 
+
+        actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+        actor_emp = col_empleados.find_one({"rut": actor_rut})
+        actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+        
+        if len(liquidaciones_generadas) > 0:
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="remuneraciones",
+                accion="Liquidación Generada",
+                descripcion=f"Se calcularon y guardaron {len(liquidaciones_generadas)} liquidaciones (Periodo {mes_int:02d}-{anio_int})."
+            )
+
         return JsonResponse({
             "success": True,
             "message": f"Remuneraciones calculadas correctamente. {len(liquidaciones_generadas)} liquidaciones generadas.",
@@ -344,8 +357,8 @@ def obtener_liquidacion_empleado(request, rut, mes, anio):
  
 @csrf_exempt
 @jwt_required
-def obtener_remuneraciones(request, mes, anio):
- 
+def obtener_remuneraciones(request, mes=None, anio=None):
+
     if request.method != 'GET':
         return JsonResponse({
             "success": False,
@@ -354,22 +367,114 @@ def obtener_remuneraciones(request, mes, anio):
         }, status=405)
  
     try:
-        liquidaciones_bd = list(col_remuneraciones.find({
-            "periodo.mes": int(mes),
-            "periodo.anio": int(anio)
-        }))
- 
+        rango = request.GET.get('rango')
+        tipo = request.GET.get('tipo')
+        resumen_cronologico = {}
+
+        liquidaciones_bd = []
+
+        if tipo:
+            if tipo == 'mes_especifico':
+                m = int(request.GET.get('mes'))
+                a = int(request.GET.get('anio'))
+                liquidaciones_bd = list(col_remuneraciones.find({"periodo.mes": m, "periodo.anio": a}))
+            elif tipo == 'rango_meses':
+                m_ini = int(request.GET.get('mes_inicio'))
+                a_ini = int(request.GET.get('anio_inicio'))
+                m_fin = int(request.GET.get('mes_fin'))
+                a_fin = int(request.GET.get('anio_fin'))
+                docs = list(col_remuneraciones.find({"periodo.anio": {"$gte": a_ini, "$lte": a_fin}}))
+                for doc in docs:
+                    m = doc.get("periodo", {}).get("mes", 0)
+                    a = doc.get("periodo", {}).get("anio", 0)
+                    val = a * 12 + m
+                    if (a_ini * 12 + m_ini) <= val <= (a_fin * 12 + m_fin):
+                        liquidaciones_bd.append(doc)
+            elif tipo == 'anio_especifico':
+                a = int(request.GET.get('anio'))
+                liquidaciones_bd = list(col_remuneraciones.find({"periodo.anio": a}))
+            elif tipo == 'rango_anios':
+                a_ini = int(request.GET.get('anio_inicio'))
+                a_fin = int(request.GET.get('anio_fin'))
+                liquidaciones_bd = list(col_remuneraciones.find({"periodo.anio": {"$gte": a_ini, "$lte": a_fin}}))
+        elif rango:
+            import datetime
+            ahora = datetime.datetime.now()
+            if rango == 'anual':
+                liquidaciones_bd = list(col_remuneraciones.find({"periodo.anio": ahora.year}))
+            else:
+                liquidaciones_bd = list(col_remuneraciones.find({"periodo.mes": ahora.month, "periodo.anio": ahora.year}))
+        else:
+            if not mes or not anio:
+                return JsonResponse({"success": False, "message": "Falta mes y año", "data": None}, status=400)
+            liquidaciones_bd = list(col_remuneraciones.find({"periodo.mes": int(mes), "periodo.anio": int(anio)}))
+
+        # Pre-llenar resumen_cronologico con ceros para que la gráfica muestre el rango completo
+        if tipo == 'rango_meses':
+            m_ini = int(request.GET.get('mes_inicio'))
+            a_ini = int(request.GET.get('anio_inicio'))
+            m_fin = int(request.GET.get('mes_fin'))
+            a_fin = int(request.GET.get('anio_fin'))
+            curr_m = m_ini
+            curr_a = a_ini
+            while curr_a * 12 + curr_m <= a_fin * 12 + m_fin:
+                clave = f"{curr_a}-{curr_m:02d}"
+                resumen_cronologico[clave] = {"fecha": clave, "total_haberes": 0, "total_descuentos": 0}
+                curr_m += 1
+                if curr_m > 12:
+                    curr_m = 1
+                    curr_a += 1
+        elif tipo == 'anio_especifico':
+            a = int(request.GET.get('anio'))
+            for m in range(1, 13):
+                clave = f"{a}-{m:02d}"
+                resumen_cronologico[clave] = {"fecha": clave, "total_haberes": 0, "total_descuentos": 0}
+        elif tipo == 'rango_anios':
+            a_ini = int(request.GET.get('anio_inicio'))
+            a_fin = int(request.GET.get('anio_fin'))
+            for a in range(a_ini, a_fin + 1):
+                clave = f"{a}"
+                resumen_cronologico[clave] = {"fecha": clave, "total_haberes": 0, "total_descuentos": 0}
+
+        # Agrupación cronológica para el Dashboard
+        if tipo or rango:
+            for liq in liquidaciones_bd:
+                m = liq.get("periodo", {}).get("mes", 1)
+                a = liq.get("periodo", {}).get("anio", 2026)
+                
+                if tipo == 'rango_anios':
+                    clave = f"{a}"
+                else:
+                    clave = f"{a}-{m:02d}"
+                
+                if clave not in resumen_cronologico:
+                    resumen_cronologico[clave] = {
+                        "fecha": clave,
+                        "total_haberes": 0,
+                        "total_descuentos": 0
+                    }
+                
+                resumen_cronologico[clave]["total_haberes"] += liq.get("totales", {}).get("total_haberes", 0)
+                resumen_cronologico[clave]["total_descuentos"] += liq.get("totales", {}).get("total_descuentos", 0)
+
         liquidaciones_frontend = []
         for liquidacion in liquidaciones_bd:
-            empleado = col_empleados.find_one({"rut": liquidacion["empleado_rut"]}) or {}
-            resultado = _serializar_liquidacion(liquidacion, empleado)
-            if resultado:
-                liquidaciones_frontend.append(resultado)
- 
+
+            empleado = col_empleados.find_one({
+                "rut": liquidacion["empleado_rut"]
+            })
+
+            liq_serializada = _serializar_liquidacion(liquidacion, empleado)
+            if liq_serializada:
+                liquidaciones_frontend.append(liq_serializada)
+            
+        crono_sorted = sorted(list(resumen_cronologico.values()), key=lambda x: x["fecha"])
+
         return JsonResponse({
             "success": True,
             "message": "Remuneraciones obtenidas correctamente.",
-            "data": liquidaciones_frontend
+            "data": liquidaciones_frontend,
+            "resumen_cronologico": crono_sorted
         }, status=200)
  
     except Exception as e:
