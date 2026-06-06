@@ -525,3 +525,86 @@ def obtener_horas_extra(request, mes, anio):
             "message": f"Error al obtener horas extra: {str(e)}",
             "data": None
         }, status=500)
+
+
+@csrf_exempt
+@jwt_required
+def procesar_pagos_lote(request):
+    if request.method not in ['POST', 'PUT']:
+        return JsonResponse({
+            "success": False,
+            "message": "Método no permitido. Usa POST o PUT.",
+            "data": None
+        }, status=405)
+
+    try:
+        body = json.loads(request.body)
+        pagados = body.get("pagados", [])
+        impagos = body.get("impagos", [])
+
+        if not isinstance(pagados, list) or not isinstance(impagos, list):
+            return JsonResponse({
+                "success": False,
+                "message": "El payload debe contener listas de IDs en 'pagados' e 'impagos'.",
+                "data": None
+            }, status=400)
+
+        # Convertir a ObjectId
+        try:
+            pagados_ids = [ObjectId(id_str) for id_str in pagados if ObjectId.is_valid(id_str)]
+            impagos_ids = [ObjectId(id_str) for id_str in impagos if ObjectId.is_valid(id_str)]
+        except Exception:
+            return JsonResponse({
+                "success": False,
+                "message": "Uno o más IDs proporcionados no son válidos.",
+                "data": None
+            }, status=400)
+
+        actualizados_pagados = 0
+        actualizados_impagos = 0
+
+        # Actualizar pagados
+        if pagados_ids:
+            res_pagados = col_remuneraciones.update_many(
+                {"_id": {"$in": pagados_ids}},
+                {"$set": {"estado_pago": "Pagado", "fecha_pago": datetime.now()}}
+            )
+            actualizados_pagados = res_pagados.modified_count
+
+        # Actualizar impagos
+        if impagos_ids:
+            res_impagos = col_remuneraciones.update_many(
+                {"_id": {"$in": impagos_ids}},
+                {"$set": {"estado_pago": "Impago"}}
+            )
+            actualizados_impagos = res_impagos.modified_count
+
+        # Registrar auditoría
+        actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+        actor_emp = col_empleados.find_one({"rut": actor_rut})
+        actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+
+        if actualizados_pagados > 0 or actualizados_impagos > 0:
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="remuneraciones",
+                accion="Estado de Pago Actualizado (Lote)",
+                descripcion=f"Se formalizaron pagos: {actualizados_pagados} pagados, {actualizados_impagos} impagos."
+            )
+
+        return JsonResponse({
+            "success": True,
+            "message": f"Se procesaron {actualizados_pagados} pagos y {actualizados_impagos} impagos correctamente.",
+            "data": {
+                "pagados": actualizados_pagados,
+                "impagos": actualizados_impagos
+            }
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "message": f"Error al procesar pagos en lote: {str(e)}",
+            "data": None
+        }, status=500)

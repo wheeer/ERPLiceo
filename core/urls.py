@@ -10,6 +10,7 @@ urlpatterns = [
     # Remuneraciones
     path('remuneraciones/calcular/', views.calcular_remuneraciones, name='calcular_remuneraciones'),
     path('remuneraciones/pdf/<str:id>/', views.obtener_pdf_liquidacion, name='obtener_pdf_liquidacion'),
+    path('remuneraciones/lote/pagar/', views.procesar_pagos_lote, name='procesar_pagos_lote'),
     path('remuneraciones/empleado/<str:rut>/<int:mes>/<int:anio>/', views.obtener_liquidacion_empleado, name='obtener_liquidacion_empleado'),
     path('remuneraciones/', views.obtener_remuneraciones, name='obtener_remuneraciones_rango'),
     path('remuneraciones/<int:mes>/<int:anio>/', views.obtener_remuneraciones, name='obtener_remuneraciones'),

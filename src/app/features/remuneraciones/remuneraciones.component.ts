@@ -40,6 +40,7 @@ interface Payroll {
   estadoEmpleado: string;  // Estado del empleado desde backend
   periodoTexto: string;    // Período formateado desde backend
   diasTrabajados: number;  // Días trabajados calculados en backend
+  selected?: boolean;      // Para checkbox
 }
 
 interface HorasExtraRecord {
@@ -78,6 +79,7 @@ export class RemuneracionesComponent implements OnInit {
   isLoading = true;
   isFetching = false;
   isGenerating = false;
+  isFormalizing = false; // Estado para el botón de formalizar
   isLoadingData = false;
   liquidacionesActivo = false;
   paginaActual = 1;
@@ -101,6 +103,14 @@ export class RemuneracionesComponent implements OnInit {
   historialHorasExtra: HorasExtraRecord[] = [];
   payrollData: Payroll[] = [];
   filteredPayrollData: Payroll[] = [];
+
+  get todosSeleccionados(): boolean {
+    return this.filteredPayrollData.length > 0 && this.filteredPayrollData.every(p => p.selected);
+  }
+
+  get cantidadSeleccionados(): number {
+    return this.filteredPayrollData.filter(p => p.selected).length;
+  }
 
   constructor(private http: HttpClient) {
     this.horasExtraForm = this.fb.group({
@@ -132,6 +142,15 @@ export class RemuneracionesComponent implements OnInit {
       next: (response) => {
         this.payrollData = response.data;
         this.filteredPayrollData = response.data;
+        
+        // Seleccionar automáticamente los que están Pendientes
+        this.filteredPayrollData.forEach(p => {
+          if (p.estadoPago === 'Pendiente') {
+            p.selected = true;
+          } else {
+            p.selected = false;
+          }
+        });
 
         this.http.get<any>(
           `http://127.0.0.1:8000/api/horas-extra/${this.mesSeleccionado}/${this.anioSeleccionado}/`,
@@ -671,6 +690,58 @@ export class RemuneracionesComponent implements OnInit {
           this.toastService.show(mensaje, 'warning');
           this.cdr.detectChanges();
         }, 0);
+      }
+    });
+  }
+
+  // ==========================================
+  // GESTIÓN DE IMPAGOS Y PAGOS (Issue #79)
+  // ==========================================
+  toggleSeleccion(payroll: Payroll) {
+    payroll.selected = !payroll.selected;
+  }
+
+  toggleSeleccionTodos(event: any) {
+    const checked = event.target.checked;
+    this.filteredPayrollData.forEach(p => p.selected = checked);
+  }
+
+  formalizarPagos() {
+    const token = localStorage.getItem('erp_token');
+    if (!token) return;
+
+    const pagados = this.filteredPayrollData.filter(p => p.selected).map(p => p.id);
+    const impagos = this.filteredPayrollData.filter(p => !p.selected && (p.estadoPago === 'Pendiente' || p.estadoPago === 'Impago')).map(p => p.id);
+
+    if (pagados.length === 0 && impagos.length === 0) {
+      this.toastService.show('No hay registros para actualizar.', 'warning');
+      return;
+    }
+
+    this.isFormalizing = true;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.put<any>(
+      `http://127.0.0.1:8000/api/remuneraciones/lote/pagar/`,
+      { pagados, impagos },
+      { headers }
+    ).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.toastService.show(res.message, 'success');
+          this.filteredPayrollData.forEach(p => {
+            if (pagados.includes(p.id)) p.estadoPago = 'Pagado';
+            if (impagos.includes(p.id)) p.estadoPago = 'Impago';
+          });
+        } else {
+          this.toastService.show(res.message, 'error');
+        }
+        this.isFormalizing = false;
+      },
+      error: (err) => {
+        console.error('Error formalizando pagos', err);
+        this.toastService.show('Error al procesar pagos en lote', 'error');
+        this.isFormalizing = false;
       }
     });
   }

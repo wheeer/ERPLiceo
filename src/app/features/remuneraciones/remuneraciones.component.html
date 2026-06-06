@@ -45,6 +45,16 @@
           Cargar
           }
         </button>
+
+        @if (activeTab === 'nomina' && filteredPayrollData.length > 0) {
+        <button class="btn-generar" (click)="formalizarPagos()" [disabled]="isFormalizing" style="margin-left: 10px; background-color: #27ae60; color: white;">
+          @if (isFormalizing) {
+          <span class="spinner-btn"></span>
+          } @else {
+          Formalizar Pagos ({{ cantidadSeleccionados }})
+          }
+        </button>
+        }
       </div>
       @if (activeTab === 'nomina') {
       <input type="text" class="search-input" placeholder="Buscar por nombre, RUT o cargo..."
@@ -95,6 +105,9 @@
     <table class="payroll-table">
       <thead>
         <tr>
+          <th class="center" style="width: 40px;">
+            <input type="checkbox" [checked]="todosSeleccionados" (change)="toggleSeleccionTodos($event)" title="Seleccionar todos">
+          </th>
           <th>RUT</th>
           <th>Nombre / Cargo</th>
           <th class="amount">Sueldo Base</th>
@@ -112,6 +125,9 @@
       <tbody>
         @for (payroll of nominaPaginada; track payroll.id) {
         <tr>
+          <td class="center">
+            <input type="checkbox" [checked]="payroll.selected" (change)="toggleSeleccion(payroll)">
+          </td>
           <td class="cell-rut">{{ payroll.rut }}</td>
           <td class="cell-nombre">
             <div class="employee-info-detailed">
@@ -142,8 +158,10 @@
           <td class="center">
             @if (payroll.estadoPago === 'Pagado') {
             <span class="badge-success">Pagado</span>
+            } @else if (payroll.estadoPago === 'Impago') {
+            <span class="badge-danger" style="background-color: #dc3545;">Impago</span>
             } @else {
-            <span class="badge-danger">Pendiente</span>
+            <span class="badge-warning" style="background-color: #f39c12; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 500;">Pendiente</span>
             }
           </td>
           <td class="cell-actions center">
@@ -155,7 +173,7 @@
       </tbody>
       <tfoot>
         <tr class="totals-row">
-          <td colspan="3">TOTALES</td>
+          <td colspan="4">TOTALES</td>
           <td class="cell-amount hide-mobile">-</td>
           <td class="cell-amount hide-mobile">-</td>
           <td class="cell-amount fw-600 hide-mobile">{{ formatCurrency(getTotalSueldo()) }}</td>
