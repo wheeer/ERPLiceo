@@ -504,11 +504,21 @@ def obtener_horas_extra(request, mes, anio):
  
         horas_extra_frontend = []
         for he in horas_extra_bd:
+            rut_empleado = he.get("rut") or he.get("empleado_rut")
+            empleado_obj = col_empleados.find_one({"rut": rut_empleado})
+            nombre_empleado = empleado_obj.get("nombre_completo", rut_empleado) if empleado_obj else rut_empleado
+            config = empleado_obj.get("config_remuneracion", {}) if empleado_obj else {}
+            sueldo_base = config.get("sueldo_base", 0)
+            
             horas_extra_frontend.append({
                 "id": str(he["_id"]),
-                "rut": he.get("rut"),
+                "rut": rut_empleado,
+                "nombre_empleado": nombre_empleado,
+                "sueldo_base": sueldo_base,
                 "horas": he.get("horas", 0),
                 "tipo": he.get("tipo", "laboral"),
+                "recargo": he.get("recargo", 50),
+                "fecha": he.get("fecha"),
                 "mes": he.get("mes"),
                 "anio": he.get("anio")
             })
