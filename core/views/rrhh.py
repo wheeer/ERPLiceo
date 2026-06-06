@@ -5,7 +5,7 @@ from bson.objectid import ObjectId
 
 from django.http import JsonResponse
 
-from core.db_connection import db, col_empleados, col_asistencia, col_horas_extra
+from core.db_connection import db, col_empleados, col_asistencia, col_horas_extra, registrar_auditoria
 from core.jwt_middleware import jwt_required
 from django.views.decorators.csrf import csrf_exempt
 
@@ -164,6 +164,19 @@ def api_empleados(request):
                 
             result = col_empleados.insert_one(body)
             body['_id'] = str(result.inserted_id)
+            
+            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+            actor_emp = col_empleados.find_one({"rut": actor_rut})
+            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+            
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="rrhh",
+                accion="Empleado Registrado",
+                descripcion=f"Se agregó nuevo empleado: {body.get('nombre_completo', rut)}"
+            )
+
             return JsonResponse({"success": True, "data": [body], "message": "Empleado creado con éxito"}, status=201)
             
         else:
@@ -187,10 +200,36 @@ def api_empleado_detalle(request, rut):
             body = parse_request_body(request)
             col_empleados.update_one({"rut": rut}, {"$set": body})
             empleado_actualizado = col_empleados.find_one({"rut": rut})
+            
+            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+            actor_emp = col_empleados.find_one({"rut": actor_rut})
+            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+            
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="rrhh",
+                accion="Ficha Actualizada",
+                descripcion=f"Se modificaron los datos del empleado {rut}"
+            )
+            
             return JsonResponse({"success": True, "data": [format_mongo_doc(empleado_actualizado)], "message": "Empleado actualizado con éxito"}, status=200)
             
         elif request.method == 'DELETE':
             col_empleados.update_one({"rut": rut}, {"$set": {"estado": "inactivo"}})
+            
+            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+            actor_emp = col_empleados.find_one({"rut": actor_rut})
+            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+            
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="rrhh",
+                accion="Empleado Desvinculado",
+                descripcion=f"Se cambió el estado del empleado {rut} a inactivo"
+            )
+            
             return JsonResponse({"success": True, "data": [], "message": "Empleado dado de baja con éxito"}, status=200)
             
         else:
@@ -232,38 +271,113 @@ def api_asistencia(request, mes=None, anio=None):
             
         elif request.method == 'POST':
             body = parse_request_body(request)
-            estado = body.get('estado')
-            horas_extra = body.get('horas_extra', 0)
             
-            estados_validos = ["Presente", "Ausente", "Tardanza", "Licencia"]
-            if estado not in estados_validos:
-                return JsonResponse({"success": False, "data": [], "message": f"Estado inválido. Valores permitidos: {', '.join(estados_validos)}"}, status=400)
+            if not isinstance(body, list):
+                registros = [body]
+            else:
+                registros = body
                 
-            try:
-                horas_extra = int(horas_extra)
-            except (ValueError, TypeError):
-                horas_extra = 0
-                
-            if horas_extra < 0 or horas_extra > 2:
-                return JsonResponse({"success": False, "data": [], "message": "Las horas extra deben ser un entero entre 0 y 2"}, status=400)
-                
-            body['horas_extra'] = horas_extra
+            estados_validos = [
+                "Presente", "Ausente", "Tardanza", "Licencia", 
+                "Atraso", "Ausente Injustificado", "Licencia Médica", 
+                "Vacaciones", "Permiso S/Goce", "Finde", "Sin registro"
+            ]
             
-            # Aseguramos parseo real de fecha a datetime (Issue 3)
-            if 'fecha' in body and isinstance(body['fecha'], str):
+            # PASS 1: Validación y preparación de datos (Evitar inserciones parciales)
+            registros_a_procesar = []
+            for reg in registros:
+                estado = reg.get('estado')
+                horas_extra = reg.get('horas_extra', 0)
+                rut_empleado = reg.get('rut') or reg.get('empleado_rut')
+                
+                if not estado or estado not in estados_validos or not rut_empleado:
+                    continue
+                    
+                if estado in ["Finde", "Sin registro"]:
+                    continue
+                    
                 try:
-                    fecha_obj = datetime.strptime(body['fecha'], "%Y-%m-%d")
-                    body['fecha'] = fecha_obj
-                except ValueError:
-                    pass
-            
-            result = col_asistencia.insert_one(body)
-            body['_id'] = str(result.inserted_id)
-            
-            if isinstance(body.get('fecha'), datetime):
-                body['fecha'] = body['fecha'].strftime("%Y-%m-%d")
+                    horas_extra = int(horas_extra)
+                except (ValueError, TypeError):
+                    horas_extra = 0
+                    
+                if horas_extra < 0 or horas_extra > 2:
+                    horas_extra = 0
+                    
+                reg['horas_extra'] = horas_extra
+
+                if estado in ["Presente", "Atraso"]:
+                    if not reg.get('hora_entrada'):
+                        reg['hora_entrada'] = "08:00"
+                    if not reg.get('hora_salida'):
+                        reg['hora_salida'] = "17:00"
+                    if reg.get('horas_trabajadas') is None:
+                        reg['horas_trabajadas'] = 9
                 
-            return JsonResponse({"success": True, "data": [body], "message": "Asistencia registrada con éxito"}, status=201)
+                fecha_obj = None
+                if 'fecha' in reg and isinstance(reg['fecha'], str):
+                    try:
+                        fecha_obj = datetime.strptime(reg['fecha'], "%Y-%m-%d")
+                        reg['fecha'] = fecha_obj
+                    except ValueError:
+                        pass
+                elif 'fecha' in reg and isinstance(reg['fecha'], datetime):
+                    fecha_obj = reg['fecha']
+                    
+                if not fecha_obj:
+                    continue
+                    
+                # Validación de duplicados PREVIA a cualquier inserción
+                inicio_dia = datetime(fecha_obj.year, fecha_obj.month, fecha_obj.day, 0, 0, 0)
+                fin_dia = datetime(fecha_obj.year, fecha_obj.month, fecha_obj.day, 23, 59, 59)
+                
+                duplicado = col_asistencia.find_one({
+                    "$or": [{"empleado_rut": rut_empleado}, {"rut": rut_empleado}],
+                    "fecha": {"$gte": inicio_dia, "$lte": fin_dia}
+                })
+                
+                if duplicado:
+                    return JsonResponse({
+                        "success": False,
+                        "data": [],
+                        "message": f"Conflicto: Ya existe un registro de asistencia para el RUT {rut_empleado} en la fecha {fecha_obj.strftime('%Y-%m-%d')}."
+                    }, status=409)
+                    
+                if 'rut' in reg and 'empleado_rut' not in reg:
+                    reg['empleado_rut'] = reg['rut']
+                    
+                registros_a_procesar.append(reg)
+
+            # PASS 2: Inserción segura
+            procesados = 0
+            datos_guardados = []
+            
+            for reg in registros_a_procesar:
+                result = col_asistencia.insert_one(reg)
+                reg['_id'] = str(result.inserted_id)
+                
+                if isinstance(reg.get('fecha'), datetime):
+                    reg['fecha'] = reg['fecha'].strftime("%Y-%m-%d")
+                    
+                datos_guardados.append(reg)
+                procesados += 1
+                
+            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+            actor_emp = col_empleados.find_one({"rut": actor_rut})
+            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+            
+            if procesados > 0:
+                registrar_auditoria(
+                    usuario_rut=actor_rut,
+                    usuario_nombre=actor_nombre,
+                    modulo="rrhh",
+                    accion="Asistencia Registrada",
+                    descripcion=f"Se registraron {procesados} entradas de asistencia."
+                )
+                
+            mensaje = f"Se procesaron {procesados} registros correctamente" if procesados > 0 else "No se procesaron registros nuevos (todos eran inválidos)"
+            
+            return JsonResponse({"success": True, "data": datos_guardados, "message": mensaje, "procesados": procesados}, status=201)
             
         else:
             return JsonResponse({"success": False, "data": [], "message": "Método no permitido"}, status=405)
@@ -276,11 +390,41 @@ def api_asistencia(request, mes=None, anio=None):
 def api_asistencia_resumen(request, mes=None, anio=None):
     try:
         if request.method == 'GET':
-            from datetime import timedelta, UTC
-            rango = request.GET.get('rango')
+            from datetime import timedelta, UTC, datetime
+            import calendar
             ahora = datetime.now()
             
-            if rango:
+            tipo = request.GET.get('tipo')
+            rango = request.GET.get('rango')
+            
+            if tipo:
+                if tipo == 'diario':
+                    fecha_str = request.GET.get('fecha')
+                    if not fecha_str: return JsonResponse({"success": False, "message": "Falta fecha"}, status=400)
+                    dt = datetime.strptime(fecha_str, "%Y-%m-%d")
+                    primer_dia = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+                    ultimo_dia = dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+                elif tipo == 'rango_fechas':
+                    f_ini = request.GET.get('fecha_inicio')
+                    f_fin = request.GET.get('fecha_fin')
+                    if not f_ini or not f_fin: return JsonResponse({"success": False, "message": "Faltan fechas inicio/fin"}, status=400)
+                    dt_ini = datetime.strptime(f_ini, "%Y-%m-%d")
+                    dt_fin = datetime.strptime(f_fin, "%Y-%m-%d")
+                    primer_dia = dt_ini.replace(hour=0, minute=0, second=0, microsecond=0)
+                    ultimo_dia = dt_fin.replace(hour=23, minute=59, second=59, microsecond=999999)
+                elif tipo == 'mensual':
+                    m = int(request.GET.get('mes', ahora.month))
+                    a = int(request.GET.get('anio', ahora.year))
+                    _, num_dias = calendar.monthrange(a, m)
+                    primer_dia = datetime(a, m, 1)
+                    ultimo_dia = datetime(a, m, num_dias, 23, 59, 59, 999999)
+                elif tipo == 'anual':
+                    a = int(request.GET.get('anio', ahora.year))
+                    primer_dia = datetime(a, 1, 1)
+                    ultimo_dia = datetime(a, 12, 31, 23, 59, 59, 999999)
+                else:
+                    return JsonResponse({"success": False, "message": "Tipo no válido"}, status=400)
+            elif rango:
                 if rango == 'semanal':
                     primer_dia = ahora - timedelta(days=7)
                     ultimo_dia = ahora
@@ -294,15 +438,32 @@ def api_asistencia_resumen(request, mes=None, anio=None):
                     return JsonResponse({"success": False, "message": "Rango no válido"}, status=400)
             else:
                 if not mes or not anio:
-                    return JsonResponse({"success": False, "message": "Falta mes/anio o rango"}, status=400)
+                    return JsonResponse({"success": False, "message": "Falta mes/anio, rango o tipo"}, status=400)
                 mes_int, anio_int = int(mes), int(anio)
                 _, num_dias = calendar.monthrange(anio_int, mes_int)
                 primer_dia = datetime(anio_int, mes_int, 1)
                 ultimo_dia = datetime(anio_int, mes_int, num_dias, 23, 59, 59)
             
+            # 1. Obtener empleados activos y pre-inicializar resumen
+            empleados_activos = list(col_empleados.find({"estado": {"$ne": "inactivo"}}))
+            resumen = {}
+            for emp in empleados_activos:
+                rut = emp.get("rut")
+                if rut:
+                    resumen[rut] = {
+                        "rut": rut,
+                        "nombre_completo": emp.get("nombre_completo", ""),
+                        "dias_trabajados": 0,
+                        "ausencias": 0,
+                        "tardanzas": 0,
+                        "licencias": 0,
+                        "horas_extra_total": 0,
+                        "tipo_dia_he": "laboral"
+                    }
+                    
+            # 2. Contar estados desde los registros diarios reales (como pidió el frontend)
             asistencias = list(col_asistencia.find({"fecha": {"$gte": primer_dia, "$lte": ultimo_dia}}))
             
-            resumen = {}
             resumen_cronologico = {} # Para el dashboard
             
             for asis in asistencias:
@@ -312,30 +473,51 @@ def api_asistencia_resumen(request, mes=None, anio=None):
                 
                 # Agrupación cronológica (solo ausencias para el chart principal)
                 if isinstance(fecha, datetime):
-                    # Si es anual, agrupamos por mes. Si es mensual/semanal, por día.
-                    clave_fecha = f"{fecha.year}-{fecha.month:02d}" if rango == 'anual' else f"{fecha.year}-{fecha.month:02d}-{fecha.day:02d}"
+                    # Si es anual, agrupamos por mes. Si es mensual/semanal/rango, por día.
+                    if tipo == 'anual' or rango == 'anual':
+                        clave_fecha = f"{fecha.year}-{fecha.month:02d}"
+                    else:
+                        clave_fecha = f"{fecha.year}-{fecha.month:02d}-{fecha.day:02d}"
+                    
                     if clave_fecha not in resumen_cronologico:
                         resumen_cronologico[clave_fecha] = 0
                     if estado == "Ausente":
                         resumen_cronologico[clave_fecha] += 1
 
                 # Agrupación por empleado
-                if not rut:
+                if not rut or rut not in resumen:
                     continue
                     
-                if rut not in resumen:
-                    resumen[rut] = {
-                        "empleado_rut": rut,
-                        "Presente": 0,
-                        "Ausente": 0,
-                        "Tardanza": 0,
-                        "Licencia": 0,
-                        "Total": 0
-                    }
+                if estado == 'Presente':
+                    resumen[rut]['dias_trabajados'] += 1
+                elif estado in ['Ausente', 'Ausente Injustificado']:
+                    resumen[rut]['ausencias'] += 1
+                elif estado in ['Atraso', 'Tardanza']:
+                    resumen[rut]['tardanzas'] += 1
+                elif estado in ['Licencia', 'Licencia Médica']:
+                    resumen[rut]['licencias'] += 1
                     
-                if estado in resumen[rut]:
-                    resumen[rut][estado] += 1
-                resumen[rut]["Total"] += 1
+            # 3. Procesar horas extra
+            filtro_he = {}
+            if tipo or rango:
+                filtro_he = {"anio": primer_dia.year}
+                if tipo != 'anual' and rango != 'anual':
+                    filtro_he["mes"] = primer_dia.month
+            else:
+                filtro_he = {"mes": mes_int, "anio": anio_int}
+                
+            horas_extras = list(col_horas_extra.find(filtro_he))
+            for he in horas_extras:
+                rut = he.get('rut') or he.get('rut_empleado') or he.get('empleado_rut')
+                if not rut or rut not in resumen:
+                    continue
+                    
+                horas = he.get("horas") or he.get("cantidad_horas") or 0
+                tipo = he.get("tipo", "laboral").lower()
+                
+                resumen[rut]["horas_extra_total"] += horas
+                if tipo == "festivo":
+                    resumen[rut]["tipo_dia_he"] = "festivo"
                 
             data = list(resumen.values())
             
@@ -411,6 +593,21 @@ def api_horas_extra(request, mes=None, anio=None):
             
             if isinstance(body.get('fecha'), datetime):
                 body['fecha'] = body['fecha'].strftime("%Y-%m-%d")
+                
+            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+            actor_emp = col_empleados.find_one({"rut": actor_rut})
+            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+            
+            rut_afectado = body.get('rut') or body.get('empleado_rut') or body.get('rut_empleado') or ''
+            horas_he = body.get('horas') or body.get('cantidad_horas') or 0
+            
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="rrhh",
+                accion="Horas Extra Añadidas",
+                descripcion=f"Se registraron {horas_he} horas extra para {rut_afectado}."
+            )
                 
             return JsonResponse({"success": True, "data": [body], "message": "Horas extra registradas con éxito"}, status=201)
             

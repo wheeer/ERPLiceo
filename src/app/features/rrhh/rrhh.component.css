@@ -251,9 +251,19 @@
   color: #6b7280;
 }
 
-.status-leave {
+.status-absent {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.status-warning {
   background: rgba(245, 158, 11, 0.15);
   color: #f59e0b;
+}
+
+.status-leave {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
 }
 
 /* TABLE FOOTER */

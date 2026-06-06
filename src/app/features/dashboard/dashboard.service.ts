@@ -25,12 +25,13 @@ export class DashboardService {
     return this.http.get<any>(this.activitiesUrl);
   }
 
-  getChartRRHH(rango: string): Observable<any> {
-    return this.http.get<any>(`http://127.0.0.1:8000/api/asistencia/resumen/?rango=${rango}`);
+  getChartRRHH(query: string): Observable<any> {
+    // query ya viene con el formato '?tipo=diario&fecha=...'
+    return this.http.get<any>(`http://127.0.0.1:8000/api/asistencia/resumen/${query}`);
   }
 
-  getChartRemuneraciones(rango: string): Observable<any> {
-    return this.http.get<any>(`http://127.0.0.1:8000/api/remuneraciones/?rango=${rango}`);
+  getChartRemuneraciones(query: string): Observable<any> {
+    return this.http.get<any>(`http://127.0.0.1:8000/api/remuneraciones/${query}`);
   }
 
   getChartInventario(categoria: string): Observable<any> {

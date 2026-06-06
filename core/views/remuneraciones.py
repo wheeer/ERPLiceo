@@ -1,541 +1,360 @@
 import json
+import calendar
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-from core.db_connection import col_empleados, col_remuneraciones, col_horas_extra
+from core.db_connection import col_empleados, col_remuneraciones, col_horas_extra, col_asistencia, registrar_auditoria
 from bson import ObjectId
 from core.jwt_middleware import jwt_required
 from datetime import datetime
-
-# Acá se agregarán los endpoints relacionados con remuneraciones, horas extra y generación de PDF, todos protegidos con JWT.#
-
-# Endpoint de remuneraciones - Jasna #
-
+ 
+ 
 @csrf_exempt
 @jwt_required
 def calcular_remuneraciones(request):
-
+ 
     if request.method != 'POST':
         return JsonResponse({
             "success": False,
             "message": "Método no permitido. Usa POST.",
             "data": None
         }, status=405)
-
+ 
     try:
-
         body = json.loads(request.body)
-
         mes = body.get("mes")
         anio = body.get("anio")
-
+ 
         if not mes or not anio:
-
             return JsonResponse({
                 "success": False,
                 "message": "Mes y año son obligatorios.",
                 "data": None
             }, status=400)
-
-        # VALIDAR SI YA EXISTEN LIQUIDACIONES
-
+ 
         existe = col_remuneraciones.find_one({
             "periodo.mes": int(mes),
             "periodo.anio": int(anio)
         })
-
+ 
         if existe:
-
             return JsonResponse({
                 "success": False,
                 "message": "Ya existen liquidaciones para ese período.",
                 "data": None
             }, status=400)
-
+ 
+        mes_int = int(mes)
+        anio_int = int(anio)
+ 
+        _, num_dias = calendar.monthrange(anio_int, mes_int)
+        primer_dia = datetime(anio_int, mes_int, 1)
+        ultimo_dia = datetime(anio_int, mes_int, num_dias, 23, 59, 59)
+ 
+        asistencias = list(col_asistencia.find({
+            "fecha": {"$gte": primer_dia, "$lte": ultimo_dia}
+        }))
+ 
+        if not asistencias:
+            return JsonResponse({
+                "success": False,
+                "message": f"No existen registros de asistencia para {mes}/{anio}.",
+                "data": None
+            }, status=400)
+ 
+        ausencias_por_rut = {}
+        for registro in asistencias:
+            rut = registro.get("empleado_rut") or registro.get("rut_empleado") or registro.get("rut")
+            estado = registro.get("estado", "").lower()
+            if estado in ["ausente", "inasistencia", "falta", "licencia"]:
+                ausencias_por_rut[rut] = ausencias_por_rut.get(rut, 0) + 1
+ 
         empleados = list(col_empleados.find({
             "estado": {"$in": ["activo", "licencia"]}
         }))
-
+ 
         liquidaciones_generadas = []
-
-        # PORCENTAJES AFP
-
-        porcentajes_afp = {
-            "ProVida": 0.1145,
-            "Habitat": 0.1127,
-            "Capital": 0.1144,
-            "Modelo": 0.1058,
-            "Cuprum": 0.1144
-        }
-
+ 
         for empleado in empleados:
-
             rut = empleado["rut"]
-
-            # CONFIGURACION REMUNERACION
-
             config = empleado.get("config_remuneracion", {})
-
             sueldo_base = config.get("sueldo_base", 0)
-
             movilizacion = config.get("movilizacion", 0)
-
             colacion = config.get("colacion", 0)
-
             afp_nombre = config.get("afp", "ProVida")
-
             salud_nombre = config.get("salud", "Fonasa")
-
-            salud_porcentaje = config.get(
-                "salud_porcentaje",
-                0.07
-            )
-
-            # GRATIFICACION LEGAL CON TOPE
-
-            gratificacion = min(
-                round(sueldo_base * 0.25),
-                205000
-            )
-
-            # HORAS EXTRA
-
-            horas_extra_empleado = list(
-                col_horas_extra.find({
-                    "$or": [
-                        {"rut_empleado": rut},
-                        {"rut": rut}
-                    ],
-                    "mes": int(mes),
-                    "anio": int(anio)
-                })
-            )
-
-            valor_hora = sueldo_base / 180
-
+ 
+            dias_ausentes = ausencias_por_rut.get(rut, 0)
+ 
+            # FIX #25 (🚨2): Mes comercial chileno siempre es 30 días
+            valor_dia = round(sueldo_base / 30)
+            descuento_asistencia = valor_dia * dias_ausentes
+ 
+            # FIX #25 (🚨1): El descuento rebaja el imponible antes de calcular AFP/Salud
+            sueldo_base_pagado = sueldo_base - descuento_asistencia
+            gratificacion = min(round(sueldo_base_pagado * 0.25), 205000)
+ 
+            horas_extra_empleado = list(col_horas_extra.find({
+                "$or": [{"rut_empleado": rut}, {"rut": rut}],
+                "mes": mes_int,
+                "anio": anio_int
+            }))
+ 
+            valor_hora = sueldo_base / 160
             total_horas_extra = 0
-
             cantidad_horas_extra = 0
-
+ 
             for hora_extra in horas_extra_empleado:
-
                 horas = hora_extra.get("horas") or hora_extra.get("cantidad_horas") or 0
-
                 cantidad_horas_extra += horas
-
-                tipo = hora_extra.get("tipo", "laboral").lower()
-                recargo = 2.0 if tipo == "festivo" else 1.5
-
-                total_horas_extra += round(
-                    horas * valor_hora * recargo
-                )
-
-            # TOTAL IMPONIBLE
-
-            total_imponible = (
-                sueldo_base +
-                gratificacion +
-                total_horas_extra
-            )
-
-            # AFP
-
-            porcentaje_afp = porcentajes_afp.get(
-                afp_nombre,
-                0.1145
-            )
-
-            afp = round(
-                total_imponible * porcentaje_afp
-            )
-
-            # SALUD
-
-            salud = round(
-                total_imponible * salud_porcentaje
-            )
-
-            # SEGURO CESANTIA
-
-            tipo_contrato = empleado.get(
-                "tipo_contrato",
-                ""
-            ).lower()
-
-            if tipo_contrato == "indefinido":
-
-                seguro_cesantia = round(
-                    total_imponible * 0.006
-                )
-
-            else:
-
-                seguro_cesantia = 0
-
-            # TOTALES
-
-            total_descuentos = (
-                afp +
-                salud +
-                seguro_cesantia
-            )
-
-            total_haberes = (
-                total_imponible +
-                movilizacion +
-                colacion
-            )
-
-            sueldo_liquido = (
-                total_haberes -
-                total_descuentos
-            )
-
-            # DOCUMENTO MONGODB
-
+                total_horas_extra += round(horas * valor_hora * 1.5)
+ 
+            # FIX #25 (🚨1): total_imponible usa sueldo_base_pagado, no sueldo_base
+            total_imponible = sueldo_base_pagado + gratificacion + total_horas_extra
+            afp = round(total_imponible * 0.115)
+            salud = round(total_imponible * 0.07)
+ 
+            tipo_contrato = empleado.get("tipo_contrato", "").lower()
+            seguro_cesantia = round(total_imponible * 0.006) if tipo_contrato == "indefinido" else 0
+ 
+            # FIX #25 (🚨1): descuento_asistencia ya NO se suma aquí
+            total_descuentos = afp + salud + seguro_cesantia
+            total_haberes = total_imponible + movilizacion + colacion
+            sueldo_liquido = total_haberes - total_descuentos
+ 
             liquidacion = {
-
                 "empleado_rut": rut,
-
-                "periodo": {
-                    "mes": int(mes),
-                    "anio": int(anio)
-                },
-
+                "estado_pago": "Pendiente",
+                "periodo": {"mes": mes_int, "anio": anio_int},
                 "empleado": {
-
-                    "nombre": empleado.get(
-                        "nombre_completo",
-                        ""
-                    ),
-
-                    "cargo": empleado.get(
-                        "cargo",
-                        ""
-                    ),
-
-                    "tipo_contrato": empleado.get(
-                        "tipo_contrato",
-                        ""
-                    )
+                    "nombre": empleado.get("nombre_completo", ""),
+                    "cargo": empleado.get("cargo", ""),
+                    "tipo_contrato": empleado.get("tipo_contrato", "")
                 },
-
                 "haberes": {
-
                     "imponibles": {
-
                         "sueldo_base": sueldo_base,
-
                         "gratificacion_legal": gratificacion,
-
-                        "horas_extra": {
-
-                            "cantidad": cantidad_horas_extra,
-
-                            "monto": total_horas_extra
-                        }
+                        "horas_extra": {"cantidad": cantidad_horas_extra, "monto": total_horas_extra}
                     },
-
-                    "no_imponibles": {
-
-                        "movilizacion": movilizacion,
-
-                        "colacion": colacion
-                    }
+                    "no_imponibles": {"movilizacion": movilizacion, "colacion": colacion}
                 },
-
                 "descuentos_legales": {
-
-                    "afp": {
-
-                        "nombre": afp_nombre,
-
-                        "monto": afp
-                    },
-
-                    "salud": {
-
-                        "nombre": salud_nombre,
-
-                        "monto": salud
-                    },
-
-                    "seguro_cesantia": {
-
-                        "monto": seguro_cesantia
-                    }
+                    "afp": {"nombre": afp_nombre, "monto": afp},
+                    "salud": {"nombre": salud_nombre, "monto": salud},
+                    "seguro_cesantia": {"monto": seguro_cesantia},
+                    "asistencia": {"dias_ausentes": dias_ausentes, "monto": descuento_asistencia}
                 },
-
                 "totales": {
-
                     "total_haberes": total_haberes,
-
                     "total_descuentos": total_descuentos,
-
                     "sueldo_liquido": sueldo_liquido
                 },
-
+                "bases": {
+                    "imp_prev_salud": total_imponible,
+                    "imp_cesantia": total_imponible,
+                    # Base tributable = imponible menos cotizaciones obligatorias
+                    "base_tributable": total_imponible - afp - salud - seguro_cesantia
+                },
                 "fecha_generacion": datetime.now()
             }
+ 
+            resultado = col_remuneraciones.insert_one(liquidacion)
+            liquidacion["_id"] = str(resultado.inserted_id)
+            liquidaciones_generadas.append(liquidacion)
 
-            resultado = col_remuneraciones.insert_one(
-                liquidacion
-            )
-
-            liquidacion["_id"] = str(
-                resultado.inserted_id
-            )
-
-            liquidaciones_generadas.append(
-                liquidacion
+        actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+        actor_emp = col_empleados.find_one({"rut": actor_rut})
+        actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+        
+        if len(liquidaciones_generadas) > 0:
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="remuneraciones",
+                accion="Liquidación Generada",
+                descripcion=f"Se calcularon y guardaron {len(liquidaciones_generadas)} liquidaciones (Periodo {mes_int:02d}-{anio_int})."
             )
 
         return JsonResponse({
             "success": True,
-            "message": "Remuneraciones calculadas correctamente.",
+            "message": f"Remuneraciones calculadas correctamente. {len(liquidaciones_generadas)} liquidaciones generadas.",
             "data": liquidaciones_generadas
         }, status=201)
-
+ 
     except Exception as e:
-
         return JsonResponse({
             "success": False,
             "message": f"Error al calcular remuneraciones: {str(e)}",
             "data": None
         }, status=500)
-    
-    # API datos PDF liquidación - Jasna #
-
+ 
+ 
+def _serializar_liquidacion(liquidacion, empleado):
+    """Helper para serializar liquidación al formato frontend."""
+    try:
+        seguro_cesantia = liquidacion["descuentos_legales"]["seguro_cesantia"]
+        seguro_cesantia_monto = seguro_cesantia["monto"] if isinstance(seguro_cesantia, dict) else seguro_cesantia
+ 
+        return {
+            "id": str(liquidacion["_id"]),
+            "rut": liquidacion["empleado_rut"],
+            "nombre": empleado.get("nombre_completo", "") if empleado else "",
+            "cargo": empleado.get("cargo", "") if empleado else "",
+            "mes": liquidacion["periodo"]["mes"],
+            "anio": liquidacion["periodo"]["anio"],
+            "estadoPago": liquidacion.get("estado_pago", "Pendiente"),
+            "sueldoBase": liquidacion["haberes"]["imponibles"]["sueldo_base"],
+            "gratificacion": liquidacion["haberes"]["imponibles"]["gratificacion_legal"],
+            "horasExtra": (
+                liquidacion["haberes"]["imponibles"]["horas_extra"]["monto"]
+                if isinstance(liquidacion["haberes"]["imponibles"]["horas_extra"], dict)
+                else liquidacion["haberes"]["imponibles"]["horas_extra"]
+            ),
+            "movilizacion": liquidacion["haberes"]["no_imponibles"]["movilizacion"],
+            "colacion": liquidacion["haberes"]["no_imponibles"]["colacion"],
+            "afp": (
+                liquidacion["descuentos_legales"]["afp"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"]["afp"], dict)
+                else liquidacion["descuentos_legales"]["afp"]
+            ),
+            "salud": (
+                liquidacion["descuentos_legales"]["salud"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"]["salud"], dict)
+                else liquidacion["descuentos_legales"]["salud"]
+            ),
+            "seguroCesantia": seguro_cesantia_monto,
+            "descuentoAsistencia": (
+                liquidacion["descuentos_legales"]["asistencia"]["monto"]
+                if isinstance(liquidacion["descuentos_legales"].get("asistencia"), dict)
+                else 0
+            ),
+            # AJUSTE #25: días ausentes para bloque separado en frontend
+            "diasAusentes": (
+                liquidacion["descuentos_legales"]["asistencia"]["dias_ausentes"]
+                if isinstance(liquidacion["descuentos_legales"].get("asistencia"), dict)
+                else 0
+            ),
+            # Días trabajados = 30 - días ausentes (mes comercial chileno)
+            "diasTrabajados": 30 - (
+                liquidacion["descuentos_legales"]["asistencia"]["dias_ausentes"]
+                if isinstance(liquidacion["descuentos_legales"].get("asistencia"), dict)
+                else 0
+            ),
+            # Nombres de instituciones previsionales
+            "afpNombre": (
+                liquidacion["descuentos_legales"]["afp"]["nombre"]
+                if isinstance(liquidacion["descuentos_legales"].get("afp"), dict)
+                else "—"
+            ),
+            "saludNombre": (
+                liquidacion["descuentos_legales"]["salud"]["nombre"]
+                if isinstance(liquidacion["descuentos_legales"].get("salud"), dict)
+                else "—"
+            ),
+            # Tipo de contrato real del empleado
+            "tipoContrato": liquidacion.get("empleado", {}).get("tipo_contrato", "—"),
+            # Estado del empleado (activo, licencia, etc.)
+            "estadoEmpleado": empleado.get("estado", "—").capitalize() if empleado else "—",
+            # Período formateado
+            "periodoTexto": f"{liquidacion['periodo']['mes']}/{liquidacion['periodo']['anio']}",
+            # Bases imponibles calculadas en backend (no reconstruir en frontend)
+            "impPrevSalud": liquidacion.get("bases", {}).get("imp_prev_salud", 0),
+            "impCesantia": liquidacion.get("bases", {}).get("imp_cesantia", 0),
+            "baseTributable": liquidacion.get("bases", {}).get("base_tributable", 0),
+            "totalHaberes": liquidacion["totales"]["total_haberes"],
+            "totalDescuentos": liquidacion["totales"]["total_descuentos"],
+            "neto": liquidacion["totales"]["sueldo_liquido"]
+        }
+    except Exception as e:
+        print(f"Error serializando liquidacion {liquidacion.get('_id')}: {e}")
+        return None
+ 
+ 
 @csrf_exempt
 @jwt_required
 def obtener_pdf_liquidacion(request, id):
-
+ 
     if request.method != 'GET':
         return JsonResponse({
             "success": False,
             "message": "Método no permitido. Usa GET.",
             "data": None
         }, status=405)
-
+ 
     try:
-
-        # VALIDAR OBJECTID
-
         if not ObjectId.is_valid(id):
-
             return JsonResponse({
                 "success": False,
                 "message": "ID de liquidación inválido.",
                 "data": None
             }, status=400)
-
-        # CONSULTA MONGODB
-
-        liquidacion = col_remuneraciones.find_one({
-            "_id": ObjectId(id)
-        })
-
+ 
+        liquidacion = col_remuneraciones.find_one({"_id": ObjectId(id)})
+ 
         if not liquidacion:
-
             return JsonResponse({
                 "success": False,
                 "message": "Liquidación no encontrada.",
                 "data": None
             }, status=404)
-
-        # BUSCAR EMPLEADO
-
-        empleado = col_empleados.find_one({
-            "rut": liquidacion["empleado_rut"]
-        })
-
-        if not empleado:
-            empleado = {}
-
-        # BACKEND COMO TRADUCTOR
-        # Mongo estructurado -> Angular plano
-
-        liquidacion_frontend = {
-
-            "id": str(liquidacion["_id"]),
-
-            "rut": liquidacion["empleado_rut"],
-
-            "nombre": empleado.get("nombre_completo", ""),
-
-            "cargo": empleado.get("cargo", ""),
-
-            "mes": liquidacion["periodo"]["mes"],
-
-            "anio": liquidacion["periodo"]["anio"],
-
-            "sueldoBase": liquidacion["haberes"]["imponibles"]["sueldo_base"],
-
-            "gratificacion": liquidacion["haberes"]["imponibles"]["gratificacion_legal"],
-
-            "horasExtra": (
-                liquidacion["haberes"]["imponibles"]["horas_extra"]["monto"]
-                if isinstance(
-                    liquidacion["haberes"]["imponibles"]["horas_extra"],
-                    dict
-                )
-                else liquidacion["haberes"]["imponibles"]["horas_extra"]
-            ),
-
-            "movilizacion": liquidacion["haberes"]["no_imponibles"]["movilizacion"],
-
-            "colacion": liquidacion["haberes"]["no_imponibles"]["colacion"],
-
-            "afp": (
-                liquidacion["descuentos_legales"]["afp"]["monto"]
-                if isinstance(
-                    liquidacion["descuentos_legales"]["afp"],
-                    dict
-                )
-                else liquidacion["descuentos_legales"]["afp"]
-            ),
-
-            "salud": (
-                liquidacion["descuentos_legales"]["salud"]["monto"]
-                if isinstance(
-                    liquidacion["descuentos_legales"]["salud"],
-                    dict
-                )
-                else liquidacion["descuentos_legales"]["salud"]
-            ),
-
-            "seguroCesantia": (
-                liquidacion["descuentos_legales"]["seguro_cesantia"]["monto"]
-                if isinstance(
-                    liquidacion["descuentos_legales"]["seguro_cesantia"],
-                    dict
-                )
-                else liquidacion["descuentos_legales"]["seguro_cesantia"]
-            ),
-
-            "totalHaberes": liquidacion["totales"]["total_haberes"],
-
-            "totalDescuentos": liquidacion["totales"]["total_descuentos"],
-
-            "neto": liquidacion["totales"]["sueldo_liquido"]
-        }
-
+ 
+        empleado = col_empleados.find_one({"rut": liquidacion["empleado_rut"]}) or {}
+ 
         return JsonResponse({
             "success": True,
             "message": "Datos PDF obtenidos correctamente.",
-            "data": liquidacion_frontend
+            "data": _serializar_liquidacion(liquidacion, empleado)
         }, status=200)
-
+ 
     except Exception as e:
-
         return JsonResponse({
             "success": False,
             "message": f"Error al obtener datos PDF: {str(e)}",
             "data": None
         }, status=500)
-    
-# API liquidación por empleado - Jasna #
-
+ 
+ 
 @csrf_exempt
 @jwt_required
 def obtener_liquidacion_empleado(request, rut, mes, anio):
-
+ 
     if request.method != 'GET':
         return JsonResponse({
             "success": False,
             "message": "Método no permitido. Usa GET.",
             "data": None
         }, status=405)
-
+ 
     try:
-
-        # CONSULTA REAL MONGODB
-
         liquidacion = col_remuneraciones.find_one({
             "empleado_rut": rut,
             "periodo.mes": int(mes),
             "periodo.anio": int(anio)
         })
-
+ 
         if not liquidacion:
             return JsonResponse({
                 "success": False,
                 "message": "Liquidación no encontrada.",
                 "data": None
             }, status=404)
-
-        # BUSCAR DATOS EMPLEADO
-
-        empleado = col_empleados.find_one({
-            "rut": rut
-        })
-
-        # BACKEND COMO TRADUCTOR
-        # Mongo estructurado -> Angular plano
-
-        liquidacion_frontend = {
-
-            "id": str(liquidacion["_id"]),
-
-            "rut": liquidacion["empleado_rut"],
-
-            "nombre": empleado.get("nombre_completo", ""),
-
-            "cargo": empleado.get("cargo", ""),
-
-            "mes": liquidacion["periodo"]["mes"],
-
-            "anio": liquidacion["periodo"]["anio"],
-
-            "sueldoBase": liquidacion["haberes"]["imponibles"]["sueldo_base"],
-
-            "gratificacion": liquidacion["haberes"]["imponibles"]["gratificacion_legal"],
-
-            "horasExtra": (
-    liquidacion["haberes"]["imponibles"]["horas_extra"]["monto"]
-    if isinstance(liquidacion["haberes"]["imponibles"]["horas_extra"], dict)
-    else liquidacion["haberes"]["imponibles"]["horas_extra"]
-),
-
-            "movilizacion": liquidacion["haberes"]["no_imponibles"]["movilizacion"],
-
-            "colacion": liquidacion["haberes"]["no_imponibles"]["colacion"],
-
-            "afp": ( liquidacion["descuentos_legales"]["afp"]["monto"]
-             if isinstance(liquidacion["descuentos_legales"]["afp"], dict)
-             else liquidacion["descuentos_legales"]["afp"] ),
-
-            "salud": ( liquidacion["descuentos_legales"]["salud"]["monto"]
-             if isinstance(liquidacion["descuentos_legales"]["salud"], dict)
-             else liquidacion["descuentos_legales"]["salud"]),
-
-           "seguroCesantia": ( liquidacion["descuentos_legales"]["seguro_cesantia"]["monto"]
-              if isinstance(liquidacion["descuentos_legales"]["seguro_cesantia"], dict)
-              else liquidacion["descuentos_legales"]["seguro_cesantia"] ),
-
-            "totalHaberes": liquidacion["totales"]["total_haberes"],
-
-            "totalDescuentos": liquidacion["totales"]["total_descuentos"],
-
-            "neto": liquidacion["totales"]["sueldo_liquido"]
-        }
-
+ 
+        empleado = col_empleados.find_one({"rut": rut}) or {}
+ 
         return JsonResponse({
             "success": True,
             "message": "Liquidación obtenida correctamente.",
-            "data": liquidacion_frontend
+            "data": _serializar_liquidacion(liquidacion, empleado)
         }, status=200)
-
+ 
     except Exception as e:
-
         return JsonResponse({
             "success": False,
             "message": f"Error al obtener liquidación: {str(e)}",
             "data": None
         }, status=500)
-    
-    # API módulo remuneraciones - Jasna #
-
+ 
+ 
 @csrf_exempt
 @jwt_required
 def obtener_remuneraciones(request, mes=None, anio=None):
@@ -546,44 +365,87 @@ def obtener_remuneraciones(request, mes=None, anio=None):
             "message": "Método no permitido. Usa GET.",
             "data": None
         }, status=405)
-
+ 
     try:
         rango = request.GET.get('rango')
+        tipo = request.GET.get('tipo')
         resumen_cronologico = {}
 
-        if rango:
+        liquidaciones_bd = []
+
+        if tipo:
+            if tipo == 'mes_especifico':
+                m = int(request.GET.get('mes'))
+                a = int(request.GET.get('anio'))
+                liquidaciones_bd = list(col_remuneraciones.find({"periodo.mes": m, "periodo.anio": a}))
+            elif tipo == 'rango_meses':
+                m_ini = int(request.GET.get('mes_inicio'))
+                a_ini = int(request.GET.get('anio_inicio'))
+                m_fin = int(request.GET.get('mes_fin'))
+                a_fin = int(request.GET.get('anio_fin'))
+                docs = list(col_remuneraciones.find({"periodo.anio": {"$gte": a_ini, "$lte": a_fin}}))
+                for doc in docs:
+                    m = doc.get("periodo", {}).get("mes", 0)
+                    a = doc.get("periodo", {}).get("anio", 0)
+                    val = a * 12 + m
+                    if (a_ini * 12 + m_ini) <= val <= (a_fin * 12 + m_fin):
+                        liquidaciones_bd.append(doc)
+            elif tipo == 'anio_especifico':
+                a = int(request.GET.get('anio'))
+                liquidaciones_bd = list(col_remuneraciones.find({"periodo.anio": a}))
+            elif tipo == 'rango_anios':
+                a_ini = int(request.GET.get('anio_inicio'))
+                a_fin = int(request.GET.get('anio_fin'))
+                liquidaciones_bd = list(col_remuneraciones.find({"periodo.anio": {"$gte": a_ini, "$lte": a_fin}}))
+        elif rango:
             import datetime
             ahora = datetime.datetime.now()
             if rango == 'anual':
-                # Obtener todas las remuneraciones del año actual
-                liquidaciones_bd = list(
-                    col_remuneraciones.find({"periodo.anio": ahora.year})
-                )
-            else: # mensual o semanal usamos el mes actual por ahora como fallback
-                liquidaciones_bd = list(
-                    col_remuneraciones.find({
-                        "periodo.mes": ahora.month,
-                        "periodo.anio": ahora.year
-                    })
-                )
+                liquidaciones_bd = list(col_remuneraciones.find({"periodo.anio": ahora.year}))
+            else:
+                liquidaciones_bd = list(col_remuneraciones.find({"periodo.mes": ahora.month, "periodo.anio": ahora.year}))
         else:
             if not mes or not anio:
                 return JsonResponse({"success": False, "message": "Falta mes y año", "data": None}, status=400)
-            
-            # CONSULTA MONGODB REAL
-            liquidaciones_bd = list(
-                col_remuneraciones.find({
-                    "periodo.mes": int(mes),
-                    "periodo.anio": int(anio)
-                })
-            )
+            liquidaciones_bd = list(col_remuneraciones.find({"periodo.mes": int(mes), "periodo.anio": int(anio)}))
+
+        # Pre-llenar resumen_cronologico con ceros para que la gráfica muestre el rango completo
+        if tipo == 'rango_meses':
+            m_ini = int(request.GET.get('mes_inicio'))
+            a_ini = int(request.GET.get('anio_inicio'))
+            m_fin = int(request.GET.get('mes_fin'))
+            a_fin = int(request.GET.get('anio_fin'))
+            curr_m = m_ini
+            curr_a = a_ini
+            while curr_a * 12 + curr_m <= a_fin * 12 + m_fin:
+                clave = f"{curr_a}-{curr_m:02d}"
+                resumen_cronologico[clave] = {"fecha": clave, "total_haberes": 0, "total_descuentos": 0}
+                curr_m += 1
+                if curr_m > 12:
+                    curr_m = 1
+                    curr_a += 1
+        elif tipo == 'anio_especifico':
+            a = int(request.GET.get('anio'))
+            for m in range(1, 13):
+                clave = f"{a}-{m:02d}"
+                resumen_cronologico[clave] = {"fecha": clave, "total_haberes": 0, "total_descuentos": 0}
+        elif tipo == 'rango_anios':
+            a_ini = int(request.GET.get('anio_inicio'))
+            a_fin = int(request.GET.get('anio_fin'))
+            for a in range(a_ini, a_fin + 1):
+                clave = f"{a}"
+                resumen_cronologico[clave] = {"fecha": clave, "total_haberes": 0, "total_descuentos": 0}
 
         # Agrupación cronológica para el Dashboard
-        if rango:
+        if tipo or rango:
             for liq in liquidaciones_bd:
                 m = liq.get("periodo", {}).get("mes", 1)
                 a = liq.get("periodo", {}).get("anio", 2026)
-                clave = f"{a}-{m:02d}"
+                
+                if tipo == 'rango_anios':
+                    clave = f"{a}"
+                else:
+                    clave = f"{a}-{m:02d}"
                 
                 if clave not in resumen_cronologico:
                     resumen_cronologico[clave] = {
@@ -596,58 +458,15 @@ def obtener_remuneraciones(request, mes=None, anio=None):
                 resumen_cronologico[clave]["total_descuentos"] += liq.get("totales", {}).get("total_descuentos", 0)
 
         liquidaciones_frontend = []
-
-        # BACKEND COMO TRADUCTOR
-        # Mongo estructurado -> Angular plano
-
         for liquidacion in liquidaciones_bd:
 
             empleado = col_empleados.find_one({
                 "rut": liquidacion["empleado_rut"]
             })
 
-            liquidaciones_frontend.append({
-
-                "id": str(liquidacion["_id"]),
-
-                "rut": liquidacion["empleado_rut"],
-
-                "nombre": empleado.get("nombre_completo", ""),
-
-                "cargo": empleado.get("cargo", ""),
-
-                "mes": liquidacion["periodo"]["mes"],
-
-                "anio": liquidacion["periodo"]["anio"],
-
-                "sueldoBase": liquidacion["haberes"]["imponibles"]["sueldo_base"],
-
-                "gratificacion": liquidacion["haberes"]["imponibles"]["gratificacion_legal"],
-
-               "horasExtra": liquidacion["haberes"]["imponibles"]["horas_extra"]["monto"],
-
-                "movilizacion": liquidacion["haberes"]["no_imponibles"]["movilizacion"],
-
-                "colacion": liquidacion["haberes"]["no_imponibles"]["colacion"],
-
-               "afp": ( liquidacion["descuentos_legales"]["afp"]["monto"]
-                if isinstance(liquidacion["descuentos_legales"]["afp"], dict)
-                else liquidacion["descuentos_legales"]["afp"] ),
-
-               "salud": ( liquidacion["descuentos_legales"]["salud"]["monto"]
-                if isinstance(liquidacion["descuentos_legales"]["salud"], dict)
-                else liquidacion["descuentos_legales"]["salud"] ),
-
-                "seguroCesantia": ( liquidacion["descuentos_legales"]["seguro_cesantia"]["monto"]
-                if isinstance(liquidacion["descuentos_legales"]["seguro_cesantia"], dict)
-                else liquidacion["descuentos_legales"]["seguro_cesantia"] ),
-
-                "totalHaberes": liquidacion["totales"]["total_haberes"],
-
-                "totalDescuentos": liquidacion["totales"]["total_descuentos"],
-
-                "neto": liquidacion["totales"]["sueldo_liquido"]
-            })
+            liq_serializada = _serializar_liquidacion(liquidacion, empleado)
+            if liq_serializada:
+                liquidaciones_frontend.append(liq_serializada)
             
         crono_sorted = sorted(list(resumen_cronologico.values()), key=lambda x: x["fecha"])
 
@@ -657,69 +476,50 @@ def obtener_remuneraciones(request, mes=None, anio=None):
             "data": liquidaciones_frontend,
             "resumen_cronologico": crono_sorted
         }, status=200)
-
+ 
     except Exception as e:
-
         return JsonResponse({
             "success": False,
             "message": f"Error al obtener remuneraciones: {str(e)}",
             "data": None
         }, status=500)
-    
-    # API módulo horas extra - Jasna #
-
+ 
+ 
 @csrf_exempt
 @jwt_required
 def obtener_horas_extra(request, mes, anio):
-
+ 
     if request.method != 'GET':
         return JsonResponse({
             "success": False,
             "message": "Método no permitido. Usa GET.",
             "data": None
         }, status=405)
-
+ 
     try:
-
-        # OBTENER HORAS EXTRA DEL PERÍODO
-
-        horas_extra_bd = list(
-            col_horas_extra.find({
-                "mes": int(mes),
-                "anio": int(anio)
-            })
-        )
-
+        horas_extra_bd = list(col_horas_extra.find({
+            "mes": int(mes),
+            "anio": int(anio)
+        }))
+ 
         horas_extra_frontend = []
-
-        # BACKEND COMO TRADUCTOR
-        # Mongo -> Angular
-
         for he in horas_extra_bd:
-
             horas_extra_frontend.append({
-
                 "id": str(he["_id"]),
-
                 "rut": he.get("rut"),
-
                 "horas": he.get("horas", 0),
-
                 "tipo": he.get("tipo", "laboral"),
-
                 "mes": he.get("mes"),
-
                 "anio": he.get("anio")
             })
-
+ 
         return JsonResponse({
             "success": True,
             "message": "Horas extra obtenidas correctamente.",
             "data": horas_extra_frontend
         }, status=200)
-
+ 
     except Exception as e:
-
         return JsonResponse({
             "success": False,
             "message": f"Error al obtener horas extra: {str(e)}",
