@@ -16,14 +16,20 @@ def format_mongo_doc(doc):
 def api_notificaciones(request):
     try:
         if request.method == 'GET':
-            # Obtener el RUT del usuario autenticado
+            # Obtener el RUT y ROL del usuario autenticado
             usuario_rut = request.user_data.get('rut') if hasattr(request, 'user_data') else None
+            rol_nombre = request.user_data.get('rol_nombre') if hasattr(request, 'user_data') else None
             
             if not usuario_rut:
                 return JsonResponse({"success": False, "message": "No autorizado"}, status=401)
                 
             # Recuperar notificaciones del usuario, ordenadas por fecha (más recientes primero)
-            notificaciones = list(col_notificaciones.find({"usuario_id": usuario_rut}).sort("fecha_creacion", -1))
+            # Si es Administrador_General, puede ver TODAS las notificaciones del sistema
+            query = {}
+            if rol_nombre != 'Administrador_General':
+                query["usuario_id"] = usuario_rut
+                
+            notificaciones = list(col_notificaciones.find(query).sort("fecha_creacion", -1))
             
             # Formatear el ObjectId y las fechas
             data = []
@@ -54,10 +60,12 @@ def api_notificacion_estado(request, notif_id):
             except:
                 return JsonResponse({"success": False, "message": "ID inválido"}, status=400)
                 
-            # Buscar la notificación y asegurar que pertenece al usuario
+            # Buscar la notificación y asegurar que pertenece al usuario (salvo que sea Admin)
             usuario_rut = request.user_data.get('rut') if hasattr(request, 'user_data') else None
+            rol_nombre = request.user_data.get('rol_nombre') if hasattr(request, 'user_data') else None
+            
             query = {"_id": obj_id}
-            if usuario_rut:
+            if rol_nombre != 'Administrador_General' and usuario_rut:
                 query["usuario_id"] = usuario_rut
                 
             notificacion = col_notificaciones.find_one(query)
