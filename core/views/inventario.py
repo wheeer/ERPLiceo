@@ -134,6 +134,10 @@ def inventario_detalle(request, codigo):
             stock_baja_new = int(body.get("stock_baja", stock_baja_old))
             stock_disponible_new = int(body.get("stock_disponible", stock_disponible_old))
             
+            # Automatización: Si vuelve de reparación a disponible, certificar el mantenimiento
+            if stock_reparacion_new < stock_reparacion_old and stock_disponible_new > stock_disponible_old:
+                body["ultimo_mantenimiento"] = datetime.now().strftime("%Y-%m-%d")
+            
             actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
             actor_emp = col_empleados.find_one({"rut": actor_rut})
             actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
