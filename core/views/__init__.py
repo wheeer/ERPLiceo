@@ -4,7 +4,9 @@ from .remuneraciones import (
     obtener_pdf_liquidacion,
     obtener_liquidacion_empleado,
     obtener_remuneraciones,
-    obtener_horas_extra
+    obtener_horas_extra,
+    procesar_pagos_lote,
+    declarar_impagos_lote
 )
 from .inventario import (
     inventario_lista,
