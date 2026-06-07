@@ -1,8 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { delay } from 'rxjs/operators';
-
 export interface DashboardMetrics {
   empleados_activos: number;
   articulos_criticos: number;

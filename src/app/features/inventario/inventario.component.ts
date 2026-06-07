@@ -235,7 +235,7 @@ export class InventarioComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar inventario:', error);
-        this.toastService.show('Error al cargar datos del inventario', 'warning');
+        console.log('Error al cargar datos del inventario');
         this.isLoading = false;
         this.cdr.detectChanges();
       }
@@ -301,14 +301,14 @@ export class InventarioComponent implements OnInit {
         if (response.success && response.data) {
           this.crearPDF(response.data);
         } else {
-          this.toastService.show('Error al obtener datos para el reporte', 'warning');
+          console.log('Error al obtener datos para el reporte');
           this.isGeneratingPDF = false;
           this.cdr.detectChanges();
         }
       },
       error: (error) => {
         console.error('Error obteniendo críticos para PDF:', error);
-        this.toastService.show('Error de conexión al generar reporte', 'error');
+        console.log('Error de conexión al generar reporte');
         this.isGeneratingPDF = false;
         this.cdr.detectChanges();
       }
@@ -359,10 +359,10 @@ export class InventarioComponent implements OnInit {
       });
 
       doc.save('reporte_articulos_criticos.pdf');
-      this.toastService.show('Reporte descargado exitosamente', 'success');
+      console.log('Reporte descargado exitosamente');
     } catch (e) {
       console.error('Error generando PDF:', e);
-      this.toastService.show('Hubo un problema al crear el archivo PDF', 'error');
+      console.log('Hubo un problema al crear el archivo PDF');
     } finally {
       this.isGeneratingPDF = false;
       this.cdr.detectChanges();
@@ -447,7 +447,7 @@ export class InventarioComponent implements OnInit {
               // Actualizar con datos del backend, asegurando el id
               this.inventoryItems[index] = { ...this.inventoryItems[index], ...response.data, id: response.data._id || formData.id };
             }
-            this.toastService.show('Producto actualizado correctamente', 'success');
+            this.isSaving = false;
             this.isSaving = false;
             this.closeModal();
             this.aplicarFiltros();
@@ -456,7 +456,7 @@ export class InventarioComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error actualizando:', error);
-          this.toastService.show('Error al actualizar el producto', 'error');
+          this.isSaving = false;
           this.isSaving = false;
           this.cdr.detectChanges();
         }
@@ -470,7 +470,6 @@ export class InventarioComponent implements OnInit {
               id: response.data._id || response.data.id || String(Date.now())
             };
             this.inventoryItems.push(newItem);
-            this.toastService.show('Producto registrado correctamente', 'success');
             this.isSaving = false;
             this.closeModal();
             this.aplicarFiltros();
@@ -479,7 +478,6 @@ export class InventarioComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error creando:', error);
-          this.toastService.show('Error al crear el producto', 'error');
           this.isSaving = false;
           this.cdr.detectChanges();
         }
@@ -508,13 +506,13 @@ export class InventarioComponent implements OnInit {
           if (response.success) {
             this.inventoryItems = this.inventoryItems.filter(i => i.id !== id);
             this.aplicarFiltros();
-            this.toastService.show('Producto eliminado del inventario.', 'warning');
+            this.aplicarFiltros();
             this.cdr.detectChanges();
           }
         },
         error: (error) => {
           console.error('Error eliminando:', error);
-          this.toastService.show('Error al eliminar producto', 'error');
+          console.error('Error eliminando producto:', error);
           this.cdr.detectChanges();
         }
       });

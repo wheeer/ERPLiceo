@@ -96,9 +96,7 @@ export class Login implements OnDestroy {
     const rutValue = this.loginForm.value.rut;
     const passwordValue = this.loginForm.value.password;
 
-    // Retraso por UX para permitir lectura del loader
-    setTimeout(() => {
-      this.authService.login(rutValue, passwordValue).subscribe({
+    this.authService.login(rutValue, passwordValue).subscribe({
       next: (respuesta) => {
         // El servidor dijo "200 OK"
         this.loaderSubscription?.unsubscribe();
@@ -124,7 +122,6 @@ export class Login implements OnDestroy {
         this.cdr.detectChanges();
       }
     });
-    }, 2500); // 2.5 segundos de carga garantizada
   }
 
   ngOnDestroy() {

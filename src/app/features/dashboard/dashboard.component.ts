@@ -1,6 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef, ViewChildren, ViewChild, QueryList } from '@angular/core';
 import { Subscription, timer } from 'rxjs';
-import { delay } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -52,14 +51,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   expandedChart: 'rrhh' | 'remuneraciones' | 'inventario' | null = null;
   isMaximized = false;
 
-  // TODO: Reemplazar con llamada al servicio de auditoría (backend pendiente)
   activities: any[] = [];
 
   filteredMetrics: any[] = [];
   filteredActivities: any[] = [];
 
-  // Filtros visuales (Fase 1: Mockups)
-  // Filtros Asistencia
+  // Filtros visuales Asistencia
   asistenciaTipoFiltro: 'diario' | 'rango_fechas' | 'mensual' | 'anual' = 'mensual';
   asistenciaDiario: string = new Date().toISOString().split('T')[0];
   asistenciaRangoInicio: string = new Date().toISOString().split('T')[0];
@@ -110,7 +107,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return val;
   }
 
-  // Opciones de Gráficos (ApexCharts - Mockups)
+  // Opciones de Gráficos (ApexCharts)
   public rrhhChartOptions: any;
   public remuneracionesChartOptions: any;
   public inventarioChartOptions: any;
@@ -288,7 +285,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // 1. Cargar Gráfico RRHH (Desde módulo nativo)
     if (this.userRole === 'Administrador_General' || this.userRole === 'Encargado_RRHH') {
       if (showSpinner) this.isLoadingChartRRHH = true;
-      this.dashboardService.getChartRRHH(rrhhQuery).pipe(delay(1200)).subscribe({
+      this.dashboardService.getChartRRHH(rrhhQuery).subscribe({
         next: (res) => {
           if (res.success && res.resumen_cronologico) {
             const rawCategories = res.resumen_cronologico.map((item: any) => item.fecha);
@@ -332,7 +329,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
 
       if (showSpinner) this.isLoadingChartRemu = true;
-      this.dashboardService.getChartRemuneraciones(remuQuery).pipe(delay(1200)).subscribe({
+      this.dashboardService.getChartRemuneraciones(remuQuery).subscribe({
         next: (res) => {
           if (res.success && res.resumen_cronologico) {
             const rawCategories = res.resumen_cronologico.map((item: any) => item.fecha);
@@ -387,7 +384,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // 3. Cargar Gráfico Inventario (Agrupando en el Frontend)
     if (this.userRole === 'Administrador_General' || this.userRole === 'Encargado_Bodega') {
       if (showSpinner) this.isLoadingChartInv = true;
-      this.dashboardService.getChartInventario(this.selectedCategory).pipe(delay(1200)).subscribe({
+      this.dashboardService.getChartInventario(this.selectedCategory).subscribe({
         next: (res) => {
           if (res.success && res.data) {
             const articulos = res.data;
@@ -444,7 +441,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (this.metrics.length === 0) {
       this.isLoadingMetrics = true;
     }
-    this.dashboardService.getMetrics().pipe(delay(1200)).subscribe({
+    this.dashboardService.getMetrics().subscribe({
       next: (data) => {
         // Lógica de semaforización de ausentismo
         const tasaAusentismo = data.empleados_activos > 0 ? (data.ausencias_mes / data.empleados_activos) * 100 : 0;
@@ -489,7 +486,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private loadActivities() {
-    this.dashboardService.getActivities().pipe(delay(1200)).subscribe({
+    this.dashboardService.getActivities().subscribe({
       next: (res) => {
         if (res.success) {
           // Convertimos strings de fecha a objetos Date

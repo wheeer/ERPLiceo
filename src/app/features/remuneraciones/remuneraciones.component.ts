@@ -139,16 +139,19 @@ export class RemuneracionesComponent implements OnInit {
         ).subscribe({
           next: (heResponse) => {
             this.historialHorasExtra = (heResponse.data || []).map((he: any) => {
-              const empleado = this.payrollData.find(p => p.rut === he.rut);
+              const empleadoEnNomina = this.payrollData.find(p => p.rut === he.rut || p.rut === he.empleado_rut);
+              const nombre = empleadoEnNomina?.nombre ?? he.nombre_empleado ?? (he.rut || he.empleado_rut);
+              const sueldoBase = empleadoEnNomina?.sueldoBase ?? he.sueldo_base ?? 0;
+              
               return {
-                id: he.id,
-                rut: he.rut,
-                empleado: empleado?.nombre ?? he.rut,
-                sueldoBase: empleado?.sueldoBase ?? 0,
+                id: he._id || he.id,
+                rut: he.rut || he.empleado_rut,
+                empleado: nombre,
+                sueldoBase: sueldoBase,
                 horas: he.horas,
-                recargo: 50,
-                montoTotal: empleado ? Math.round((empleado.sueldoBase / 160) * 1.5 * he.horas) : 0,
-                fecha: new Date(),
+                recargo: he.recargo || 50,
+                montoTotal: Math.round((sueldoBase / 160) * (1 + ((he.recargo || 50) / 100)) * he.horas),
+                fecha: he.fecha ? new Date(he.fecha) : new Date(),
                 tipo: he.tipo ?? 'laboral',
                 tipoDia: he.tipo ?? 'laboral',
                 autorizadoPor: 'Registrado en RRHH',
@@ -218,30 +221,59 @@ export class RemuneracionesComponent implements OnInit {
     const recargoMultiplicador = 1 + (formValues.recargo / 100);
     const montoTotal = valorHoraNormal * recargoMultiplicador * formValues.horas;
 
-    const nuevoRegistro: HorasExtraRecord = {
-      id: crypto.randomUUID(),
+    const token = localStorage.getItem('erp_token');
+    if (!token) {
+      this.toastService.show('Sesión expirada.', 'warning');
+      return;
+    }
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    const payload = {
       rut: empleado.rut,
-      empleado: empleado.nombre,
-      sueldoBase: empleado.sueldoBase,
+      empleado_rut: empleado.rut,
       horas: formValues.horas,
-      recargo: formValues.recargo,
-      montoTotal: Math.round(montoTotal),
-      fecha: new Date(),
-      tipo: 'laboral',
-      tipoDia: 'laboral',
-      autorizadoPor: 'Registrado en Remuneraciones',
+      fecha: new Date().toISOString().split('T')[0],
       mes: this.mesSeleccionado,
-      anio: this.anioSeleccionado
+      anio: this.anioSeleccionado,
+      tipo: formValues.recargo == 100 ? 'festivo' : 'laboral',
+      recargo: parseInt(formValues.recargo, 10)
     };
 
-    this.historialHorasExtra.unshift(nuevoRegistro);
-    this.toastService.show(`Horas extra registradas: ${this.formatCurrency(Math.round(montoTotal))}`, 'success');
-    this.horasExtraForm.patchValue({ horas: 1 });
+    this.http.post<any>('http://127.0.0.1:8000/api/horas-extra/', payload, { headers }).subscribe({
+      next: (res: any) => {
+        const savedData = res.data ? res.data[0] : payload;
+        const nuevoRegistro: HorasExtraRecord = {
+          id: savedData._id || savedData.id || crypto.randomUUID(),
+          rut: empleado.rut,
+          empleado: empleado.nombre,
+          sueldoBase: empleado.sueldoBase,
+          horas: formValues.horas,
+          recargo: formValues.recargo,
+          montoTotal: Math.round(montoTotal),
+          fecha: new Date(),
+          tipo: 'laboral',
+          tipoDia: 'laboral',
+          autorizadoPor: 'Registrado en Remuneraciones',
+          mes: this.mesSeleccionado,
+          anio: this.anioSeleccionado
+        };
+
+        this.historialHorasExtra.unshift(nuevoRegistro);
+        console.log('Horas registradas');
+        this.horasExtraForm.patchValue({ horas: 1 });
+      },
+      error: (err: any) => {
+        const msg = err.error?.message || 'Error al conectar con la base de datos para Horas Extras';
+        console.log('Error manejado globalmente');
+      }
+    });
   }
 
   eliminarRegistro(id: string) {
-    this.historialHorasExtra = this.historialHorasExtra.filter(h => h.id !== id);
-    this.toastService.show('Registro eliminado.', 'warning');
+    // Para cumplir con el requerimiento de quitar el borrado fantasma:
+    // Puesto que el endpoint DELETE de la API no está desarrollado aún, emitimos un error o advertencia,
+    // pero evitamos modificar el arreglo local si no sabemos que backend lo hizo.
+    this.toastService.show('La eliminación de Horas Extras en Base de Datos no está implementada en esta API aún.', 'warning');
   }
 
   formatDate(date: Date): string {
@@ -658,7 +690,7 @@ export class RemuneracionesComponent implements OnInit {
         setTimeout(() => {
           this.isGenerating = false;
           this.liquidacionesActivo = false;
-          this.toastService.show('Liquidaciones generadas correctamente.', 'success');
+          this.isGenerating = false;
           this.cdr.detectChanges();
           this.cargarRemuneraciones();
         }, 0);
