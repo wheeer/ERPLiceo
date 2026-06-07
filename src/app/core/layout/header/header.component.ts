@@ -213,6 +213,29 @@ export class HeaderComponent implements OnInit, OnDestroy {
       },
       error: (err) => console.error('🔴 Error al cargar historial de notificaciones:', err)
     });
+
+    // Cargar stock crítico como notificaciones virtuales persistentes hasta que se solucione el stock
+    if (this.userRole === 'Administrador_General' || this.userRole === 'Encargado_Bodega') {
+      this.notificationService.getCriticalStock().subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            const criticosVirtuales: AppNotification[] = response.data.map((item: any) => ({
+              mensaje: `El artículo "${item.nombre}" (${item.codigo}) tiene stock crítico (${item.stock_disponible}).`,
+              modulo: 'inventario',
+              tipo: 'Stock Crítico',
+              url_destino: '/app/inventario',
+              leida: false,
+              fecha_creacion: new Date().toISOString()
+            }));
+            
+            this.ngZone.run(() => {
+              this.notificaciones = [...this.notificaciones, ...criticosVirtuales];
+            });
+          }
+        },
+        error: (err) => console.error('🔴 Error al cargar stock crítico para notificaciones virtuales:', err)
+      });
+    }
   }
 
   ngOnDestroy() {

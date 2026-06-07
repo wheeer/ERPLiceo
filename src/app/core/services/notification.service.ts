@@ -54,4 +54,8 @@ export class NotificationService {
   public markAsRead(id: string): Observable<any> {
     return this.http.patch(`${this.apiUrl}/notificaciones/${id}/`, {});
   }
+
+  public getCriticalStock(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/inventario/criticos/`);
+  }
 }
