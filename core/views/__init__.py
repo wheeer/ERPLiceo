@@ -11,7 +11,8 @@ from .remuneraciones import (
 from .inventario import (
     inventario_lista,
     inventario_detalle,
-    inventario_criticos
+    inventario_criticos,
+    inventario_poco_stock
 )
 from .rrhh import (
     lista_empleados, 
