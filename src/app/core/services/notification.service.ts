@@ -6,7 +6,7 @@ import { HttpClient } from '@angular/common/http';
 
 export interface AppNotification {
   _id?: string;
-  message: string;
+  mensaje: string;
   modulo: string;
   tipo?: string;
   url_destino: string;

@@ -114,7 +114,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     // Función global auxiliar para probar notificaciones fácilmente desde la consola
     (window as any).sendTestNotif = () => {
       this.notificationService.sendMessage({
-        message: '⚠️ Alerta de Stock Crítico en Bodega Central (Prueba)',
+        mensaje: '⚠️ Alerta de Stock Crítico en Bodega Central (Prueba)',
         modulo: 'inventario',
         url_destino: '/app/inventario'
       });
