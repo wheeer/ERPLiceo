@@ -658,7 +658,8 @@ export class RemuneracionesComponent implements OnInit {
         setTimeout(() => {
           this.isGenerating = false;
           this.liquidacionesActivo = false;
-          this.toastService.show('Liquidaciones generadas correctamente.', 'success');
+          const mensajeExito = response?.message || 'Liquidaciones generadas correctamente.';
+          this.toastService.show(mensajeExito, 'success');
           this.cdr.detectChanges();
           this.cargarRemuneraciones();
         }, 0);
@@ -667,7 +668,12 @@ export class RemuneracionesComponent implements OnInit {
         setTimeout(() => {
           this.isGenerating = false;
           this.liquidacionesActivo = false;
-          const mensaje = error.error?.message || 'Error al generar liquidaciones.';
+          let mensaje = 'Error al generar liquidaciones.';
+          if (error.error && typeof error.error === 'object') {
+            mensaje = error.error.message || error.error.error || error.error.detail || mensaje;
+          } else if (error.message) {
+            mensaje = error.message;
+          }
           this.toastService.show(mensaje, 'warning');
           this.cdr.detectChanges();
         }, 0);

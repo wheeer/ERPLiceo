@@ -2,9 +2,18 @@
  
   <!-- HEADER CON TABS -->
   <div class="rrhh-header-row">
-    <div class="rrhh-header">
-      <h1 class="rrhh-title">Remuneraciones</h1>
-      <p class="rrhh-subtitle">Nómina y cálculo de honorarios — Ley 21.561</p>
+    <div class="rrhh-header" style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+      <div>
+        <h1 class="rrhh-title">Remuneraciones</h1>
+        <p class="rrhh-subtitle">Nómina y cálculo de honorarios — Ley 21.561</p>
+      </div>
+      <button class="btn-generar-primary" (click)="generarLiquidaciones()" [disabled]="isGenerating">
+        @if (isGenerating) {
+        <span class="spinner-btn"></span> Generando...
+        } @else {
+        Generar Liquidaciones
+        }
+      </button>
     </div>
     <div class="module-tabs">
       <button class="tab-btn" [class.active]="activeTab === 'nomina'" (click)="changeTab('nomina')">
@@ -12,14 +21,6 @@
       </button>
       <button class="tab-btn" [class.active]="activeTab === 'horasExtra'" (click)="changeTab('horasExtra')">
         Cálculo Horas Extra
-      </button>
-      <button class="btn-generar-liquidaciones" [class.active]="liquidacionesActivo" (click)="generarLiquidaciones()"
-        [disabled]="isGenerating">
-        @if (isGenerating) {
-        <span class="spinner-btn"></span> Generando...
-        } @else {
-        Generar Liquidaciones
-        }
       </button>
     </div>
   </div>

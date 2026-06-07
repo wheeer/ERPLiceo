@@ -97,28 +97,31 @@
 button:focus,
 button:focus-visible { outline: none; box-shadow: none; }
  
-.btn-generar:disabled,
-.btn-generar-liquidaciones:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-generar:disabled { opacity: 0.4; cursor: not-allowed; }
  
-.btn-generar-liquidaciones {
-  padding: 0.6rem 1.2rem;
-  background: transparent;
+.btn-generar-primary {
+  padding: 0.6rem 1.5rem;
+  background: #2563eb;
+  color: #ffffff;
   border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin: 0;
-}
- 
-.btn-generar-liquidaciones:hover { color: var(--text-primary); }
- 
-.btn-generar-liquidaciones.active {
-  color: var(--accent);
-  border-bottom: 2px solid var(--accent);
+  border-radius: 8px;
   font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+}
+
+.btn-generar-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.btn-generar-primary:disabled {
+  background: rgba(37, 99, 235, 0.5);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: not-allowed;
+  box-shadow: none;
 }
  
 /* ============================================================
