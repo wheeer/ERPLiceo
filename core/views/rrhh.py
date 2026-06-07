@@ -177,12 +177,6 @@ def api_empleados(request):
                 descripcion=f"Se agregó nuevo empleado: {body.get('nombre_completo', rut)}"
             )
 
-            }",
-                modulo="rrhh",
-                tipo="Éxito",
-                url_destino="/app/rrhh"
-            )
-
             return JsonResponse({"success": True, "data": [body], "message": "Empleado creado con éxito"}, status=201)
             
         else:
@@ -381,7 +375,7 @@ def api_asistencia(request, mes=None, anio=None):
                     descripcion=f"Se registraron {procesados} entradas de asistencia."
                 )
                 
-                mensaje = f"Se procesaron {procesados} registros correctamente" if procesados > 0 else "No se procesaron registros nuevos (todos eran inválidos)"
+            mensaje = f"Se procesaron {procesados} registros correctamente" if procesados > 0 else "No se procesaron registros nuevos (todos eran inválidos)"
             
             return JsonResponse({"success": True, "data": datos_guardados, "message": mensaje, "procesados": procesados}, status=201)
             

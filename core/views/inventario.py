@@ -68,12 +68,6 @@ def inventario_lista(request):
                 descripcion=f"Se agregó el ítem '{nuevo_articulo.get('nombre', '')}' ({codigo}) al inventario."
             )
             
-            } ({codigo})",
-                modulo="inventario",
-                tipo="Éxito",
-                url_destino="/app/inventario"
-            )
-            
             return JsonResponse({
                 "success": True,
                 "message": "Artículo creado correctamente",

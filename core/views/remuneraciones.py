@@ -188,12 +188,6 @@ def calcular_remuneraciones(request):
                 descripcion=f"Se calcularon y guardaron {len(liquidaciones_generadas)} liquidaciones (Periodo {mes_int:02d}-{anio_int})."
             )
 
-            } liquidaciones para el período {mes_int:02d}-{anio_int}",
-                modulo="remuneraciones",
-                tipo="Éxito",
-                url_destino="/app/remuneraciones"
-            )
-
         return JsonResponse({
             "success": True,
             "message": f"Remuneraciones calculadas correctamente. {len(liquidaciones_generadas)} liquidaciones generadas.",
@@ -636,8 +630,8 @@ def procesar_pagos_lote(request):
                 accion="Estado de Pago Actualizado (Lote)",
                 descripcion=f"Se formalizaron pagos: {actualizados_pagados} pagados, {actualizados_impagos} impagos."
             )
-            
-            return JsonResponse({
+
+        return JsonResponse({
             "success": True,
             "message": f"Se procesaron {actualizados_pagados} pagos y {actualizados_impagos} impagos correctamente.",
             "data": {
@@ -723,12 +717,6 @@ def declarar_impagos_lote(request):
                 modulo="remuneraciones",
                 accion="Impago Declarado (Lote)",
                 descripcion=f"Se declararon {actualizados_impagos} impagos. Motivo: {motivo}"
-            )
-            
-            ",
-                modulo="remuneraciones",
-                tipo="Urgente",
-                url_destino="/app/remuneraciones"
             )
 
         return JsonResponse({
