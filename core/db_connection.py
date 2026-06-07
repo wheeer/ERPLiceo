@@ -62,3 +62,34 @@ def crear_notificacion(usuario_rut, mensaje, modulo, url_destino="#", tipo="Info
     }
     col_notificaciones.insert_one(notificacion)
     return notificacion
+
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
+def despachar_notificacion_sistema(mensaje, modulo, tipo="Informativa", url_destino="#"):
+    """
+    Guarda una sola notificación para el rol correspondiente y lanza el evento WebSocket.
+    El Administrador ve todas (por query {}), los Encargados ven las de su rol.
+    """
+    rol_destino = "global"
+    if modulo == "inventario":
+        rol_destino = "Encargado_Bodega"
+    elif modulo == "rrhh":
+        rol_destino = "Encargado_RRHH"
+    elif modulo == "remuneraciones":
+        rol_destino = "Encargado_Remuneraciones"
+        
+    crear_notificacion(rol_destino, mensaje, modulo, url_destino, tipo)
+    
+    channel_layer = get_channel_layer()
+    if channel_layer:
+        async_to_sync(channel_layer.group_send)(
+            "notifications_group",
+            {
+                "type": "notification_message",
+                "mensaje": mensaje,
+                "modulo": modulo,
+                "url_destino": url_destino,
+                "tipo": tipo
+            }
+        )

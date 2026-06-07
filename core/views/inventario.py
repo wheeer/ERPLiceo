@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from core.db_connection import col_inventario, col_empleados, registrar_auditoria
+from core.db_connection import col_inventario, col_empleados, registrar_auditoria, despachar_notificacion_sistema
 from core.jwt_middleware import jwt_required
 
 @csrf_exempt
@@ -66,6 +66,13 @@ def inventario_lista(request):
                 modulo="inventario",
                 accion="Ítem Registrado",
                 descripcion=f"Se agregó el ítem '{nuevo_articulo.get('nombre', '')}' ({codigo}) al inventario."
+            )
+            
+            despachar_notificacion_sistema(
+                mensaje=f"Nuevo artículo agregado: {nuevo_articulo.get('nombre', '')} ({codigo})",
+                modulo="inventario",
+                tipo="Éxito",
+                url_destino="/app/inventario"
             )
             
             return JsonResponse({
@@ -208,6 +215,13 @@ def inventario_detalle(request, codigo):
                 descripcion=f"Se actualizó la información/stock del ítem {codigo}."
             )
             
+            despachar_notificacion_sistema(
+                mensaje=f"Artículo actualizado: {codigo}",
+                modulo="inventario",
+                tipo="Informativa",
+                url_destino="/app/inventario"
+            )
+            
             return JsonResponse({
                 "success": True,
                 "message": "Artículo actualizado correctamente",
@@ -238,6 +252,13 @@ def inventario_detalle(request, codigo):
                 modulo="inventario",
                 accion="Ítem Eliminado",
                 descripcion=f"Se eliminó el registro del ítem {codigo}."
+            )
+            
+            despachar_notificacion_sistema(
+                mensaje=f"Artículo eliminado: {codigo}",
+                modulo="inventario",
+                tipo="Urgente",
+                url_destino="/app/inventario"
             )
             
             return JsonResponse({

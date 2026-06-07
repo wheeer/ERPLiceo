@@ -7,6 +7,7 @@ import { NgApexchartsModule, ChartComponent } from 'ng-apexcharts';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from './dashboard.service';
 import { DashboardPdfService } from './dashboard-pdf.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 interface ActivityLog {
   id: number;
@@ -29,9 +30,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private dashboardService = inject(DashboardService);
   private pdfService = inject(DashboardPdfService);
+  private notificationService = inject(NotificationService);
   private cdr = inject(ChangeDetectorRef);
   userRole: string | null = null;
   private pollingSubscription!: Subscription;
+  private notifSub!: Subscription;
 
   @ViewChildren(ChartComponent) charts!: QueryList<ChartComponent>;
   @ViewChild('chartModalRrhh') chartModalRrhh!: ChartComponent;
@@ -129,11 +132,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.loadMetrics();
       this.loadActivities();
     });
+
+    // Actualización en tiempo real vía WebSockets
+    this.notifSub = this.notificationService.getMessages().subscribe(() => {
+      this.loadMetrics();
+      this.loadActivities();
+    });
   }
 
   ngOnDestroy() {
     if (this.pollingSubscription) {
       this.pollingSubscription.unsubscribe();
+    }
+    if (this.notifSub) {
+      this.notifSub.unsubscribe();
     }
   }
 
