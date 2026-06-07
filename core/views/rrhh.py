@@ -5,7 +5,7 @@ from bson.objectid import ObjectId
 
 from django.http import JsonResponse
 
-from core.db_connection import db, col_empleados, col_asistencia, col_horas_extra, registrar_auditoria
+from core.db_connection import db, col_empleados, col_asistencia, col_horas_extra, registrar_auditoria, despachar_notificacion_sistema
 from core.jwt_middleware import jwt_required
 from django.views.decorators.csrf import csrf_exempt
 
@@ -177,6 +177,13 @@ def api_empleados(request):
                 descripcion=f"Se agregó nuevo empleado: {body.get('nombre_completo', rut)}"
             )
 
+            despachar_notificacion_sistema(
+                mensaje=f"Nuevo empleado registrado: {body.get('nombre_completo', rut)}",
+                modulo="rrhh",
+                tipo="Éxito",
+                url_destino="/app/rrhh"
+            )
+
             return JsonResponse({"success": True, "data": [body], "message": "Empleado creado con éxito"}, status=201)
             
         else:
@@ -213,6 +220,13 @@ def api_empleado_detalle(request, rut):
                 descripcion=f"Se modificaron los datos del empleado {rut}"
             )
             
+            despachar_notificacion_sistema(
+                mensaje=f"Ficha actualizada para empleado {rut}",
+                modulo="rrhh",
+                tipo="Informativa",
+                url_destino="/app/rrhh"
+            )
+            
             return JsonResponse({"success": True, "data": [format_mongo_doc(empleado_actualizado)], "message": "Empleado actualizado con éxito"}, status=200)
             
         elif request.method == 'DELETE':
@@ -228,6 +242,13 @@ def api_empleado_detalle(request, rut):
                 modulo="rrhh",
                 accion="Empleado Desvinculado",
                 descripcion=f"Se cambió el estado del empleado {rut} a inactivo"
+            )
+            
+            despachar_notificacion_sistema(
+                mensaje=f"Empleado {rut} desvinculado",
+                modulo="rrhh",
+                tipo="Urgente",
+                url_destino="/app/rrhh"
             )
             
             return JsonResponse({"success": True, "data": [], "message": "Empleado dado de baja con éxito"}, status=200)
@@ -373,6 +394,13 @@ def api_asistencia(request, mes=None, anio=None):
                     modulo="rrhh",
                     accion="Asistencia Registrada",
                     descripcion=f"Se registraron {procesados} entradas de asistencia."
+                )
+                
+                despachar_notificacion_sistema(
+                    mensaje=f"Se registraron {procesados} entradas de asistencia",
+                    modulo="rrhh",
+                    tipo="Éxito",
+                    url_destino="/app/rrhh"
                 )
                 
             mensaje = f"Se procesaron {procesados} registros correctamente" if procesados > 0 else "No se procesaron registros nuevos (todos eran inválidos)"
@@ -607,6 +635,13 @@ def api_horas_extra(request, mes=None, anio=None):
                 modulo="rrhh",
                 accion="Horas Extra Añadidas",
                 descripcion=f"Se registraron {horas_he} horas extra para {rut_afectado}."
+            )
+                
+            despachar_notificacion_sistema(
+                mensaje=f"Se añadieron {horas_he} horas extra para {rut_afectado}",
+                modulo="rrhh",
+                tipo="Informativa",
+                url_destino="/app/rrhh"
             )
                 
             return JsonResponse({"success": True, "data": [body], "message": "Horas extra registradas con éxito"}, status=201)
