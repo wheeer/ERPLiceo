@@ -11,12 +11,13 @@ export interface NotificationFilter {
   label: string;
   class: string;
   priorityValue: number;
+  roles?: string[]; // Si no se define, lo ven todos.
 }
 
 export const NOTIFICATION_FILTERS: NotificationFilter[] = [
   { id: 'Todas', label: 'Todas', class: '', priorityValue: 0 },
-  { id: 'Stock Crítico', label: 'Crítico', class: 'priority-stock', priorityValue: 1 },
-  { id: 'Poco Stock', label: 'Poco Stock', class: 'priority-poco-stock', priorityValue: 2 },
+  { id: 'Stock Crítico', label: 'Crítico', class: 'priority-stock', priorityValue: 1, roles: ['Administrador_General', 'Encargado_Bodega'] },
+  { id: 'Poco Stock', label: 'Poco Stock', class: 'priority-poco-stock', priorityValue: 2, roles: ['Administrador_General', 'Encargado_Bodega'] },
   { id: 'Urgente', label: 'Urgente', class: 'priority-urgente', priorityValue: 3 },
   { id: 'Éxito', label: 'Éxito', class: 'priority-exito', priorityValue: 4 },
   { id: 'Informativa', label: 'Info', class: 'priority-info', priorityValue: 5 }
@@ -65,6 +66,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
   filtroPrioridad: string = 'Todas';
   mostrarNotificaciones = false;
   mostrarMenuUsuario = false;
+
+  get visibleNotificationFilters(): NotificationFilter[] {
+    return this.notificationFilters.filter(f => 
+      !f.roles || f.roles.includes(this.userRole || '')
+    );
+  }
 
   get notificacionesSinLeer(): number {
     return this.notificaciones.filter(n => !n.leida).length;

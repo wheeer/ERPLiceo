@@ -44,7 +44,7 @@
           <h4 class="dropdown-title">Notificaciones</h4>
           
           <div class="notif-filters">
-            @for (filter of notificationFilters; track filter.id) {
+            @for (filter of visibleNotificationFilters; track filter.id) {
               <button 
                 class="notif-filter-btn {{ filter.class }}" 
                 [class.active]="filtroPrioridad === filter.id" 
