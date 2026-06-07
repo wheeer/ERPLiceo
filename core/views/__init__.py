@@ -5,7 +5,8 @@ from .remuneraciones import (
     obtener_liquidacion_empleado,
     obtener_remuneraciones,
     obtener_horas_extra,
-    procesar_pagos_lote
+    procesar_pagos_lote,
+    declarar_impagos_lote
 )
 from .inventario import (
     inventario_lista,

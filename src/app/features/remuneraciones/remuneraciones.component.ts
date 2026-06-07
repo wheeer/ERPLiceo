@@ -29,6 +29,7 @@ interface Payroll {
   anio: number;
   horasExtra: number;
   estadoPago: string;
+  motivoImpago?: string;
   descuentoAsistencia: number;
   diasAusentes: number; // AJUSTE #25: días ausentes para bloque separado
   afpNombre: string;   // Nombre real de la AFP del empleado
@@ -68,6 +69,10 @@ interface HorasExtraRecord {
 })
 export class RemuneracionesComponent implements OnInit {
   mostrarModal = false;
+  showModalImpago = false;
+  motivoImpago = '';
+  filtroEstado = 'Todos';
+  filtroTexto = '';
   detalleSeleccionado: Payroll | null = null;
 
   private fb = inject(FormBuilder);
@@ -281,13 +286,20 @@ export class RemuneracionesComponent implements OnInit {
     return this.filteredPayrollData.reduce((sum, p) => sum + p.neto, 0);
   }
 
-  onSearch(event: Event) {
-    const query = (event.target as HTMLInputElement).value.toLowerCase();
-    this.filteredPayrollData = this.payrollData.filter(item =>
-      item.nombre.toLowerCase().includes(query) ||
-      item.rut.toLowerCase().includes(query) ||
-      item.cargo.toLowerCase().includes(query)
-    );
+  onSearch(event?: Event) {
+    if (event) {
+      this.filtroTexto = (event.target as HTMLInputElement).value.toLowerCase();
+    }
+    
+    this.filteredPayrollData = this.payrollData.filter(item => {
+      const matchTexto = item.nombre.toLowerCase().includes(this.filtroTexto) ||
+                         item.rut.toLowerCase().includes(this.filtroTexto) ||
+                         item.cargo.toLowerCase().includes(this.filtroTexto);
+      
+      const matchEstado = this.filtroEstado === 'Todos' || item.estadoPago === this.filtroEstado;
+      
+      return matchTexto && matchEstado;
+    });
     this.paginaActual = 1;
   }
 
@@ -711,10 +723,10 @@ export class RemuneracionesComponent implements OnInit {
     if (!token) return;
 
     const pagados = this.filteredPayrollData.filter(p => p.selected).map(p => p.id);
-    const impagos = this.filteredPayrollData.filter(p => !p.selected && (p.estadoPago === 'Pendiente' || p.estadoPago === 'Impago')).map(p => p.id);
+    const impagos: string[] = []; // Ya no agrupamos desmarcados automáticamente
 
-    if (pagados.length === 0 && impagos.length === 0) {
-      this.toastService.show('No hay registros para actualizar.', 'warning');
+    if (pagados.length === 0) {
+      this.toastService.show('No hay registros seleccionados para pagar.', 'warning');
       return;
     }
 
@@ -731,17 +743,80 @@ export class RemuneracionesComponent implements OnInit {
           this.toastService.show(res.message, 'success');
           this.filteredPayrollData.forEach(p => {
             if (pagados.includes(p.id)) p.estadoPago = 'Pagado';
-            if (impagos.includes(p.id)) p.estadoPago = 'Impago';
           });
         } else {
           this.toastService.show(res.message, 'error');
         }
         this.isFormalizing = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error formalizando pagos', err);
-        this.toastService.show('Error al procesar pagos en lote', 'error');
+        const mensaje = err.error?.message || 'Error al procesar pagos en lote';
+        this.toastService.show(mensaje, 'error');
         this.isFormalizing = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  abrirModalImpago() {
+    this.motivoImpago = '';
+    this.showModalImpago = true;
+  }
+
+  cerrarModalImpago() {
+    this.showModalImpago = false;
+    this.motivoImpago = '';
+  }
+
+  confirmarImpagos() {
+    const token = localStorage.getItem('erp_token');
+    if (!token) return;
+
+    const impagos = this.filteredPayrollData.filter(p => p.selected).map(p => p.id);
+
+    if (impagos.length === 0) {
+      this.toastService.show('No hay registros seleccionados para marcar como impago.', 'warning');
+      return;
+    }
+
+    if (!this.motivoImpago.trim()) {
+      this.toastService.show('El motivo es obligatorio.', 'warning');
+      return;
+    }
+
+    this.isFormalizing = true;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.put<any>(
+      `http://127.0.0.1:8000/api/remuneraciones/lote/impago/`,
+      { impagos, motivo: this.motivoImpago },
+      { headers }
+    ).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.toastService.show(res.message, 'success');
+          this.filteredPayrollData.forEach(p => {
+            if (impagos.includes(p.id)) {
+              p.estadoPago = 'Impago';
+              // Here we could add logic to store 'motivo_impago' on the object if needed, 
+              // but it's not strictly necessary for the current UI.
+            }
+          });
+          this.cerrarModalImpago();
+        } else {
+          this.toastService.show(res.message, 'error');
+        }
+        this.isFormalizing = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error declarando impagos', err);
+        const mensaje = err.error?.message || 'Error al procesar impagos en lote';
+        this.toastService.show(mensaje, 'error');
+        this.isFormalizing = false;
+        this.cdr.detectChanges();
       }
     });
   }

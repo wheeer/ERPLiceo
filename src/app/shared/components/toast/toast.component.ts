@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService, Toast } from '../../../core/services/toast.service';
 import { Subscription } from 'rxjs';
@@ -13,6 +13,7 @@ import { Subscription } from 'rxjs';
 export class ToastComponent implements OnInit, OnDestroy {
   toasts: (Toast & { id: number; removing: boolean })[] = [];
   private toastService = inject(ToastService);
+  private cdr = inject(ChangeDetectorRef);
   private subscription!: Subscription;
   private idCounter = 0;
 
@@ -26,6 +27,7 @@ export class ToastComponent implements OnInit, OnDestroy {
     const id = this.idCounter++;
     const newToast = { ...toast, id, removing: false };
     this.toasts.push(newToast);
+    this.cdr.detectChanges();
 
     // Auto eliminar
     if (toast.duration && toast.duration > 0) {
@@ -37,8 +39,10 @@ export class ToastComponent implements OnInit, OnDestroy {
     const toast = this.toasts.find(t => t.id === id);
     if (toast) {
       toast.removing = true; // Inicia animación de salida
+      this.cdr.detectChanges();
       setTimeout(() => {
         this.toasts = this.toasts.filter(t => t.id !== id);
+        this.cdr.detectChanges();
       }, 300); // Tiempo de la transición CSS
     }
   }
