@@ -159,7 +159,13 @@ export class InventarioComponent implements OnInit {
       // 1. Si aumentó reparación (asumimos que viene de disponible)
       if (rep > prevRep) {
         const diff = rep - prevRep;
-        disp = Math.max(0, disp - diff);
+        if (diff > prevDisp) {
+          this.toastService.show('No hay suficiente stock disponible para enviar a reparación', 'error');
+          rep = prevRep + prevDisp;
+          disp = 0;
+        } else {
+          disp = disp - diff;
+        }
         needsUpdate = true;
       }
       // 2. Si bajó reparación (preguntar destino)
@@ -175,15 +181,30 @@ export class InventarioComponent implements OnInit {
       }
       // 3. Si aumentó baja (y no fue por el paso 2)
       else if (baja > prevBaja && !needsUpdate) {
-        this.pendingDiff = baja - prevBaja;
-        this.showBajaModal = true;
+        const diff = baja - prevBaja;
+        const maxBajaPosible = prevDisp + prevRep;
         
-        // Revertir visualmente mientras el modal está abierto
-        this.isModalUpdating = true;
-        this.inventoryForm.patchValue({ stock_baja: prevBaja }, { emitEvent: false });
-        this.isModalUpdating = false;
-        return;
+        if (diff > maxBajaPosible) {
+          this.toastService.show('No hay suficiente stock en el sistema para dar de baja', 'error');
+          baja = prevBaja + maxBajaPosible;
+          this.pendingDiff = maxBajaPosible;
+          needsUpdate = true;
+        } else {
+          this.pendingDiff = diff;
+        }
+        
+        if (this.pendingDiff > 0) {
+          this.showBajaModal = true;
+          // Revertir visualmente mientras el modal está abierto
+          this.isModalUpdating = true;
+          this.inventoryForm.patchValue({ stock_baja: prevBaja }, { emitEvent: false });
+          this.isModalUpdating = false;
+          return;
+        }
       }
+
+      // Habilitar/deshabilitar fecha de último mantenimiento según stock de reparación
+      this.updateMantenimientoState(rep);
 
       const total = disp + rep + baja;
 
@@ -389,6 +410,20 @@ export class InventarioComponent implements OnInit {
   // Métodos de navegación y gestión de estado
   // ==========================================
 
+  get todayDate(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  private updateMantenimientoState(repStock: number) {
+    const umControl = this.inventoryForm.get('ultimo_mantenimiento');
+    if (!umControl) return;
+    if (repStock > 0) {
+      if (umControl.disabled) umControl.enable({ emitEvent: false });
+    } else {
+      if (umControl.enabled) umControl.disable({ emitEvent: false });
+    }
+  }
+
   changeTab(tab: 'stock' | 'gestion') {
     this.activeTab = tab;
   }
@@ -404,6 +439,7 @@ export class InventarioComponent implements OnInit {
       costo_unitario: 0
     });
     this.previousFormValues = this.inventoryForm.getRawValue();
+    this.updateMantenimientoState(0);
     this.showModal = true;
   }
 
@@ -412,6 +448,7 @@ export class InventarioComponent implements OnInit {
     this.inventoryForm.patchValue(item);
     this.previousFormValues = this.inventoryForm.getRawValue();
     this.originalSku = item.codigo;
+    this.updateMantenimientoState(item.stock_reparacion || 0);
     this.showModal = true;
   }
 
@@ -436,7 +473,7 @@ export class InventarioComponent implements OnInit {
   executeSave() {
     this.showSaveModal = false;
     this.isSaving = true;
-    const formData = this.inventoryForm.value;
+    const formData = this.inventoryForm.getRawValue();
     
     if (this.isEditing) {
       this.inventarioService.actualizarArticulo(formData.codigo, formData).subscribe({
@@ -536,6 +573,18 @@ export class InventarioComponent implements OnInit {
     let disp = currentValues.stock_disponible;
     let rep = currentValues.stock_reparacion;
     let baja = currentValues.stock_baja;
+    
+    if (origen === 'reparacion' && this.pendingDiff > rep) {
+      this.toastService.show('No hay suficientes unidades en reparación', 'error');
+      this.isModalUpdating = false;
+      this.pendingDiff = 0;
+      return;
+    } else if (origen === 'disponible' && this.pendingDiff > disp) {
+      this.toastService.show('No hay suficientes unidades disponibles', 'error');
+      this.isModalUpdating = false;
+      this.pendingDiff = 0;
+      return;
+    }
     
     baja += this.pendingDiff;
     

@@ -134,23 +134,54 @@ def inventario_detalle(request, codigo):
             stock_baja_new = int(body.get("stock_baja", stock_baja_old))
             stock_disponible_new = int(body.get("stock_disponible", stock_disponible_old))
             
+            # Automatización: Si vuelve de reparación a disponible, certificar el mantenimiento
+            if stock_reparacion_new < stock_reparacion_old and stock_disponible_new > stock_disponible_old:
+                body["ultimo_mantenimiento"] = datetime.now().strftime("%Y-%m-%d")
+            
+            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+            actor_emp = col_empleados.find_one({"rut": actor_rut})
+            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+            
+            delta_reparacion = stock_reparacion_new - stock_reparacion_old
+            delta_baja = stock_baja_new - stock_baja_old
+            delta_disponible = stock_disponible_new - stock_disponible_old
+
             if stock_reparacion_new > stock_reparacion_old:
-                diff = stock_reparacion_new - stock_reparacion_old
                 incidencias.append({
                     "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "tipo": "Reparación",
+                    "cantidad": delta_reparacion,
+                    "detalle": f"Pasado a reparación por {actor_nombre}"
+                })
+            elif stock_reparacion_new < stock_reparacion_old and stock_disponible_new > stock_disponible_old:
+                # Agregar incidencia de devolución exitosa
+                diff = stock_reparacion_old - stock_reparacion_new
+                incidencias.append({
+                    "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "tipo": "Restaurado",
                     "cantidad": diff,
-                    "detalle": "Actualizado desde panel de gestión"
+                    "detalle": f"Devuelto de reparación por {actor_nombre}"
                 })
 
             if stock_baja_new > stock_baja_old:
-                diff = stock_baja_new - stock_baja_old
                 incidencias.append({
                     "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "tipo": "Baja",
-                    "cantidad": diff,
-                    "detalle": "Actualizado desde panel de gestión"
+                    "cantidad": delta_baja,
+                    "detalle": f"Dado de baja por {actor_nombre}"
                 })
+                
+            # Si el cambio en disponible NO es exactamente la compensación de los otros movimientos, 
+            # entonces el usuario hizo un ajuste manual real sobre la cifra de disponibilidad.
+            if delta_disponible != -(delta_reparacion + delta_baja):
+                diff = abs(delta_disponible + delta_reparacion + delta_baja)
+                if diff > 0:
+                    incidencias.append({
+                        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "tipo": "Ajuste",
+                        "cantidad": diff,
+                        "detalle": f"Ajuste manual de stock por {actor_nombre}"
+                    })
 
             body["stock_disponible"] = stock_disponible_new
             body["stock_reparacion"] = stock_reparacion_new
@@ -168,10 +199,6 @@ def inventario_detalle(request, codigo):
                 
             actualizado = col_inventario.find_one({"codigo": codigo})
             actualizado['_id'] = str(actualizado['_id'])
-            
-            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
-            actor_emp = col_empleados.find_one({"rut": actor_rut})
-            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
             
             registrar_auditoria(
                 usuario_rut=actor_rut,

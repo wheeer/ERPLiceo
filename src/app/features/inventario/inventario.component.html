@@ -398,19 +398,25 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="ubicacion">Ubicación</label>
-              <select id="ubicacion" formControlName="ubicacion"
-                [class.error]="inventoryForm.get('ubicacion')?.invalid && inventoryForm.get('ubicacion')?.touched"
-                [class.valid]="inventoryForm.get('ubicacion')?.valid && inventoryForm.get('ubicacion')?.touched">
-                <option value="">Seleccione...</option>
-                <option value="Taller 1">Taller 1</option>
-                <option value="Laboratorio 1">Laboratorio 1</option>
-                <option value="Bodega Central">Bodega Central</option>
-                <option value="Sala Servidores">Sala Servidores</option>
-                <option value="Sala Profesores">Sala Profesores</option>
-                <option value="Bodegas Salas">Bodegas Salas</option>
-              </select>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ultimo_mantenimiento">Último Mantenimiento</label>
+                <input id="ultimo_mantenimiento" type="date" formControlName="ultimo_mantenimiento" [max]="todayDate">
+              </div>
+              <div class="form-group">
+                <label for="ubicacion">Ubicación</label>
+                <select id="ubicacion" formControlName="ubicacion"
+                  [class.error]="inventoryForm.get('ubicacion')?.invalid && inventoryForm.get('ubicacion')?.touched"
+                  [class.valid]="inventoryForm.get('ubicacion')?.valid && inventoryForm.get('ubicacion')?.touched">
+                  <option value="">Seleccione...</option>
+                  <option value="Taller 1">Taller 1</option>
+                  <option value="Laboratorio 1">Laboratorio 1</option>
+                  <option value="Bodega Central">Bodega Central</option>
+                  <option value="Sala Servidores">Sala Servidores</option>
+                  <option value="Sala Profesores">Sala Profesores</option>
+                  <option value="Bodegas Salas">Bodegas Salas</option>
+                </select>
+              </div>
             </div>
           </div>
         </form>
