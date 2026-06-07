@@ -27,7 +27,13 @@ def api_notificaciones(request):
             # Si es Administrador_General, puede ver TODAS las notificaciones del sistema
             query = {}
             if rol_nombre != 'Administrador_General':
-                query["usuario_id"] = usuario_rut
+                query = {
+                    "$or": [
+                        {"usuario_id": usuario_rut},
+                        {"usuario_id": rol_nombre},
+                        {"usuario_id": "global"}
+                    ]
+                }
                 
             notificaciones = list(col_notificaciones.find(query).sort("fecha_creacion", -1))
             
@@ -66,7 +72,11 @@ def api_notificacion_estado(request, notif_id):
             
             query = {"_id": obj_id}
             if rol_nombre != 'Administrador_General' and usuario_rut:
-                query["usuario_id"] = usuario_rut
+                query["$or"] = [
+                    {"usuario_id": usuario_rut},
+                    {"usuario_id": rol_nombre},
+                    {"usuario_id": "global"}
+                ]
                 
             notificacion = col_notificaciones.find_one(query)
             if not notificacion:

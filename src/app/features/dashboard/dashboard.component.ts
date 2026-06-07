@@ -134,7 +134,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
 
     // Actualización en tiempo real vía WebSockets
-    this.notifSub = this.notificationService.getMessages().subscribe(() => {
+    this.notifSub = this.notificationService.getNotifications().subscribe(() => {
       this.loadMetrics();
       this.loadActivities();
     });
