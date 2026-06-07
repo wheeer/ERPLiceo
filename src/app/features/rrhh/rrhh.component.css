@@ -229,6 +229,17 @@
   color: var(--text-primary);
 }
 
+.employee-info-detailed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.employee-subtext {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
 /* STATUS BADGES */
 .status-badge {
   display: inline-block;
