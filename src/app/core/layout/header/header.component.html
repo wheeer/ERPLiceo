@@ -42,8 +42,16 @@
       @if (mostrarNotificaciones) {
         <div class="dropdown-panel notif-panel" id="panel-notificaciones" style="width: 450px;">
           <h4 class="dropdown-title">Notificaciones</h4>
+          
+          <div class="notif-filters">
+            <button class="notif-filter-btn" [class.active]="filtroPrioridad === 'Todas'" (click)="setFiltroPrioridad('Todas')">Todas</button>
+            <button class="notif-filter-btn priority-urgente" [class.active]="filtroPrioridad === 'Urgente'" (click)="setFiltroPrioridad('Urgente')">Urgente</button>
+            <button class="notif-filter-btn priority-exito" [class.active]="filtroPrioridad === 'Éxito'" (click)="setFiltroPrioridad('Éxito')">Éxito</button>
+            <button class="notif-filter-btn priority-info" [class.active]="filtroPrioridad === 'Informativa'" (click)="setFiltroPrioridad('Informativa')">Info</button>
+          </div>
+
           <div class="notif-list-container" style="max-height: 400px; overflow-y: auto;">
-          @for (n of notificaciones; track n.mensaje) {
+          @for (n of notificacionesFiltradasYOrdenadas; track n.mensaje) {
             <div class="notif-item-rich" [class.no-leida]="!n.leida" (click)="marcarComoLeida(n)">
               <div class="notif-icon-wrapper" [ngClass]="'icon-' + (n.tipo | lowercase)">
                 @if (n.tipo === 'Urgente') {

@@ -44,6 +44,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   notificaciones: AppNotification[] = [];
   private notifSub!: Subscription;
 
+  filtroPrioridad: string = 'Todas';
   mostrarNotificaciones = false;
   mostrarMenuUsuario = false;
 
@@ -76,6 +77,29 @@ export class HeaderComponent implements OnInit, OnDestroy {
   toggleMenuUsuario() {
     this.mostrarMenuUsuario = !this.mostrarMenuUsuario;
     this.mostrarNotificaciones = false;
+  }
+
+  setFiltroPrioridad(filtro: string) {
+    this.filtroPrioridad = filtro;
+  }
+
+  get notificacionesFiltradasYOrdenadas(): AppNotification[] {
+    let filtradas = this.notificaciones;
+    if (this.filtroPrioridad !== 'Todas') {
+      filtradas = filtradas.filter(n => (n.tipo || 'Informativa') === this.filtroPrioridad);
+    }
+    
+    // Ordenar por prioridad primero (1: Urgente, 2: Éxito, 3: Informativa), luego por fecha
+    return filtradas.sort((a, b) => {
+      const prioridades: Record<string, number> = { 'Urgente': 1, 'Éxito': 2, 'Informativa': 3 };
+      const pA = prioridades[a.tipo || 'Informativa'] || 3;
+      const pB = prioridades[b.tipo || 'Informativa'] || 3;
+      if (pA !== pB) return pA - pB;
+      
+      const dA = new Date(a.fecha_creacion || 0).getTime();
+      const dB = new Date(b.fecha_creacion || 0).getTime();
+      return dB - dA; // Más recientes primero
+    });
   }
 
   cerrarSesion() {
