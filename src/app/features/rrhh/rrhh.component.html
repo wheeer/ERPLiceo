@@ -328,9 +328,37 @@
         <h2>Asistencia Diaria - {{ fechaHoy | date:'dd/MM/yyyy' }}</h2>
         <input type="text" class="search-input" placeholder="Buscar por nombre o RUT..." (keyup)="onSearchAsistencia($event)">
       </div>
-      <div class="zen-mode-badge">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        Modo Zen Activo: Todos Presentes
+      <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        @if (!verificandoDia) {
+          @if (esFindeHoy) {
+            <div class="zen-mode-badge" style="background: rgba(107, 114, 128, 0.1); color: #6b7280; border-color: rgba(107, 114, 128, 0.2);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              Fin de semana (Sin asistencia)
+            </div>
+          } @else if (diaSellado) {
+            <div class="zen-mode-badge" style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.2);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Día Procesado (Lista pasada)
+            </div>
+          } @else {
+            <div class="zen-mode-badge" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Aún no se ha pasado la lista de hoy
+            </div>
+          }
+          
+          @if (!esFindeHoy) {
+            <button class="btn-primary" (click)="sellarDia()" [disabled]="diaSellado || isSelleandoDia">
+              @if (isSelleandoDia) {
+                <span class="btn-spinner"></span> Sellando...
+              } @else {
+                Sellar Día
+              }
+            </button>
+          }
+        } @else {
+          <div class="skeleton-box shimmer" style="width: 200px; height: 35px; border-radius: 20px;"></div>
+        }
       </div>
     </div>
 

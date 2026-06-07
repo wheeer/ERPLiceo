@@ -18,7 +18,9 @@ from .rrhh import (
     api_empleado_detalle,
     api_asistencia,
     api_asistencia_resumen,
-    api_horas_extra
+    api_horas_extra,
+    api_asistencia_estado_hoy,
+    api_asistencia_sellar
 )
 from .dashboard import (
     api_dashboard_resumen, 

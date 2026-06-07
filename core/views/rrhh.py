@@ -536,6 +536,120 @@ def api_asistencia_resumen(request, mes=None, anio=None):
     except Exception as e:
         return JsonResponse({"success": False, "data": [], "message": str(e)}, status=500)
 
+@csrf_exempt
+@jwt_required
+def api_asistencia_estado_hoy(request):
+    try:
+        if request.method == 'GET':
+            from datetime import datetime
+            hoy = datetime.now()
+            
+            es_finde = hoy.weekday() >= 5
+            if es_finde:
+                return JsonResponse({
+                    "success": True,
+                    "dia_sellado": True,
+                    "es_finde": True,
+                    "total_registros": 0,
+                    "total_activos": 0
+                }, status=200)
+
+            inicio_dia = datetime(hoy.year, hoy.month, hoy.day, 0, 0, 0)
+            fin_dia = datetime(hoy.year, hoy.month, hoy.day, 23, 59, 59)
+            
+            activos = col_empleados.count_documents({"estado": {"$ne": "inactivo"}})
+            registros_hoy = col_asistencia.count_documents({
+                "fecha": {"$gte": inicio_dia, "$lte": fin_dia}
+            })
+            
+            dia_sellado = registros_hoy > 0 and registros_hoy >= activos
+            
+            return JsonResponse({
+                "success": True,
+                "dia_sellado": dia_sellado,
+                "es_finde": False,
+                "total_registros": registros_hoy,
+                "total_activos": activos
+            }, status=200)
+        else:
+            return JsonResponse({"success": False, "message": "Método no permitido"}, status=405)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+@csrf_exempt
+@jwt_required
+def api_asistencia_sellar(request):
+    try:
+        if request.method == 'POST':
+            from datetime import datetime
+            hoy = datetime.now()
+            
+            if hoy.weekday() >= 5:
+                return JsonResponse({"success": False, "message": "No se puede sellar asistencia en fines de semana."}, status=400)
+                
+            inicio_dia = datetime(hoy.year, hoy.month, hoy.day, 0, 0, 0)
+            fin_dia = datetime(hoy.year, hoy.month, hoy.day, 23, 59, 59)
+            
+            # Buscar empleados activos
+            empleados_activos = list(col_empleados.find({"estado": {"$ne": "inactivo"}}))
+            
+            # Buscar registros de hoy
+            registros_hoy = list(col_asistencia.find({
+                "fecha": {"$gte": inicio_dia, "$lte": fin_dia}
+            }))
+            
+            ruts_con_registro = set()
+            for r in registros_hoy:
+                rut = r.get('empleado_rut') or r.get('rut')
+                if rut: ruts_con_registro.add(rut)
+                
+            nuevos_registros = []
+            # Usar objeto datetime a la medianoche en UTC (o local) como lo hace el resto del sistema
+            fecha_obj = datetime(hoy.year, hoy.month, hoy.day, 0, 0, 0)
+            
+            for emp in empleados_activos:
+                rut_emp = emp.get('rut')
+                if rut_emp and rut_emp not in ruts_con_registro:
+                    nuevos_registros.append({
+                        "rut": rut_emp,
+                        "empleado_rut": rut_emp,
+                        "estado": "Presente",
+                        "fecha": fecha_obj,
+                        "hora_entrada": "08:00",
+                        "hora_salida": "17:00",
+                        "horas_trabajadas": 9,
+                        "horas_extra": 0,
+                        "comentario": "Generado automáticamente por sellado (Modo Zen)"
+                    })
+            
+            insertados = 0
+            if nuevos_registros:
+                # Reutilizar validación interna si es necesario, o insertar directo
+                result = col_asistencia.insert_many(nuevos_registros)
+                insertados = len(result.inserted_ids)
+                
+                actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+                actor_emp = col_empleados.find_one({"rut": actor_rut})
+                actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+                
+                registrar_auditoria(
+                    usuario_rut=actor_rut,
+                    usuario_nombre=actor_nombre,
+                    modulo="rrhh",
+                    accion="Día de Asistencia Sellado",
+                    descripcion=f"Se selló la asistencia insertando {insertados} registros de presentes implícitos."
+                )
+
+            return JsonResponse({
+                "success": True,
+                "message": f"Día sellado exitosamente. Se registraron {insertados} presentes por defecto.",
+                "insertados": insertados
+            }, status=200)
+        else:
+            return JsonResponse({"success": False, "message": "Método no permitido"}, status=405)
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
 
 # --- HORAS EXTRA ---
 

@@ -113,6 +113,11 @@ export class RrhhComponent implements OnInit {
   selectedAsistencia: AsistenciaEmpleado | null = null;
   excepcionForm: FormGroup;
 
+  diaSellado: boolean = false;
+  verificandoDia: boolean = true;
+  isSelleandoDia: boolean = false;
+  esFindeHoy: boolean = false;
+
   horasExtraForm: FormGroup;
   historialHorasExtra: RegistroHorasExtra[] = [];
 
@@ -251,6 +256,9 @@ export class RrhhComponent implements OnInit {
         const tab = params['tab'];
         if (['general', 'gestion', 'ficha', 'asistencia', 'horasExtra'].includes(tab)) {
           this.activeTab = tab as TabType;
+          if (this.activeTab === 'asistencia') {
+            this.verificarEstadoDia();
+          }
         }
       }
     });
@@ -540,6 +548,10 @@ export class RrhhComponent implements OnInit {
     this.activeTab = tab;
     this.paginaActual = 1;
 
+    if (tab === 'asistencia') {
+      this.verificarEstadoDia();
+    }
+
     if (tab !== 'ficha') {
       this.selectedEmployee = null;
     }
@@ -677,6 +689,52 @@ export class RrhhComponent implements OnInit {
       e.rut.toLowerCase().includes(query)
     );
     this.paginaActual = 1;
+  }
+
+  verificarEstadoDia() {
+    this.verificandoDia = true;
+    this.rrhhService.verificarEstadoDia().subscribe({
+      next: (res: any) => {
+        this.diaSellado = res.dia_sellado;
+        this.esFindeHoy = res.es_finde || false;
+        this.verificandoDia = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al verificar estado del día', err);
+        this.verificandoDia = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  sellarDia() {
+    if (confirm('¿Está seguro de sellar el día? Esto marcará como Presente a todos los empleados activos sin registro de hoy. Esta acción es definitiva.')) {
+      this.isSelleandoDia = true;
+      this.rrhhService.sellarAsistenciaDia().subscribe({
+        next: (res: any) => {
+          this.isSelleandoDia = false;
+          this.diaSellado = true;
+          this.toastService.show(`Día sellado exitosamente. Se marcaron ${res.insertados} presentes.`, 'success');
+          // Update the local list so the UI reflects "Presente" on the sealed people
+          this.asistenciaList.forEach(emp => {
+            if (emp.estado === 'Sin registro' || emp.estado === 'Presente') {
+              emp.estado = 'Presente';
+            }
+          });
+          this.filteredAsistenciaList = [...this.asistenciaList];
+          // Refresh monthly calendar data if needed
+          this.obtenerAsistencia();
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          this.isSelleandoDia = false;
+          const msg = err.error?.message || 'Error al sellar el día';
+          this.toastService.show(msg, 'error');
+          this.cdr.detectChanges();
+        }
+      });
+    }
   }
 
   registrarHorasExtra() {

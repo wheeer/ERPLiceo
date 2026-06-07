@@ -38,6 +38,14 @@ export class RrhhService {
     return this.http.post<any>(this.asistenciaUrl, registros);
   }
 
+  verificarEstadoDia(): Observable<any> {
+    return this.http.get<any>(`${this.asistenciaUrl}estado-hoy/`);
+  }
+
+  sellarAsistenciaDia(): Observable<any> {
+    return this.http.post<any>(`${this.asistenciaUrl}sellar/`, {});
+  }
+
   registrarHorasExtra(registro: any): Observable<any> {
     return this.http.post<any>(this.horasExtraUrl, registro);
   }

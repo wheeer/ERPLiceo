@@ -25,6 +25,8 @@ urlpatterns = [
     # Recursos Humanos (Nuevos Endpoints DRF - Issue #17)
     path('empleados/', views.api_empleados, name='api_empleados'),
     path('empleados/<str:rut>/', views.api_empleado_detalle, name='api_empleado_detalle'),
+    path('asistencia/estado-hoy/', views.api_asistencia_estado_hoy, name='api_asistencia_estado_hoy'),
+    path('asistencia/sellar/', views.api_asistencia_sellar, name='api_asistencia_sellar'),
     path('asistencia/', views.api_asistencia, name='api_asistencia_post'),
     path('asistencia/<int:mes>/<int:anio>/', views.api_asistencia, name='api_asistencia'),
     path('asistencia/resumen/', views.api_asistencia_resumen, name='api_asistencia_resumen_rango'),
