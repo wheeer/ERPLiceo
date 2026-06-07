@@ -31,18 +31,6 @@ def calcular_remuneraciones(request):
                 "data": None
             }, status=400)
  
-        existe = col_remuneraciones.find_one({
-            "periodo.mes": int(mes),
-            "periodo.anio": int(anio)
-        })
- 
-        if existe:
-            return JsonResponse({
-                "success": False,
-                "message": "Ya existen liquidaciones para ese período.",
-                "data": None
-            }, status=400)
- 
         mes_int = int(mes)
         anio_int = int(anio)
  
@@ -76,6 +64,21 @@ def calcular_remuneraciones(request):
  
         for empleado in empleados:
             rut = empleado["rut"]
+
+            # Buscar si ya existe liquidación para el empleado en el período actual
+            liquidacion_existente = col_remuneraciones.find_one({
+                "empleado_rut": rut,
+                "periodo.mes": mes_int,
+                "periodo.anio": anio_int
+            })
+
+            estado_previo = "Pendiente"
+            if liquidacion_existente:
+                estado_previo = liquidacion_existente.get("estado_pago", "Pendiente")
+                if estado_previo.lower() == "pagado":
+                    # Blindaje: No se permite alterar liquidaciones con estado 'Pagado'
+                    continue
+
             config = empleado.get("config_remuneracion", {})
             sueldo_base = config.get("sueldo_base", 0)
             movilizacion = config.get("movilizacion", 0)
@@ -123,7 +126,7 @@ def calcular_remuneraciones(request):
  
             liquidacion = {
                 "empleado_rut": rut,
-                "estado_pago": "Pendiente",
+                "estado_pago": estado_previo,
                 "periodo": {"mes": mes_int, "anio": anio_int},
                 "empleado": {
                     "nombre": empleado.get("nombre_completo", ""),
@@ -158,8 +161,18 @@ def calcular_remuneraciones(request):
                 "fecha_generacion": datetime.now()
             }
  
-            resultado = col_remuneraciones.insert_one(liquidacion)
-            liquidacion["_id"] = str(resultado.inserted_id)
+            if liquidacion_existente:
+                # Upsert: Actualizar el documento existente
+                col_remuneraciones.update_one(
+                    {"_id": liquidacion_existente["_id"]},
+                    {"$set": liquidacion}
+                )
+                liquidacion["_id"] = str(liquidacion_existente["_id"])
+            else:
+                # Insert normal
+                resultado = col_remuneraciones.insert_one(liquidacion)
+                liquidacion["_id"] = str(resultado.inserted_id)
+
             liquidaciones_generadas.append(liquidacion)
 
         actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
