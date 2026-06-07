@@ -400,6 +400,10 @@ export class RrhhComponent implements OnInit {
     const diaActual = hoy.getDate();
     const esMesPasado = this.anioSeleccionado < hoy.getFullYear() || (this.anioSeleccionado === hoy.getFullYear() && this.mesSeleccionado < (hoy.getMonth() + 1));
 
+    const empleadoData = this.employees.find(e => e.rut === this.empleadoSeleccionado);
+    const estadoGlobal = empleadoData?.estado || '';
+    const esGlobalLicencia = estadoGlobal === 'licencia';
+
     // Generar cada día del mes
     for (let i = 1; i <= diasEnMes; i++) {
       const fechaObj = new Date(this.anioSeleccionado, this.mesSeleccionado - 1, i);
@@ -407,11 +411,19 @@ export class RrhhComponent implements OnInit {
 
       let estadoFinal = 'Sin registro';
 
-      if (asistenciaMap[i]) {
-        estadoFinal = asistenciaMap[i]; // Si hay registro en BD, este manda.
-      } else if (esFinde) {
+      // Prioridad 1: Dato duro diario (Base de datos)
+      if (asistenciaMap[i] && asistenciaMap[i] !== 'Sin registro' && asistenciaMap[i] !== 'Finde') {
+        estadoFinal = asistenciaMap[i]; 
+      } 
+      // Prioridad 2: Fallback al estado global (Licencia, etc) si el casillero está vacío
+      else if (esGlobalLicencia) {
+        estadoFinal = estadoGlobal;
+      }
+      // Prioridad 3: Lógica normal del calendario
+      else if (esFinde) {
         estadoFinal = 'Finde';
-      } else if (esMesPasado || (esMesActual && i <= diaActual)) {
+      } 
+      else if (esMesPasado || (esMesActual && i <= diaActual)) {
         // Modo Zen: Si el día ya pasó, no es finde y no tiene registro negativo en BD, se asume presente por defecto.
         estadoFinal = 'Presente';
       }
