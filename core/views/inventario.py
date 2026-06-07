@@ -134,13 +134,17 @@ def inventario_detalle(request, codigo):
             stock_baja_new = int(body.get("stock_baja", stock_baja_old))
             stock_disponible_new = int(body.get("stock_disponible", stock_disponible_old))
             
+            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+            actor_emp = col_empleados.find_one({"rut": actor_rut})
+            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+            
             if stock_reparacion_new > stock_reparacion_old:
                 diff = stock_reparacion_new - stock_reparacion_old
                 incidencias.append({
                     "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "tipo": "Reparación",
                     "cantidad": diff,
-                    "detalle": "Actualizado desde panel de gestión"
+                    "detalle": f"Pasado a reparación por {actor_nombre}"
                 })
 
             if stock_baja_new > stock_baja_old:
@@ -149,7 +153,16 @@ def inventario_detalle(request, codigo):
                     "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "tipo": "Baja",
                     "cantidad": diff,
-                    "detalle": "Actualizado desde panel de gestión"
+                    "detalle": f"Dado de baja por {actor_nombre}"
+                })
+                
+            if stock_disponible_new != stock_disponible_old:
+                diff = abs(stock_disponible_new - stock_disponible_old)
+                incidencias.append({
+                    "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "tipo": "Ajuste",
+                    "cantidad": diff,
+                    "detalle": f"Ajuste manual de stock por {actor_nombre}"
                 })
 
             body["stock_disponible"] = stock_disponible_new
@@ -168,10 +181,6 @@ def inventario_detalle(request, codigo):
                 
             actualizado = col_inventario.find_one({"codigo": codigo})
             actualizado['_id'] = str(actualizado['_id'])
-            
-            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
-            actor_emp = col_empleados.find_one({"rut": actor_rut})
-            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
             
             registrar_auditoria(
                 usuario_rut=actor_rut,
