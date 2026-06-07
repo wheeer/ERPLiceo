@@ -2,7 +2,7 @@ import json
 import calendar
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from core.db_connection import col_empleados, col_remuneraciones, col_horas_extra, col_asistencia, registrar_auditoria, despachar_notificacion_sistema
+from core.db_connection import col_empleados, col_remuneraciones, col_horas_extra, col_asistencia, registrar_auditoria
 from bson import ObjectId
 from core.jwt_middleware import jwt_required
 from datetime import datetime
@@ -188,8 +188,7 @@ def calcular_remuneraciones(request):
                 descripcion=f"Se calcularon y guardaron {len(liquidaciones_generadas)} liquidaciones (Periodo {mes_int:02d}-{anio_int})."
             )
 
-            despachar_notificacion_sistema(
-                mensaje=f"Se generaron {len(liquidaciones_generadas)} liquidaciones para el período {mes_int:02d}-{anio_int}",
+            } liquidaciones para el período {mes_int:02d}-{anio_int}",
                 modulo="remuneraciones",
                 tipo="Éxito",
                 url_destino="/app/remuneraciones"
@@ -638,14 +637,7 @@ def procesar_pagos_lote(request):
                 descripcion=f"Se formalizaron pagos: {actualizados_pagados} pagados, {actualizados_impagos} impagos."
             )
             
-            despachar_notificacion_sistema(
-                mensaje=f"Estado de pagos modificado: {actualizados_pagados} pagados, {actualizados_impagos} impagos",
-                modulo="remuneraciones",
-                tipo="Informativa",
-                url_destino="/app/remuneraciones"
-            )
-
-        return JsonResponse({
+            return JsonResponse({
             "success": True,
             "message": f"Se procesaron {actualizados_pagados} pagos y {actualizados_impagos} impagos correctamente.",
             "data": {
@@ -733,8 +725,7 @@ def declarar_impagos_lote(request):
                 descripcion=f"Se declararon {actualizados_impagos} impagos. Motivo: {motivo}"
             )
             
-            despachar_notificacion_sistema(
-                mensaje=f"Se declararon {actualizados_impagos} impagos (Motivo: {motivo})",
+            ",
                 modulo="remuneraciones",
                 tipo="Urgente",
                 url_destino="/app/remuneraciones"

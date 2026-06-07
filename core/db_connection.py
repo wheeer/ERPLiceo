@@ -46,6 +46,19 @@ def registrar_auditoria(usuario_rut, usuario_nombre, modulo, accion, descripcion
         "timestamp": datetime.now(UTC)
     }
     col_auditoria.insert_one(log_entry)
+    
+    # NUEVO: Convertir auditoría a notificación para que la campana muestre la misma info
+    mensaje = f"{usuario_nombre} [{accion}] - {descripcion}"
+    
+    tipo_notif = "Informativa"
+    if "Eliminado" in accion or "Desvinculado" in accion or "Impago" in accion:
+        tipo_notif = "Urgente"
+    elif "Registrado" in accion or "Actualizado" in accion or "Generada" in accion or "Añadidas" in accion:
+        tipo_notif = "Éxito"
+        
+    url_destino = f"/app/{modulo}" if modulo else "#"
+    
+    despachar_notificacion_sistema(mensaje, modulo, tipo=tipo_notif, url_destino=url_destino)
 
 def crear_notificacion(usuario_rut, mensaje, modulo, url_destino="#", tipo="Informativa"):
     """
