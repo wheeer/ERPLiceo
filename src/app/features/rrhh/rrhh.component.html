@@ -493,7 +493,7 @@
               'cal-status-present': dia.estado === 'Presente',
               'cal-status-absent': dia.estado === 'Ausente Injustificado' || dia.estado === 'Ausente',
               'cal-status-warning': dia.estado === 'Atraso' || dia.estado === 'Tardanza',
-              'cal-status-leave': dia.estado === 'Licencia Médica' || dia.estado === 'Licencia',
+              'cal-status-leave': dia.estado === 'Licencia Médica' || dia.estado === 'Licencia' || dia.estado === 'Vacaciones' || dia.estado === 'Permiso S/Goce',
               'cal-status-weekend': dia.estado === 'Finde'
             }">
               <span class="day-number">{{ dia.numero }}</span>
@@ -501,7 +501,7 @@
                 <span class="day-tag" [ngClass]="{
                   'tag-absent': dia.estado === 'Ausente Injustificado' || dia.estado === 'Ausente',
                   'tag-warning': dia.estado === 'Atraso' || dia.estado === 'Tardanza',
-                  'tag-leave': dia.estado === 'Licencia Médica' || dia.estado === 'Licencia'
+                  'tag-leave': dia.estado === 'Licencia Médica' || dia.estado === 'Licencia' || dia.estado === 'Vacaciones' || dia.estado === 'Permiso S/Goce'
                 }">{{ dia.estado }}</span>
               }
             </div>
