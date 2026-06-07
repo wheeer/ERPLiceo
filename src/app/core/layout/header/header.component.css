@@ -431,3 +431,6 @@
 .notif-filter-btn.priority-urgente.active { background: #f59e0b; border-color: #f59e0b; }
 .notif-filter-btn.priority-exito.active { background: #10b981; border-color: #10b981; }
 .notif-filter-btn.priority-info.active { background: #3b82f6; border-color: #3b82f6; }
+
+.notif-filter-btn.priority-stock.active { background: #ef4444; border-color: #ef4444; }
+.notif-icon-wrapper.icon-stock-critico { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }

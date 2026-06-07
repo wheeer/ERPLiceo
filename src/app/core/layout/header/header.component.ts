@@ -6,6 +6,21 @@ import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { filter, map, mergeMap, Subscription } from 'rxjs';
 import { NotificationService, AppNotification } from '../../services/notification.service';
 
+export interface NotificationFilter {
+  id: string;
+  label: string;
+  class: string;
+  priorityValue: number;
+}
+
+export const NOTIFICATION_FILTERS: NotificationFilter[] = [
+  { id: 'Todas', label: 'Todas', class: '', priorityValue: 0 },
+  { id: 'Stock Crítico', label: 'Crítico', class: 'priority-stock', priorityValue: 1 },
+  { id: 'Urgente', label: 'Urgente', class: 'priority-urgente', priorityValue: 2 },
+  { id: 'Éxito', label: 'Éxito', class: 'priority-exito', priorityValue: 3 },
+  { id: 'Informativa', label: 'Info', class: 'priority-info', priorityValue: 4 }
+];
+
 @Component({
   selector: 'app-header',
   standalone: true,
@@ -44,6 +59,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   notificaciones: AppNotification[] = [];
   private notifSub!: Subscription;
 
+  // Variables para la vista
+  notificationFilters = NOTIFICATION_FILTERS;
   filtroPrioridad: string = 'Todas';
   mostrarNotificaciones = false;
   mostrarMenuUsuario = false;
@@ -89,11 +106,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
       filtradas = filtradas.filter(n => (n.tipo || 'Informativa') === this.filtroPrioridad);
     }
     
-    // Ordenar por prioridad primero (1: Urgente, 2: Éxito, 3: Informativa), luego por fecha
+    // Mapeo dinámico de prioridades basado en NOTIFICATION_FILTERS
+    const prioridadMap = new Map<string, number>();
+    NOTIFICATION_FILTERS.forEach(f => prioridadMap.set(f.id, f.priorityValue));
+    
     return filtradas.sort((a, b) => {
-      const prioridades: Record<string, number> = { 'Urgente': 1, 'Éxito': 2, 'Informativa': 3 };
-      const pA = prioridades[a.tipo || 'Informativa'] || 3;
-      const pB = prioridades[b.tipo || 'Informativa'] || 3;
+      const pA = prioridadMap.get(a.tipo || 'Informativa') || 99;
+      const pB = prioridadMap.get(b.tipo || 'Informativa') || 99;
       if (pA !== pB) return pA - pB;
       
       const dA = new Date(a.fecha_creacion || 0).getTime();

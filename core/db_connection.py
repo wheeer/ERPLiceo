@@ -51,7 +51,9 @@ def registrar_auditoria(usuario_rut, usuario_nombre, modulo, accion, descripcion
     mensaje = f"{usuario_nombre} [{accion}] - {descripcion}"
     
     tipo_notif = "Informativa"
-    if "Eliminado" in accion or "Desvinculado" in accion or "Impago" in accion:
+    if "Crítico" in accion or "Crítico" in descripcion or "crítico" in descripcion.lower():
+        tipo_notif = "Stock Crítico"
+    elif "Eliminado" in accion or "Desvinculado" in accion or "Impago" in accion:
         tipo_notif = "Urgente"
     elif "Registrado" in accion or "Actualizado" in accion or "Generada" in accion or "Añadidas" in accion:
         tipo_notif = "Éxito"
