@@ -20,7 +20,7 @@ def api_dashboard_resumen(request):
         # 2. Artículos con Stock Crítico (Fórmula modular alineada a inventario.py)
         articulos_criticos = col_inventario.count_documents({
             "$or": [
-                {"$expr": { "$lte": ["$stock_disponible", "$stock_minimo"] }},
+                {"stock_disponible": {"$lte": 0}},
                 {"estado": "Crítico"}
             ]
         })

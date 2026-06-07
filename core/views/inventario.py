@@ -88,10 +88,10 @@ def inventario_lista(request):
 def inventario_criticos(request):
     if request.method == 'GET':
         try:
-            # Encuentra items donde stock_disponible <= stock_minimo o estado es Crítico
+            # Encuentra items donde stock_disponible <= 0 o estado es Crítico
             items = list(col_inventario.find({
                 "$or": [
-                    {"$expr": { "$lte": ["$stock_disponible", "$stock_minimo"] }},
+                    {"stock_disponible": {"$lte": 0}},
                     {"estado": "Crítico"}
                 ]
             }))
@@ -102,6 +102,38 @@ def inventario_criticos(request):
             return JsonResponse({
                 "success": True,
                 "message": "Artículos críticos obtenidos correctamente",
+                "data": items
+            }, status=200)
+        except Exception as e:
+            return JsonResponse({
+                "success": False,
+                "message": str(e),
+                "data": None
+            }, status=500)
+    else:
+        return JsonResponse({"success": False, "message": "Método no permitido", "data": None}, status=405)
+
+
+@csrf_exempt
+@jwt_required
+def inventario_poco_stock(request):
+    if request.method == 'GET':
+        try:
+            # Encuentra items donde 0 < stock_disponible <= stock_minimo y estado NO es Crítico
+            items = list(col_inventario.find({
+                "$and": [
+                    {"stock_disponible": {"$gt": 0}},
+                    {"$expr": { "$lte": ["$stock_disponible", "$stock_minimo"] }},
+                    {"estado": {"$ne": "Crítico"}}
+                ]
+            }))
+            
+            for item in items:
+                item['_id'] = str(item['_id'])
+                
+            return JsonResponse({
+                "success": True,
+                "message": "Artículos con poco stock obtenidos correctamente",
                 "data": items
             }, status=200)
         except Exception as e:

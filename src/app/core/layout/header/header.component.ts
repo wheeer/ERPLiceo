@@ -16,9 +16,10 @@ export interface NotificationFilter {
 export const NOTIFICATION_FILTERS: NotificationFilter[] = [
   { id: 'Todas', label: 'Todas', class: '', priorityValue: 0 },
   { id: 'Stock Crítico', label: 'Crítico', class: 'priority-stock', priorityValue: 1 },
-  { id: 'Urgente', label: 'Urgente', class: 'priority-urgente', priorityValue: 2 },
-  { id: 'Éxito', label: 'Éxito', class: 'priority-exito', priorityValue: 3 },
-  { id: 'Informativa', label: 'Info', class: 'priority-info', priorityValue: 4 }
+  { id: 'Poco Stock', label: 'Poco Stock', class: 'priority-poco-stock', priorityValue: 2 },
+  { id: 'Urgente', label: 'Urgente', class: 'priority-urgente', priorityValue: 3 },
+  { id: 'Éxito', label: 'Éxito', class: 'priority-exito', priorityValue: 4 },
+  { id: 'Informativa', label: 'Info', class: 'priority-info', priorityValue: 5 }
 ];
 
 @Component({
@@ -220,7 +221,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
         next: (response) => {
           if (response.success && response.data) {
             const criticosVirtuales: AppNotification[] = response.data.map((item: any) => ({
-              mensaje: `El artículo "${item.nombre}" (${item.codigo}) tiene stock crítico (${item.stock_disponible}).`,
+              mensaje: `El artículo "${item.nombre}" (${item.codigo}) se ha AGOTADO (Stock: 0).`,
               modulo: 'inventario',
               tipo: 'Stock Crítico',
               url_destino: '/app/inventario',
@@ -234,6 +235,26 @@ export class HeaderComponent implements OnInit, OnDestroy {
           }
         },
         error: (err) => console.error('🔴 Error al cargar stock crítico para notificaciones virtuales:', err)
+      });
+
+      this.notificationService.getLowStock().subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            const pocoStockVirtuales: AppNotification[] = response.data.map((item: any) => ({
+              mensaje: `El artículo "${item.nombre}" (${item.codigo}) tiene poco stock (${item.stock_disponible} restante). Reponer pronto.`,
+              modulo: 'inventario',
+              tipo: 'Poco Stock',
+              url_destino: '/app/inventario',
+              leida: false,
+              fecha_creacion: new Date().toISOString()
+            }));
+            
+            this.ngZone.run(() => {
+              this.notificaciones = [...this.notificaciones, ...pocoStockVirtuales];
+            });
+          }
+        },
+        error: (err) => console.error('🔴 Error al cargar poco stock para notificaciones virtuales:', err)
       });
     }
   }

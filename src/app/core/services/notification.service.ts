@@ -58,4 +58,8 @@ export class NotificationService {
   public getCriticalStock(): Observable<any> {
     return this.http.get(`${this.apiUrl}/inventario/criticos/`);
   }
+
+  public getLowStock(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/inventario/poco-stock/`);
+  }
 }
