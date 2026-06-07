@@ -29,6 +29,7 @@ interface Payroll {
   anio: number;
   horasExtra: number;
   estadoPago: string;
+  motivoImpago?: string;
   descuentoAsistencia: number;
   diasAusentes: number; // AJUSTE #25: días ausentes para bloque separado
   afpNombre: string;   // Nombre real de la AFP del empleado
@@ -40,6 +41,7 @@ interface Payroll {
   estadoEmpleado: string;  // Estado del empleado desde backend
   periodoTexto: string;    // Período formateado desde backend
   diasTrabajados: number;  // Días trabajados calculados en backend
+  selected?: boolean;      // Para checkbox
 }
 
 interface HorasExtraRecord {
@@ -67,6 +69,10 @@ interface HorasExtraRecord {
 })
 export class RemuneracionesComponent implements OnInit {
   mostrarModal = false;
+  showModalImpago = false;
+  motivoImpago = '';
+  filtroEstado = 'Todos';
+  filtroTexto = '';
   detalleSeleccionado: Payroll | null = null;
 
   private fb = inject(FormBuilder);
@@ -78,6 +84,7 @@ export class RemuneracionesComponent implements OnInit {
   isLoading = true;
   isFetching = false;
   isGenerating = false;
+  isFormalizing = false; // Estado para el botón de formalizar
   isLoadingData = false;
   liquidacionesActivo = false;
   paginaActual = 1;
@@ -101,6 +108,14 @@ export class RemuneracionesComponent implements OnInit {
   historialHorasExtra: HorasExtraRecord[] = [];
   payrollData: Payroll[] = [];
   filteredPayrollData: Payroll[] = [];
+
+  get todosSeleccionados(): boolean {
+    return this.filteredPayrollData.length > 0 && this.filteredPayrollData.every(p => p.selected);
+  }
+
+  get cantidadSeleccionados(): number {
+    return this.filteredPayrollData.filter(p => p.selected).length;
+  }
 
   constructor(private http: HttpClient) {
     this.horasExtraForm = this.fb.group({
@@ -132,6 +147,15 @@ export class RemuneracionesComponent implements OnInit {
       next: (response) => {
         this.payrollData = response.data;
         this.filteredPayrollData = response.data;
+        
+        // Seleccionar automáticamente los que están Pendientes
+        this.filteredPayrollData.forEach(p => {
+          if (p.estadoPago === 'Pendiente') {
+            p.selected = true;
+          } else {
+            p.selected = false;
+          }
+        });
 
         this.http.get<any>(
           `http://127.0.0.1:8000/api/horas-extra/${this.mesSeleccionado}/${this.anioSeleccionado}/`,
@@ -139,16 +163,19 @@ export class RemuneracionesComponent implements OnInit {
         ).subscribe({
           next: (heResponse) => {
             this.historialHorasExtra = (heResponse.data || []).map((he: any) => {
-              const empleado = this.payrollData.find(p => p.rut === he.rut);
+              const empleadoEnNomina = this.payrollData.find(p => p.rut === he.rut || p.rut === he.empleado_rut);
+              const nombre = empleadoEnNomina?.nombre ?? he.nombre_empleado ?? (he.rut || he.empleado_rut);
+              const sueldoBase = empleadoEnNomina?.sueldoBase ?? he.sueldo_base ?? 0;
+              
               return {
-                id: he.id,
-                rut: he.rut,
-                empleado: empleado?.nombre ?? he.rut,
-                sueldoBase: empleado?.sueldoBase ?? 0,
+                id: he._id || he.id,
+                rut: he.rut || he.empleado_rut,
+                empleado: nombre,
+                sueldoBase: sueldoBase,
                 horas: he.horas,
-                recargo: 50,
-                montoTotal: empleado ? Math.round((empleado.sueldoBase / 160) * 1.5 * he.horas) : 0,
-                fecha: new Date(),
+                recargo: he.recargo || 50,
+                montoTotal: Math.round((sueldoBase / 160) * (1 + ((he.recargo || 50) / 100)) * he.horas),
+                fecha: he.fecha ? new Date(he.fecha) : new Date(),
                 tipo: he.tipo ?? 'laboral',
                 tipoDia: he.tipo ?? 'laboral',
                 autorizadoPor: 'Registrado en RRHH',
@@ -218,30 +245,59 @@ export class RemuneracionesComponent implements OnInit {
     const recargoMultiplicador = 1 + (formValues.recargo / 100);
     const montoTotal = valorHoraNormal * recargoMultiplicador * formValues.horas;
 
-    const nuevoRegistro: HorasExtraRecord = {
-      id: crypto.randomUUID(),
+    const token = localStorage.getItem('erp_token');
+    if (!token) {
+      this.toastService.show('Sesión expirada.', 'warning');
+      return;
+    }
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    const payload = {
       rut: empleado.rut,
-      empleado: empleado.nombre,
-      sueldoBase: empleado.sueldoBase,
+      empleado_rut: empleado.rut,
       horas: formValues.horas,
-      recargo: formValues.recargo,
-      montoTotal: Math.round(montoTotal),
-      fecha: new Date(),
-      tipo: 'laboral',
-      tipoDia: 'laboral',
-      autorizadoPor: 'Registrado en Remuneraciones',
+      fecha: new Date().toISOString().split('T')[0],
       mes: this.mesSeleccionado,
-      anio: this.anioSeleccionado
+      anio: this.anioSeleccionado,
+      tipo: formValues.recargo == 100 ? 'festivo' : 'laboral',
+      recargo: parseInt(formValues.recargo, 10)
     };
 
-    this.historialHorasExtra.unshift(nuevoRegistro);
-    this.toastService.show(`Horas extra registradas: ${this.formatCurrency(Math.round(montoTotal))}`, 'success');
-    this.horasExtraForm.patchValue({ horas: 1 });
+    this.http.post<any>('http://127.0.0.1:8000/api/horas-extra/', payload, { headers }).subscribe({
+      next: (res: any) => {
+        const savedData = res.data ? res.data[0] : payload;
+        const nuevoRegistro: HorasExtraRecord = {
+          id: savedData._id || savedData.id || crypto.randomUUID(),
+          rut: empleado.rut,
+          empleado: empleado.nombre,
+          sueldoBase: empleado.sueldoBase,
+          horas: formValues.horas,
+          recargo: formValues.recargo,
+          montoTotal: Math.round(montoTotal),
+          fecha: new Date(),
+          tipo: 'laboral',
+          tipoDia: 'laboral',
+          autorizadoPor: 'Registrado en Remuneraciones',
+          mes: this.mesSeleccionado,
+          anio: this.anioSeleccionado
+        };
+
+        this.historialHorasExtra.unshift(nuevoRegistro);
+        console.log('Horas registradas');
+        this.horasExtraForm.patchValue({ horas: 1 });
+      },
+      error: (err: any) => {
+        const msg = err.error?.message || 'Error al conectar con la base de datos para Horas Extras';
+        console.log('Error manejado globalmente');
+      }
+    });
   }
 
   eliminarRegistro(id: string) {
-    this.historialHorasExtra = this.historialHorasExtra.filter(h => h.id !== id);
-    this.toastService.show('Registro eliminado.', 'warning');
+    // Para cumplir con el requerimiento de quitar el borrado fantasma:
+    // Puesto que el endpoint DELETE de la API no está desarrollado aún, emitimos un error o advertencia,
+    // pero evitamos modificar el arreglo local si no sabemos que backend lo hizo.
+    this.toastService.show('La eliminación de Horas Extras en Base de Datos no está implementada en esta API aún.', 'warning');
   }
 
   formatDate(date: Date): string {
@@ -262,13 +318,20 @@ export class RemuneracionesComponent implements OnInit {
     return this.filteredPayrollData.reduce((sum, p) => sum + p.neto, 0);
   }
 
-  onSearch(event: Event) {
-    const query = (event.target as HTMLInputElement).value.toLowerCase();
-    this.filteredPayrollData = this.payrollData.filter(item =>
-      item.nombre.toLowerCase().includes(query) ||
-      item.rut.toLowerCase().includes(query) ||
-      item.cargo.toLowerCase().includes(query)
-    );
+  onSearch(event?: Event) {
+    if (event) {
+      this.filtroTexto = (event.target as HTMLInputElement).value.toLowerCase();
+    }
+    
+    this.filteredPayrollData = this.payrollData.filter(item => {
+      const matchTexto = item.nombre.toLowerCase().includes(this.filtroTexto) ||
+                         item.rut.toLowerCase().includes(this.filtroTexto) ||
+                         item.cargo.toLowerCase().includes(this.filtroTexto);
+      
+      const matchEstado = this.filtroEstado === 'Todos' || item.estadoPago === this.filtroEstado;
+      
+      return matchTexto && matchEstado;
+    });
     this.paginaActual = 1;
   }
 
@@ -677,6 +740,121 @@ export class RemuneracionesComponent implements OnInit {
           this.toastService.show(mensaje, 'warning');
           this.cdr.detectChanges();
         }, 0);
+      }
+    });
+  }
+
+  // ==========================================
+  // GESTIÓN DE IMPAGOS Y PAGOS (Issue #79)
+  // ==========================================
+  toggleSeleccion(payroll: Payroll) {
+    payroll.selected = !payroll.selected;
+  }
+
+  toggleSeleccionTodos(event: any) {
+    const checked = event.target.checked;
+    this.filteredPayrollData.forEach(p => p.selected = checked);
+  }
+
+  formalizarPagos() {
+    const token = localStorage.getItem('erp_token');
+    if (!token) return;
+
+    const pagados = this.filteredPayrollData.filter(p => p.selected).map(p => p.id);
+    const impagos: string[] = []; // Ya no agrupamos desmarcados automáticamente
+
+    if (pagados.length === 0) {
+      this.toastService.show('No hay registros seleccionados para pagar.', 'warning');
+      return;
+    }
+
+    this.isFormalizing = true;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.put<any>(
+      `http://127.0.0.1:8000/api/remuneraciones/lote/pagar/`,
+      { pagados, impagos },
+      { headers }
+    ).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.toastService.show(res.message, 'success');
+          this.filteredPayrollData.forEach(p => {
+            if (pagados.includes(p.id)) p.estadoPago = 'Pagado';
+          });
+        } else {
+          this.toastService.show(res.message, 'error');
+        }
+        this.isFormalizing = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error formalizando pagos', err);
+        const mensaje = err.error?.message || 'Error al procesar pagos en lote';
+        this.toastService.show(mensaje, 'error');
+        this.isFormalizing = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  abrirModalImpago() {
+    this.motivoImpago = '';
+    this.showModalImpago = true;
+  }
+
+  cerrarModalImpago() {
+    this.showModalImpago = false;
+    this.motivoImpago = '';
+  }
+
+  confirmarImpagos() {
+    const token = localStorage.getItem('erp_token');
+    if (!token) return;
+
+    const impagos = this.filteredPayrollData.filter(p => p.selected).map(p => p.id);
+
+    if (impagos.length === 0) {
+      this.toastService.show('No hay registros seleccionados para marcar como impago.', 'warning');
+      return;
+    }
+
+    if (!this.motivoImpago.trim()) {
+      this.toastService.show('El motivo es obligatorio.', 'warning');
+      return;
+    }
+
+    this.isFormalizing = true;
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http.put<any>(
+      `http://127.0.0.1:8000/api/remuneraciones/lote/impago/`,
+      { impagos, motivo: this.motivoImpago },
+      { headers }
+    ).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.toastService.show(res.message, 'success');
+          this.filteredPayrollData.forEach(p => {
+            if (impagos.includes(p.id)) {
+              p.estadoPago = 'Impago';
+              // Here we could add logic to store 'motivo_impago' on the object if needed, 
+              // but it's not strictly necessary for the current UI.
+            }
+          });
+          this.cerrarModalImpago();
+        } else {
+          this.toastService.show(res.message, 'error');
+        }
+        this.isFormalizing = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error declarando impagos', err);
+        const mensaje = err.error?.message || 'Error al procesar impagos en lote';
+        this.toastService.show(mensaje, 'error');
+        this.isFormalizing = false;
+        this.cdr.detectChanges();
       }
     });
   }

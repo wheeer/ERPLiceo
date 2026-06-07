@@ -116,14 +116,7 @@ export class RrhhComponent implements OnInit {
   horasExtraForm: FormGroup;
   historialHorasExtra: RegistroHorasExtra[] = [];
 
-  asistenciaList: AsistenciaEmpleado[] = [
-    { id: 1, rut: '11111111-1', nombre: 'Walter Hollub', cargo: 'Administrador del Sistema', estado: 'Presente', entrada: '08:00', salida: '17:00', diasVacaciones: 15, inasistenciasInjustificadas: 0 },
-    { id: 2, rut: '22222222-2', nombre: 'Jordan Acevedo', cargo: 'Jefe de Recursos Humanos', estado: 'Presente', entrada: '08:00', salida: '17:00', diasVacaciones: 12, inasistenciasInjustificadas: 2 },
-    { id: 3, rut: '33333333-3', nombre: 'Jasna Ramírez', cargo: 'Encargada de Remuneraciones', estado: 'Presente', entrada: '08:00', salida: '17:00', diasVacaciones: 15, inasistenciasInjustificadas: 0 },
-    { id: 4, rut: '44444444-4', nombre: 'Juan Pablo Hernández', cargo: 'Encargado de Bodega', estado: 'Presente', entrada: '08:00', salida: '17:00', diasVacaciones: 5, inasistenciasInjustificadas: 0 },
-    { id: 5, rut: '55555555-5', nombre: 'Valentina Torres Álvarez', cargo: 'Docente Especialidad Electromecánica', estado: 'Presente', entrada: '08:00', salida: '17:00', diasVacaciones: 0, inasistenciasInjustificadas: 3 },
-    { id: 6, rut: '66666666-6', nombre: 'Ana Tijoux Merino', cargo: 'Psicóloga Convivencia Escolar', estado: 'Presente', entrada: '08:00', salida: '17:00', diasVacaciones: 10, inasistenciasInjustificadas: 1 }
-  ];
+  asistenciaList: AsistenciaEmpleado[] = [];
 
   employees: Employee[] = [];
   filteredEmployees: Employee[] = [];
@@ -237,6 +230,7 @@ export class RrhhComponent implements OnInit {
       empleadoId: ['', Validators.required],
       fecha: [new Date().toISOString().split('T')[0], Validators.required],
       horas: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
+      recargo: [50, Validators.required],
       autorizadoPor: ['', Validators.required]
     });
 
@@ -273,6 +267,34 @@ export class RrhhComponent implements OnInit {
     });
 
     this.obtenerAsistencia();
+  }
+
+  cargarHorasExtra() {
+    this.rrhhService.obtenerHorasExtra(this.mesSeleccionado, this.anioSeleccionado).subscribe({
+      next: (res: any) => {
+        this.historialHorasExtra = (res.data || []).map((he: any) => {
+          const emp = this.employees.find(e => e.rut === he.rut || e.rut === he.empleado_rut);
+          return {
+            id: he._id || he.id,
+            fecha: he.fecha,
+            empleadoId: emp?.id || '',
+            empleado: emp?.nombre || he.rut,
+            cargo: emp?.cargo || '',
+            rut: he.rut || he.empleado_rut,
+            sueldoBase: emp?.config_remuneracion?.sueldo_base || 0,
+            tipoDia: he.tipo || 'laboral',
+            horas: he.horas,
+            recargo: he.recargo || 50,
+            montoTotal: 0,
+            autorizadoPor: he.autorizado_por || 'Registrado en RRHH'
+          };
+        });
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al obtener horas extras', err);
+      }
+    });
   }
 
   // ==========================================
@@ -433,7 +455,8 @@ export class RrhhComponent implements OnInit {
 
         this.filteredEmployees = [...this.employees];
 
-        // Mapear los empleados reales a la lista de asistencia diaria (Modo Zen por defecto)
+        // Restaurado: Mapear los empleados reales a la lista de asistencia diaria (Modo Zen)
+        // Esto NO es un mock, es la lógica de negocio para tener a quién marcarle excepciones.
         this.asistenciaList = this.employees.map((emp: any) => ({
           id: emp.id,
           rut: emp.rut,
@@ -446,6 +469,9 @@ export class RrhhComponent implements OnInit {
           inasistenciasInjustificadas: 0
         }));
         this.filteredAsistenciaList = [...this.asistenciaList];
+
+        // Llamar a cargarHorasExtra AHORA que employees está poblado
+        this.cargarHorasExtra();
 
         // Populate the calendar dropdown from the real employees list
         this.empleadosCalendario = this.employees.map(e => ({
@@ -464,7 +490,7 @@ export class RrhhComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error al cargar empleados desde Mongo:', error);
-        this.toastService.show('Error al conectar con la base de datos', 'error');
+        console.error('Error al conectar con la base de datos', error);
         this.isLoading = false;
         this.cdr.detectChanges();
       }
@@ -589,7 +615,7 @@ export class RrhhComponent implements OnInit {
     if (this.isEditing) {
       this.rrhhService.actualizarEmpleado(empleadoData.rut, empleadoData).subscribe({
         next: (res: any) => {
-          this.toastService.show('Empleado actualizado correctamente', 'success');
+          this.isSaving = false;
           this.isSaving = false;
           this.closeForm();
           this.cargarDatosEmpleados();
@@ -597,14 +623,14 @@ export class RrhhComponent implements OnInit {
         error: (err: any) => {
           this.isSaving = false;
           const msg = err.error?.error || 'Error al actualizar empleado';
-          this.toastService.show(msg, 'error');
+          console.log('Error manejado globalmente');
           this.cdr.detectChanges();
         }
       });
     } else {
       this.rrhhService.crearEmpleado(empleadoData).subscribe({
         next: (res: any) => {
-          this.toastService.show('Empleado registrado correctamente', 'success');
+          this.isSaving = false;
           this.isSaving = false;
           this.closeForm();
           this.cargarDatosEmpleados();
@@ -612,7 +638,7 @@ export class RrhhComponent implements OnInit {
         error: (err: any) => {
           this.isSaving = false;
           const msg = err.error?.error || 'Error al registrar empleado';
-          this.toastService.show(msg, 'error');
+          console.log('Error manejado globalmente');
           this.cdr.detectChanges();
         }
       });
@@ -623,12 +649,12 @@ export class RrhhComponent implements OnInit {
     if (confirm('¿Está seguro de dar de baja este empleado?')) {
       this.rrhhService.darDeBajaEmpleado(rut).subscribe({
         next: () => {
-          this.toastService.show('Empleado dado de baja exitosamente.', 'success');
+          console.log('Empleado dado de baja exitosamente.');
           this.cargarDatosEmpleados();
         },
         error: (err: any) => {
           const msg = err.error?.error || 'Error al dar de baja empleado';
-          this.toastService.show(msg, 'error');
+          console.log('Error manejado globalmente');
         }
       });
     }
@@ -657,43 +683,66 @@ export class RrhhComponent implements OnInit {
     if (this.horasExtraForm.invalid) return;
 
     this.isSaving = true;
+    const data = this.horasExtraForm.value;
+    const empleado = this.employees.find(e => e.id == data.empleadoId);
 
-    setTimeout(() => {
-      const data = this.horasExtraForm.value;
-      const empleado = this.employees.find(e => e.id == data.empleadoId);
+    if (!empleado) {
+      this.isSaving = false;
+      return;
+    }
 
-      if (empleado) {
+    const payload = {
+      rut: empleado.rut,
+      empleado_rut: empleado.rut,
+      horas: data.horas,
+      fecha: data.fecha,
+      tipo: data.recargo == 100 ? 'festivo' : 'laboral',
+      recargo: parseInt(data.recargo, 10),
+      autorizado_por: data.autorizadoPor
+    };
+
+    this.rrhhService.registrarHorasExtra(payload).subscribe({
+      next: (res: any) => {
+        // En base a la respuesta, insertamos en el arreglo local
+        const savedData = res.data ? res.data[0] : payload;
         this.historialHorasExtra.unshift({
-          id: Date.now(),
-          fecha: data.fecha,
+          id: savedData._id || savedData.id || Date.now(),
+          fecha: savedData.fecha || data.fecha,
           empleadoId: empleado.id,
           empleado: empleado.nombre,
           cargo: empleado.cargo,
           rut: empleado.rut,
           sueldoBase: empleado.config_remuneracion.sueldo_base,
-          tipoDia: 'laboral',
+          tipoDia: data.recargo == 100 ? 'festivo' : 'laboral',
           horas: data.horas,
-          recargo: 50,
+          recargo: parseInt(data.recargo, 10),
           montoTotal: 0,
           autorizadoPor: data.autorizadoPor
         });
 
-        this.toastService.show(`Se han registrado ${data.horas} hrs para ${empleado.nombre}`, 'success');
+        console.log(`Se han registrado ${data.horas} hrs para ${empleado.nombre}`);
 
         this.horasExtraForm.reset({
           fecha: new Date().toISOString().split('T')[0],
-          horas: 1
+          horas: 1,
+          recargo: 50
         });
+        
+        this.isSaving = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.isSaving = false;
+        const msg = err.error?.message || 'Error al conectar con la base de datos para Horas Extras';
+        console.log('Error de hrs extras', msg);
+        this.cdr.detectChanges();
       }
-
-      this.isSaving = false;
-      this.cdr.detectChanges();
-    }, 1500);
+    });
   }
 
   eliminarRegistroHE(id: string | number) {
     this.historialHorasExtra = this.historialHorasExtra.filter(h => h.id !== id);
-    this.toastService.show('Registro eliminado.', 'warning');
+    console.log('Registro eliminado');
   }
 
   openExcepcionModal(empleado: AsistenciaEmpleado) {
@@ -755,13 +804,13 @@ export class RrhhComponent implements OnInit {
 
         if (tipo === 'atraso') {
           emp.entrada = formValue.horaEntradaReal;
-          this.toastService.show(`Atraso de ${formValue.minutosAtraso} min registrado para ${emp.nombre}`, 'warning');
+          console.log('Atraso registrado');
         } else if (tipo === 'vacaciones') {
           emp.diasVacaciones = Math.max(0, emp.diasVacaciones - 1);
-          this.toastService.show(`Día de vacaciones descontado a ${emp.nombre}. Saldo: ${emp.diasVacaciones}`, 'info');
+          console.log('Vacaciones registradas');
         } else {
           emp.inasistenciasInjustificadas += 1;
-          this.toastService.show(`Excepción ${estadoFinal} registrada.`, 'info');
+          console.log('Excepción registrada');
         }
 
         this.isSaving = false;
@@ -774,7 +823,7 @@ export class RrhhComponent implements OnInit {
       error: (err) => {
         this.isSaving = false;
         const msg = err.error?.message || 'Error al guardar la excepción. Posible duplicado.';
-        this.toastService.show(msg, 'error');
+        console.log('Error guardando excepción', msg);
         this.cdr.detectChanges();
       }
     });

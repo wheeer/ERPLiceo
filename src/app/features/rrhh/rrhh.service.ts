@@ -9,6 +9,7 @@ export class RrhhService {
   // URL de tu backend en Django
   private apiUrl = 'http://127.0.0.1:8000/api/empleados/';
   private asistenciaUrl = 'http://127.0.0.1:8000/api/asistencia/';
+  private horasExtraUrl = 'http://127.0.0.1:8000/api/horas-extra/';
 
   constructor(private http: HttpClient) { }
 
@@ -35,6 +36,14 @@ export class RrhhService {
 
   registrarAsistenciaDiaria(registros: any[]): Observable<any> {
     return this.http.post<any>(this.asistenciaUrl, registros);
+  }
+
+  registrarHorasExtra(registro: any): Observable<any> {
+    return this.http.post<any>(this.horasExtraUrl, registro);
+  }
+
+  obtenerHorasExtra(mes: number, anio: number): Observable<any> {
+    return this.http.get<any>(`${this.horasExtraUrl}${mes}/${anio}/`);
   }
 
   crearEmpleado(empleadoData: any): Observable<any> {

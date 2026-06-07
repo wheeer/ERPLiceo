@@ -809,6 +809,14 @@
               <label>Cantidad de Horas (máx 10/sem)</label>
               <input type="number" formControlName="horas" min="1" max="10" [class.error]="horasExtraForm.get('horas')?.invalid && horasExtraForm.get('horas')?.touched">
             </div>
+
+            <div class="form-group">
+              <label>Recargo (%)</label>
+              <select formControlName="recargo" [class.error]="horasExtraForm.get('recargo')?.invalid && horasExtraForm.get('recargo')?.touched">
+                <option value="50">50% (Normal)</option>
+                <option value="100">100% (Domingo/Festivo)</option>
+              </select>
+            </div>
           </div>
           
           <div class="form-row">
@@ -867,6 +875,7 @@
                     <th>Fecha</th>
                     <th>Empleado</th>
                     <th class="center">Horas</th>
+                    <th class="center">Recargo</th>
                     <th>Autorizado Por</th>
                     <th class="center">Acción</th>
                   </tr>
@@ -882,6 +891,11 @@
                         </div>
                       </td>
                       <td class="center"><strong>{{ registro.horas }}</strong> hrs</td>
+                      <td class="center">
+                        <span class="day-tag" [ngClass]="{'tag-warning': registro.recargo == 50, 'tag-absent': registro.recargo == 100}">
+                          {{ registro.recargo }}%
+                        </span>
+                      </td>
                       <td>{{ registro.autorizadoPor }}</td>
                       <td class="cell-actions center">
                         <button class="btn-action btn-delete" (click)="eliminarRegistroHE(registro.id)" title="Eliminar registro">

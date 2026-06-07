@@ -203,6 +203,7 @@ def _serializar_liquidacion(liquidacion, empleado):
             "mes": liquidacion["periodo"]["mes"],
             "anio": liquidacion["periodo"]["anio"],
             "estadoPago": liquidacion.get("estado_pago", "Pendiente"),
+            "motivoImpago": liquidacion.get("motivo_impago", ""),
             "sueldoBase": liquidacion["haberes"]["imponibles"]["sueldo_base"],
             "gratificacion": liquidacion["haberes"]["imponibles"]["gratificacion_legal"],
             "horasExtra": (
@@ -504,11 +505,21 @@ def obtener_horas_extra(request, mes, anio):
  
         horas_extra_frontend = []
         for he in horas_extra_bd:
+            rut_empleado = he.get("rut") or he.get("empleado_rut")
+            empleado_obj = col_empleados.find_one({"rut": rut_empleado})
+            nombre_empleado = empleado_obj.get("nombre_completo", rut_empleado) if empleado_obj else rut_empleado
+            config = empleado_obj.get("config_remuneracion", {}) if empleado_obj else {}
+            sueldo_base = config.get("sueldo_base", 0)
+            
             horas_extra_frontend.append({
                 "id": str(he["_id"]),
-                "rut": he.get("rut"),
+                "rut": rut_empleado,
+                "nombre_empleado": nombre_empleado,
+                "sueldo_base": sueldo_base,
                 "horas": he.get("horas", 0),
                 "tipo": he.get("tipo", "laboral"),
+                "recargo": he.get("recargo", 50),
+                "fecha": he.get("fecha"),
                 "mes": he.get("mes"),
                 "anio": he.get("anio")
             })
@@ -523,5 +534,187 @@ def obtener_horas_extra(request, mes, anio):
         return JsonResponse({
             "success": False,
             "message": f"Error al obtener horas extra: {str(e)}",
+            "data": None
+        }, status=500)
+
+
+@csrf_exempt
+@jwt_required
+def procesar_pagos_lote(request):
+    if request.method not in ['POST', 'PUT']:
+        return JsonResponse({
+            "success": False,
+            "message": "Método no permitido. Usa POST o PUT.",
+            "data": None
+        }, status=405)
+
+    try:
+        body = json.loads(request.body)
+        pagados = body.get("pagados", [])
+        impagos = body.get("impagos", [])
+
+        if not isinstance(pagados, list) or not isinstance(impagos, list):
+            return JsonResponse({
+                "success": False,
+                "message": "El payload debe contener listas de IDs en 'pagados' e 'impagos'.",
+                "data": None
+            }, status=400)
+
+        # Convertir a ObjectId
+        try:
+            pagados_ids = [ObjectId(id_str) for id_str in pagados if ObjectId.is_valid(id_str)]
+            impagos_ids = [ObjectId(id_str) for id_str in impagos if ObjectId.is_valid(id_str)]
+        except Exception:
+            return JsonResponse({
+                "success": False,
+                "message": "Uno o más IDs proporcionados no son válidos.",
+                "data": None
+            }, status=400)
+
+        # VALIDACIÓN DE REGLAS DE NEGOCIO: No permitir modificar registros ya pagados
+        todos_ids = pagados_ids + impagos_ids
+        if todos_ids:
+            pagados_existentes = col_remuneraciones.count_documents({
+                "_id": {"$in": todos_ids},
+                "estado_pago": "Pagado"
+            })
+            if pagados_existentes > 0:
+                return JsonResponse({
+                    "success": False,
+                    "message": "Una o más liquidaciones ya se encuentran pagadas y no pueden ser modificadas.",
+                    "data": None
+                }, status=400)
+
+        actualizados_pagados = 0
+        actualizados_impagos = 0
+
+        # Actualizar pagados
+        if pagados_ids:
+            res_pagados = col_remuneraciones.update_many(
+                {"_id": {"$in": pagados_ids}},
+                {"$set": {"estado_pago": "Pagado", "fecha_pago": datetime.now()}}
+            )
+            actualizados_pagados = res_pagados.modified_count
+
+        # Actualizar impagos
+        if impagos_ids:
+            res_impagos = col_remuneraciones.update_many(
+                {"_id": {"$in": impagos_ids}},
+                {"$set": {"estado_pago": "Impago"}}
+            )
+            actualizados_impagos = res_impagos.modified_count
+
+        # Registrar auditoría
+        actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+        actor_emp = col_empleados.find_one({"rut": actor_rut})
+        actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+
+        if actualizados_pagados > 0 or actualizados_impagos > 0:
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="remuneraciones",
+                accion="Estado de Pago Actualizado (Lote)",
+                descripcion=f"Se formalizaron pagos: {actualizados_pagados} pagados, {actualizados_impagos} impagos."
+            )
+
+        return JsonResponse({
+            "success": True,
+            "message": f"Se procesaron {actualizados_pagados} pagos y {actualizados_impagos} impagos correctamente.",
+            "data": {
+                "pagados": actualizados_pagados,
+                "impagos": actualizados_impagos
+            }
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "message": f"Error al procesar pagos en lote: {str(e)}",
+            "data": None
+        }, status=500)
+
+@csrf_exempt
+@jwt_required
+def declarar_impagos_lote(request):
+    if request.method not in ['POST', 'PUT']:
+        return JsonResponse({
+            "success": False,
+            "message": "Método no permitido. Usa POST o PUT.",
+            "data": None
+        }, status=405)
+
+    try:
+        body = json.loads(request.body)
+        impagos = body.get("impagos", [])
+        motivo = body.get("motivo", "").strip()
+
+        if not isinstance(impagos, list) or not impagos:
+            return JsonResponse({
+                "success": False,
+                "message": "El payload debe contener una lista de IDs en 'impagos'.",
+                "data": None
+            }, status=400)
+
+        if not motivo:
+            return JsonResponse({
+                "success": False,
+                "message": "Debe proporcionar un motivo o glosa para el impago.",
+                "data": None
+            }, status=400)
+
+        try:
+            impagos_ids = [ObjectId(id_str) for id_str in impagos if ObjectId.is_valid(id_str)]
+        except Exception:
+            return JsonResponse({
+                "success": False,
+                "message": "Uno o más IDs proporcionados no son válidos.",
+                "data": None
+            }, status=400)
+
+        pagados_existentes = col_remuneraciones.count_documents({
+            "_id": {"$in": impagos_ids},
+            "estado_pago": "Pagado"
+        })
+        if pagados_existentes > 0:
+            return JsonResponse({
+                "success": False,
+                "message": "Una o más liquidaciones ya se encuentran pagadas.",
+                "data": None
+            }, status=400)
+
+        res_impagos = col_remuneraciones.update_many(
+            {"_id": {"$in": impagos_ids}},
+            {"$set": {
+                "estado_pago": "Impago",
+                "motivo_impago": motivo,
+                "fecha_impago": datetime.now()
+            }}
+        )
+        actualizados_impagos = res_impagos.modified_count
+
+        actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+        actor_emp = col_empleados.find_one({"rut": actor_rut})
+        actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+
+        if actualizados_impagos > 0:
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="remuneraciones",
+                accion="Impago Declarado (Lote)",
+                descripcion=f"Se declararon {actualizados_impagos} impagos. Motivo: {motivo}"
+            )
+
+        return JsonResponse({
+            "success": True,
+            "message": f"Se declararon {actualizados_impagos} impagos correctamente.",
+            "data": {"impagos": actualizados_impagos}
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "message": f"Error al declarar impagos en lote: {str(e)}",
             "data": None
         }, status=500)
