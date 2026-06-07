@@ -37,4 +37,8 @@ urlpatterns = [
     # Dashboard
     path('dashboard/resumen/', views.api_dashboard_resumen, name='api_dashboard_resumen'),
     path('dashboard/actividades/', views.api_dashboard_actividades, name='api_dashboard_actividades'),
+
+    # Notificaciones
+    path('notificaciones/', views.api_notificaciones, name='api_notificaciones'),
+    path('notificaciones/<str:notif_id>/', views.api_notificacion_estado, name='api_notificacion_estado'),
 ]

@@ -28,6 +28,7 @@ col_inventario = db["inventario"]
 col_roles = db["roles"]
 col_horas_extra = db["horas_extra"]
 col_auditoria = db["auditoria"]
+col_notificaciones = db["notificaciones"]
 
 from datetime import datetime, UTC
 
@@ -46,3 +47,18 @@ def registrar_auditoria(usuario_rut, usuario_nombre, modulo, accion, descripcion
     }
     col_auditoria.insert_one(log_entry)
 
+def crear_notificacion(usuario_rut, mensaje, modulo, url_destino="#", tipo="Informativa"):
+    """
+    Guarda una notificación en la base de datos para asegurar su persistencia.
+    """
+    notificacion = {
+        "usuario_id": usuario_rut,
+        "mensaje": mensaje,
+        "modulo": modulo,
+        "tipo": tipo,
+        "url_destino": url_destino,
+        "leida": False,
+        "fecha_creacion": datetime.now(UTC)
+    }
+    col_notificaciones.insert_one(notificacion)
+    return notificacion

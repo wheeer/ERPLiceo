@@ -53,6 +53,15 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   marcarComoLeida(notificacion: AppNotification) {
     notificacion.leida = true;
+    
+    // Si la notificación tiene ID de base de datos, despachamos al servidor
+    if (notificacion._id) {
+      this.notificationService.markAsRead(notificacion._id).subscribe({
+        next: () => console.log('✅ Notificación marcada como leída en DB'),
+        error: (err) => console.error('❌ Error al marcar notificación:', err)
+      });
+    }
+
     if (notificacion.url_destino && notificacion.url_destino !== '#') {
       this.router.navigateByUrl(notificacion.url_destino);
       this.mostrarNotificaciones = false;
@@ -112,7 +121,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
       console.log('✅ Comando de prueba enviado al servidor.');
     };
 
-    // Suscripción al WebSocket de notificaciones
+    // Suscripción al WebSocket de notificaciones en tiempo real
     this.notifSub = this.notificationService.getNotifications().subscribe({
       next: (msg: AppNotification) => {
         console.log('🔔 Notificación recibida por WebSocket:', msg);
@@ -137,6 +146,29 @@ export class HeaderComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => console.error('🔴 Error en WebSocket:', err)
+    });
+
+    // Cargar el historial persistente desde el Backend
+    this.notificationService.getHistoricalNotifications().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          // Filtrar por roles también las históricas si el backend no lo hizo estrictamente
+          const historicas = response.data.filter((msg: AppNotification) => {
+            const mod = msg.modulo;
+            if (this.userRole === 'Administrador_General') return true;
+            if (this.userRole === 'Encargado_RRHH' && (mod === 'rrhh' || mod === 'general')) return true;
+            if (this.userRole === 'Encargado_Remuneraciones' && (mod === 'remuneraciones' || mod === 'general')) return true;
+            if (this.userRole === 'Encargado_Bodega' && (mod === 'inventario' || mod === 'general')) return true;
+            return false;
+          });
+
+          this.ngZone.run(() => {
+            // Unimos el historial con las notificaciones que hayan llegado por WS recién conectarnos
+            this.notificaciones = [...this.notificaciones, ...historicas];
+          });
+        }
+      },
+      error: (err) => console.error('🔴 Error al cargar historial de notificaciones:', err)
     });
   }
 
