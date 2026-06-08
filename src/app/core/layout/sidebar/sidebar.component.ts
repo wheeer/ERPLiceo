@@ -8,11 +8,17 @@ interface NavSubItem {
   tab: string;
 }
 
+interface NavSubGroup {
+  groupLabel: string;
+  items: NavSubItem[];
+}
+
 interface NavItem {
   id: string;
   label: string;
   ruta: string;
   subItems?: NavSubItem[];
+  subGroups?: NavSubGroup[];
   roles?: string[]; // Si no tiene roles, todos lo ven (ej: dashboard)
 }
 
@@ -42,11 +48,29 @@ export class SidebarComponent {
       label: 'Recursos Humanos',
       ruta: '/app/rrhh',
       roles: ['Encargado_RRHH'],
-      subItems: [
-        { label: 'Vista General', tab: 'general' },
-        { label: 'Gestión de Personal', tab: 'gestion' },
-        { label: 'Control de Asistencia', tab: 'asistencia' },
-        { label: 'Horas Extra', tab: 'horasExtra' }
+      subGroups: [
+        {
+          groupLabel: 'Administración',
+          items: [
+            { label: 'Directorio de Empleados', tab: 'general' },
+            { label: 'Gestión y Contratos', tab: 'gestion' }
+          ]
+        },
+        {
+          groupLabel: 'Operativa Diaria',
+          items: [
+            { label: 'Asistencia Diaria', tab: 'asistencia' },
+            { label: 'Registro Horas Extra', tab: 'horasExtra' }
+          ]
+        },
+        {
+          groupLabel: 'Planificación y Reportes',
+          items: [
+            { label: 'Planificación de Turnos', tab: 'turnos' },
+            { label: 'Asistencia Mensual', tab: 'global' },
+            { label: 'Calendario Individual', tab: 'calendario' }
+          ]
+        }
       ]
     },
     {

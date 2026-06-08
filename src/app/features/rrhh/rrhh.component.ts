@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../core/services/toast.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { RrhhService } from './rrhh.service';
+import { forkJoin, of } from 'rxjs';
 
 // ==========================================
 // INTERFACES ANTIGUAS
@@ -13,6 +14,7 @@ export interface Employee {
   id: string | number;
   rut: string;
   nombre: string;
+  nombre_completo?: string;
   correo: string;
   cargo: string;
   tipo_contrato: 'Indefinido' | 'Plazo Fijo' | 'Honorarios';
@@ -26,6 +28,15 @@ export interface Employee {
     movilizacion: number;
     colacion: number;
   };
+  config_jornada?: {
+    tipo_jornada: string;
+    horas_contrato: number;
+    dias_asistencia: number[];
+  };
+  excepciones_jornada?: {
+    fecha: string;
+    accion: 'agregar' | 'quitar';
+  }[];
 }
 
 export interface RegistroHorasExtra {
@@ -75,7 +86,7 @@ export interface DiaCalendario {
   estado?: string;
 }
 
-export type TabType = 'general' | 'gestion' | 'ficha' | 'asistencia' | 'horasExtra' | 'calendario';
+export type TabType = 'general' | 'gestion' | 'ficha' | 'asistencia' | 'horasExtra' | 'calendario' | 'global' | 'turnos';
 
 @Component({
   selector: 'app-rrhh',
@@ -92,6 +103,7 @@ export class RrhhComponent implements OnInit {
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
   private rrhhService = inject(RrhhService);
   private http = inject(HttpClient);
@@ -111,7 +123,16 @@ export class RrhhComponent implements OnInit {
   fechaHoy: Date = new Date();
   showAsistenciaModal = false;
   selectedAsistencia: AsistenciaEmpleado | null = null;
+  showHorasExtraModal = false;
+  _showExcepcionJornadaModal = false;
   excepcionForm: FormGroup;
+
+  excepcionJornadaForm: FormGroup;
+
+  diaSellado: boolean = false;
+  verificandoDia: boolean = true;
+  isSelleandoDia: boolean = false;
+  esFindeHoy: boolean = false;
 
   horasExtraForm: FormGroup;
   historialHorasExtra: RegistroHorasExtra[] = [];
@@ -125,13 +146,26 @@ export class RrhhComponent implements OnInit {
   // ==========================================
   // ESTADO NUEVO (Issue #21 - Calendario)
   // ==========================================
-  mesSeleccionado: number;
-  anioSeleccionado: number;
+  mesSeleccionado: number = 6;
+  anioSeleccionado: number = 2026;
   empleadoSeleccionado: string = '';
   empleadosCalendario: EmpleadoCalendario[] = [];
   asistenciaMensual: AsistenciaDia[] = [];
   diasCalendario: DiaCalendario[] = [];
 
+  // --- VISTA GLOBAL MENSUAL ---
+  globalMesSeleccionado: number = 6;
+  globalAnioSeleccionado: number = 2026;
+  globalDiasMes: number[] = [];
+  globalEmpleados: any[] = [];
+  globalAsistenciaMap: { [rut: string]: { [dia: number]: string } } = {};
+
+  // Estado para la pestaña Vista Global de Turnos
+  turnosMesSeleccionado: number = new Date().getMonth() + 1;
+  turnosAnioSeleccionado: number = new Date().getFullYear();
+  globalDiasTurnosMes: number[] = [];
+  globalTurnosMap: { [rut: string]: { [dia: number]: string } } = {};
+  
   totalPresentes: number = 0;
   totalAusentes: number = 0;
   totalTardanzas: number = 0;
@@ -216,7 +250,16 @@ export class RrhhComponent implements OnInit {
       afp: ['', Validators.required],
       salud: ['', Validators.required],
       movilizacion: [0, Validators.required],
-      colacion: [0, Validators.required]
+      colacion: [0, Validators.required],
+      tipo_jornada: ['Ordinaria', Validators.required],
+      horas_contrato: [44, [Validators.required, Validators.min(1)]],
+      dias_asistencia_0: [true],
+      dias_asistencia_1: [true],
+      dias_asistencia_2: [true],
+      dias_asistencia_3: [true],
+      dias_asistencia_4: [true],
+      dias_asistencia_5: [false],
+      dias_asistencia_6: [false]
     });
 
     this.excepcionForm = this.fb.group({
@@ -234,6 +277,12 @@ export class RrhhComponent implements OnInit {
       autorizadoPor: ['', Validators.required]
     });
 
+    this.excepcionJornadaForm = this.fb.group({
+      rutEmpleado: ['', Validators.required],
+      fecha_libre: ['', Validators.required],
+      fecha_trabaja: ['', Validators.required]
+    });
+
     const hoy = new Date();
     this.mesSeleccionado = hoy.getMonth() + 1;
     this.anioSeleccionado = hoy.getFullYear();
@@ -249,8 +298,11 @@ export class RrhhComponent implements OnInit {
     this.route.queryParams.subscribe(params => {
       if (params['tab']) {
         const tab = params['tab'];
-        if (['general', 'gestion', 'ficha', 'asistencia', 'horasExtra'].includes(tab)) {
+        if (['general', 'gestion', 'ficha', 'asistencia', 'horasExtra', 'turnos', 'global', 'calendario'].includes(tab)) {
           this.activeTab = tab as TabType;
+          if (this.activeTab === 'asistencia') {
+            this.verificarEstadoDia();
+          }
         }
       }
     });
@@ -537,12 +589,164 @@ export class RrhhComponent implements OnInit {
   }
 
   changeTab(tab: TabType) {
+    // Sincronizar URL para que el Sidebar actualice su estado
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tab },
+      queryParamsHandling: 'merge'
+    });
+
     this.activeTab = tab;
     this.paginaActual = 1;
+
+    if (tab === 'asistencia') {
+      this.verificarEstadoDia();
+    } else if (tab === 'global') {
+      this.cargarVistaGlobal();
+    } else if (tab === 'turnos') {
+      this.cargarVistaTurnos();
+    }
 
     if (tab !== 'ficha') {
       this.selectedEmployee = null;
     }
+  }
+
+  cargarVistaGlobal() {
+    this.isLoading = true;
+    
+    // Obtener días del mes
+    const daysInMonth = new Date(this.globalAnioSeleccionado, this.globalMesSeleccionado, 0).getDate();
+    this.globalDiasMes = Array.from({length: daysInMonth}, (_, i) => i + 1);
+
+    // Obtener empleados (usar caché si ya existen)
+    const empleadosObs = this.globalEmpleados && this.globalEmpleados.length > 0 
+      ? of({ data: this.globalEmpleados }) 
+      : this.rrhhService.obtenerEmpleados(true);
+
+    // Obtener asistencia
+    const asistenciaObs = this.rrhhService.obtenerAsistencia(this.globalMesSeleccionado, this.globalAnioSeleccionado);
+
+    forkJoin({
+      resEmp: empleadosObs,
+      resAsis: asistenciaObs
+    }).subscribe({
+      next: ({ resEmp, resAsis }) => {
+        this.globalEmpleados = resEmp.data || resEmp;
+        const asistencias = resAsis.data || [];
+        
+        // Mapear por RUT y Día
+        this.globalAsistenciaMap = {};
+        this.globalEmpleados.forEach(emp => {
+          this.globalAsistenciaMap[emp.rut] = {};
+        });
+
+        asistencias.forEach((asis: any) => {
+          if (asis.fecha) {
+            const day = parseInt(asis.fecha.split('-')[2], 10);
+            const empRut = asis.empleado_rut || asis.rut;
+            if (!this.globalAsistenciaMap[empRut]) {
+              this.globalAsistenciaMap[empRut] = {};
+            }
+            // Prevenir TypeError si asis.estado viene null/undefined
+            this.globalAsistenciaMap[empRut][day] = (asis.estado || '').toLowerCase();
+          }
+        });
+
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cargar datos para vista global', err);
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  cambiarMesGlobal(delta: number) {
+    this.globalMesSeleccionado += delta;
+    if (this.globalMesSeleccionado > 12) {
+      this.globalMesSeleccionado = 1;
+      this.globalAnioSeleccionado++;
+    } else if (this.globalMesSeleccionado < 1) {
+      this.globalMesSeleccionado = 12;
+      this.globalAnioSeleccionado--;
+    }
+    this.cargarVistaGlobal();
+  }
+
+  // ==========================================
+  // VISTA GLOBAL DE TURNOS (FASE 5)
+  // ==========================================
+  cargarVistaTurnos() {
+    this.isLoading = true;
+    const daysInMonth = new Date(this.turnosAnioSeleccionado, this.turnosMesSeleccionado, 0).getDate();
+    this.globalDiasTurnosMes = Array.from({length: daysInMonth}, (_, i) => i + 1);
+
+    const obs = this.globalEmpleados && this.globalEmpleados.length > 0
+      ? of({ data: this.globalEmpleados })
+      : this.rrhhService.obtenerEmpleados(true);
+
+    obs.subscribe({
+      next: (res: any) => {
+        this.globalEmpleados = res.data || res;
+        this.globalTurnosMap = {};
+
+        this.globalEmpleados.forEach((emp: any) => {
+          this.globalTurnosMap[emp.rut] = {};
+          
+          // Días de contrato normales (0=Lunes, 6=Domingo en nuestra interfaz)
+          const diasAsistencia = emp.config_jornada?.dias_asistencia || [0,1,2,3,4];
+          
+          // Iterar por cada día del mes
+          for (let day = 1; day <= daysInMonth; day++) {
+            const dateObj = new Date(this.turnosAnioSeleccionado, this.turnosMesSeleccionado - 1, day);
+            const jsDay = dateObj.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+            const mappedDay = jsDay === 0 ? 6 : jsDay - 1; // Convertir a 0=Mon, ..., 6=Sun
+            
+            // Estado base por contrato
+            let estadoTurno = diasAsistencia.includes(mappedDay) ? 'T' : 'L';
+
+            // Revisar excepciones/swaps
+            if (emp.excepciones_jornada && emp.excepciones_jornada.length > 0) {
+              const dateStr = `${this.turnosAnioSeleccionado}-${String(this.turnosMesSeleccionado).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              const excepcion = emp.excepciones_jornada.find((ex: any) => ex.fecha === dateStr || ex.fecha.startsWith(dateStr));
+              
+              if (excepcion) {
+                if (excepcion.accion === 'agregar') {
+                  estadoTurno = 'C-T'; // Cambio a Turno (Era libre, ahora trabaja)
+                } else if (excepcion.accion === 'quitar') {
+                  estadoTurno = 'C-L'; // Cambio a Libre (Era trabajo, ahora libre)
+                }
+              }
+            }
+
+            this.globalTurnosMap[emp.rut][day] = estadoTurno;
+          }
+        });
+
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cargar turnos globales', err);
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  cambiarMesTurnos(delta: number) {
+    this.turnosMesSeleccionado += delta;
+    if (this.turnosMesSeleccionado > 12) {
+      this.turnosMesSeleccionado = 1;
+      this.turnosAnioSeleccionado++;
+    } else if (this.turnosMesSeleccionado < 1) {
+      this.turnosMesSeleccionado = 12;
+      this.turnosAnioSeleccionado--;
+    }
+    this.cargarVistaTurnos();
   }
 
   viewFicha(employee: Employee) {
@@ -561,7 +765,16 @@ export class RrhhComponent implements OnInit {
       sueldo_base: null,
       movilizacion: null,
       colacion: null,
-      fechaIngreso: new Date().toISOString().split('T')[0]
+      fechaIngreso: new Date().toISOString().split('T')[0],
+      tipo_jornada: 'Ordinaria',
+      horas_contrato: 44,
+      dias_asistencia_0: true,
+      dias_asistencia_1: true,
+      dias_asistencia_2: true,
+      dias_asistencia_3: true,
+      dias_asistencia_4: true,
+      dias_asistencia_5: false,
+      dias_asistencia_6: false
     });
     this.viewingForm = true;
   }
@@ -576,7 +789,16 @@ export class RrhhComponent implements OnInit {
       afp: employee.config_remuneracion?.afp || '',
       salud: employee.config_remuneracion?.salud || '',
       movilizacion: employee.config_remuneracion?.movilizacion || 0,
-      colacion: employee.config_remuneracion?.colacion || 0
+      colacion: employee.config_remuneracion?.colacion || 0,
+      tipo_jornada: employee.config_jornada?.tipo_jornada || 'Ordinaria',
+      horas_contrato: employee.config_jornada?.horas_contrato || 44,
+      dias_asistencia_0: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(0),
+      dias_asistencia_1: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(1),
+      dias_asistencia_2: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(2),
+      dias_asistencia_3: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(3),
+      dias_asistencia_4: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(4),
+      dias_asistencia_5: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(5),
+      dias_asistencia_6: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(6)
     });
     this.viewingForm = true;
   }
@@ -586,13 +808,27 @@ export class RrhhComponent implements OnInit {
   }
 
   saveEmployee() {
-    if (this.employeeForm.invalid) return;
+    if (this.employeeForm.invalid) {
+      Object.keys(this.employeeForm.controls).forEach(key => {
+        const control = this.employeeForm.get(key);
+        control?.markAsTouched();
+      });
+      return;
+    }
 
     this.isSaving = true;
     const rawData = this.employeeForm.getRawValue();
 
-    // Adaptar los datos al formato que espera el backend (y que tienen los registros antiguos)
-    const empleadoData = {
+    const dias_asistencia: number[] = [];
+    if (rawData.dias_asistencia_0) dias_asistencia.push(0);
+    if (rawData.dias_asistencia_1) dias_asistencia.push(1);
+    if (rawData.dias_asistencia_2) dias_asistencia.push(2);
+    if (rawData.dias_asistencia_3) dias_asistencia.push(3);
+    if (rawData.dias_asistencia_4) dias_asistencia.push(4);
+    if (rawData.dias_asistencia_5) dias_asistencia.push(5);
+    if (rawData.dias_asistencia_6) dias_asistencia.push(6);
+
+    const empleadoData: any = {
       ...rawData,
       nombre_completo: rawData.nombre,
       fecha_ingreso: rawData.fechaIngreso,
@@ -602,20 +838,26 @@ export class RrhhComponent implements OnInit {
         salud: rawData.salud,
         movilizacion: rawData.movilizacion,
         colacion: rawData.colacion
+      },
+      config_jornada: {
+        tipo_jornada: rawData.tipo_jornada,
+        horas_contrato: rawData.horas_contrato,
+        dias_asistencia: dias_asistencia
       }
     };
 
-    // Opcional: Eliminar los campos planos para no ensuciar la BD
     delete empleadoData.sueldo_base;
     delete empleadoData.afp;
     delete empleadoData.salud;
     delete empleadoData.movilizacion;
     delete empleadoData.colacion;
+    delete empleadoData.tipo_jornada;
+    delete empleadoData.horas_contrato;
+    for (let i = 0; i <= 6; i++) delete empleadoData[`dias_asistencia_${i}`];
 
-    if (this.isEditing) {
-      this.rrhhService.actualizarEmpleado(empleadoData.rut, empleadoData).subscribe({
+    if (this.isEditing && this.selectedEmployee) {
+      this.rrhhService.actualizarEmpleado(this.selectedEmployee.rut, empleadoData).subscribe({
         next: (res: any) => {
-          this.isSaving = false;
           this.isSaving = false;
           this.closeForm();
           this.cargarDatosEmpleados();
@@ -677,6 +919,52 @@ export class RrhhComponent implements OnInit {
       e.rut.toLowerCase().includes(query)
     );
     this.paginaActual = 1;
+  }
+
+  verificarEstadoDia() {
+    this.verificandoDia = true;
+    this.rrhhService.verificarEstadoDia().subscribe({
+      next: (res: any) => {
+        this.diaSellado = res.dia_sellado;
+        this.esFindeHoy = res.es_finde || false;
+        this.verificandoDia = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error al verificar estado del día', err);
+        this.verificandoDia = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  sellarDia() {
+    if (confirm('¿Está seguro de sellar el día? Esto marcará como Presente a todos los empleados activos sin registro de hoy. Esta acción es definitiva.')) {
+      this.isSelleandoDia = true;
+      this.rrhhService.sellarAsistenciaDia().subscribe({
+        next: (res: any) => {
+          this.isSelleandoDia = false;
+          this.diaSellado = true;
+          this.toastService.show(`Día sellado exitosamente. Se marcaron ${res.insertados} presentes.`, 'success');
+          // Update the local list so the UI reflects "Presente" on the sealed people
+          this.asistenciaList.forEach(emp => {
+            if (emp.estado === 'Sin registro' || emp.estado === 'Presente') {
+              emp.estado = 'Presente';
+            }
+          });
+          this.filteredAsistenciaList = [...this.asistenciaList];
+          // Refresh monthly calendar data if needed
+          this.obtenerAsistencia();
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          this.isSelleandoDia = false;
+          const msg = err.error?.message || 'Error al sellar el día';
+          this.toastService.show(msg, 'error');
+          this.cdr.detectChanges();
+        }
+      });
+    }
   }
 
   registrarHorasExtra() {
@@ -825,6 +1113,52 @@ export class RrhhComponent implements OnInit {
         const msg = err.error?.message || 'Error al guardar la excepción. Posible duplicado.';
         console.log('Error guardando excepción', msg);
         this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // --- MODO ZEN PREDICTIVO: Excepciones Pre-aprobadas ---
+  showExcepcionJornadaModal() {
+    this.excepcionJornadaForm.reset({
+      rutEmpleado: this.selectedEmployee ? this.selectedEmployee.rut : '',
+      fecha_libre: '',
+      fecha_trabaja: ''
+    });
+    this.isSaving = false;
+    // Usamos una variable separada para mostrar el modal de turnos independientemente del selectedEmployee
+    this._showExcepcionJornadaModal = true;
+  }
+
+  closeExcepcionJornadaModal() {
+    this._showExcepcionJornadaModal = false;
+  }
+
+  saveExcepcionJornada() {
+    if (this.excepcionJornadaForm.invalid) return;
+    this.isSaving = true;
+
+    const val = this.excepcionJornadaForm.value;
+
+    this.rrhhService.swapTurno(val.rutEmpleado, val.fecha_libre, val.fecha_trabaja).subscribe({
+      next: (res) => {
+        // Actualizamos localmente si estamos en la ficha de ese empleado
+        const empleadoActualizado = res.data[0];
+        if (this.selectedEmployee && this.selectedEmployee.rut === val.rutEmpleado) {
+           this.selectedEmployee.excepciones_jornada = empleadoActualizado.excepciones_jornada;
+        }
+        
+        this.isSaving = false;
+        this.closeExcepcionJornadaModal();
+        this.toastService.show('Swap realizado exitosamente.', 'success');
+        
+        this.cargarDatosEmpleados();
+        if (this.activeTab === 'turnos') {
+          this.cargarVistaTurnos(); // refrescar la matriz
+        }
+      },
+      error: (err) => {
+        this.toastService.show('Error al registrar swap.', 'error');
+        this.isSaving = false;
       }
     });
   }

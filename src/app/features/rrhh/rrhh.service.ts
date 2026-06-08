@@ -38,6 +38,14 @@ export class RrhhService {
     return this.http.post<any>(this.asistenciaUrl, registros);
   }
 
+  verificarEstadoDia(): Observable<any> {
+    return this.http.get<any>(`${this.asistenciaUrl}estado-hoy/`);
+  }
+
+  sellarAsistenciaDia(): Observable<any> {
+    return this.http.post<any>(`${this.asistenciaUrl}sellar/`, {});
+  }
+
   registrarHorasExtra(registro: any): Observable<any> {
     return this.http.post<any>(this.horasExtraUrl, registro);
   }
@@ -56,5 +64,12 @@ export class RrhhService {
 
   darDeBajaEmpleado(rut: string): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}${rut}/`);
+  }
+
+  swapTurno(rut: string, fechaLibre: string, fechaTrabaja: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}${rut}/swap/`, {
+      fecha_libre: fechaLibre,
+      fecha_trabaja: fechaTrabaja
+    });
   }
 }

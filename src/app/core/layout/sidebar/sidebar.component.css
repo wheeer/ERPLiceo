@@ -212,6 +212,21 @@
   animation: slideDown 0.2s ease-out forwards;
 }
 
+.nav-sub-list.grouped {
+  padding-left: 2.75rem; /* Menos indentación para el grupo */
+  gap: 0.15rem;
+}
+
+.nav-sub-group-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-sidebar-muted, #475569);
+  font-weight: 700;
+  padding: 1rem 0.5rem 0.25rem;
+  user-select: none;
+}
+
 .nav-sub-link {
   display: flex;
   align-items: center;
