@@ -40,14 +40,47 @@
       </button>
 
       @if (mostrarNotificaciones) {
-        <div class="dropdown-panel notif-panel" id="panel-notificaciones">
+        <div class="dropdown-panel notif-panel" id="panel-notificaciones" style="width: 450px;">
           <h4 class="dropdown-title">Notificaciones</h4>
-          @for (n of notificaciones; track n.message) {
-            <div class="notif-item" [class.no-leida]="!n.leida" (click)="marcarComoLeida(n)" style="cursor: pointer;">
-              <span class="notif-dot"></span>
-              <div style="flex: 1;">
-                <p style="margin-bottom: 2px;">{{ n.message }}</p>
-                <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase;">{{ n.modulo }}</span>
+          
+          <div class="notif-filters">
+            @for (filter of visibleNotificationFilters; track filter.id) {
+              <button 
+                class="notif-filter-btn {{ filter.class }}" 
+                [class.active]="filtroPrioridad === filter.id" 
+                (click)="setFiltroPrioridad(filter.id)">
+                {{ filter.label }}
+              </button>
+            }
+          </div>
+
+          <div class="notif-list-container" style="max-height: 400px; overflow-y: auto;">
+          @for (n of notificacionesFiltradasYOrdenadas; track n.mensaje) {
+            <div class="notif-item-rich" [class.no-leida]="!n.leida" (click)="marcarComoLeida(n)">
+              <div class="notif-icon-wrapper" [ngClass]="'icon-' + (n.tipo === 'Stock Crítico' ? 'stock-critico' : (n.tipo === 'Poco Stock' ? 'poco-stock' : (n.tipo | lowercase)))">
+                @if (n.tipo === 'Stock Crítico') {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                } @else if (n.tipo === 'Poco Stock') {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                } @else if (n.tipo === 'Urgente') {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                } @else if (n.tipo === 'Éxito') {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                } @else if (n.tipo === 'Error') {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                }
+              </div>
+              <div class="notif-content-rich">
+                <div class="notif-header-rich">
+                  <h3 class="notif-title-rich">{{ n.tipo || 'Informativa' }}</h3>
+                  <span class="notif-time-rich">{{ n.fecha_creacion ? (n.fecha_creacion | date:'short') : 'Ahora' }}</span>
+                </div>
+                <p class="notif-desc-rich">{{ n.mensaje }}</p>
+                <div class="notif-footer-rich">
+                  <span class="badge-modulo" [ngClass]="'badge-' + n.modulo">{{ n.modulo | uppercase }}</span>
+                </div>
               </div>
             </div>
           }
@@ -56,6 +89,7 @@
               No tienes notificaciones nuevas.
             </div>
           }
+          </div>
         </div>
       }
     </div>

@@ -11,7 +11,8 @@ from .remuneraciones import (
 from .inventario import (
     inventario_lista,
     inventario_detalle,
-    inventario_criticos
+    inventario_criticos,
+    inventario_poco_stock
 )
 from .rrhh import (
     lista_empleados, 
@@ -28,4 +29,8 @@ from .rrhh import (
 from .dashboard import (
     api_dashboard_resumen, 
     api_dashboard_actividades
+)
+from .notificaciones import (
+    api_notificaciones,
+    api_notificacion_estado
 )

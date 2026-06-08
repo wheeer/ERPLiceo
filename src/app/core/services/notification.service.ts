@@ -1,13 +1,17 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { Observable, timer } from 'rxjs';
 import { retry, delayWhen } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
 
 export interface AppNotification {
-  message: string;
+  _id?: string;
+  mensaje: string;
   modulo: string;
+  tipo?: string;
   url_destino: string;
   leida?: boolean;
+  fecha_creacion?: string;
 }
 
 @Injectable({
@@ -39,4 +43,17 @@ export class NotificationService {
   public sendMessage(msg: any) {
     this.socket$.next(msg);
   }
+
+  private http = inject(HttpClient);
+  private readonly apiUrl = 'http://127.0.0.1:8000/api';
+
+  public getHistoricalNotifications(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/notificaciones/`);
+  }
+
+  public markAsRead(id: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/notificaciones/${id}/`, {});
+  }
+
+
 }
