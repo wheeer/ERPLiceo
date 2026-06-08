@@ -239,6 +239,57 @@ def api_empleado_detalle(request, rut):
         return JsonResponse({"success": False, "data": [], "message": str(e)}, status=500)
 
 
+@csrf_exempt
+@jwt_required
+def api_empleado_swap(request, rut):
+    try:
+        if request.method == 'POST':
+            body = parse_request_body(request)
+            fecha_libre = body.get('fecha_libre')
+            fecha_trabaja = body.get('fecha_trabaja')
+
+            if not fecha_libre or not fecha_trabaja:
+                return JsonResponse({"success": False, "data": [], "message": "Debe enviar fecha_libre y fecha_trabaja"}, status=400)
+
+            empleado = col_empleados.find_one({"rut": rut})
+            if not empleado:
+                return JsonResponse({"success": False, "data": [], "message": "Empleado no encontrado"}, status=404)
+
+            # Insertar en excepciones_jornada
+            excepciones = empleado.get('excepciones_jornada', [])
+            
+            # Filtramos previas para evitar duplicados en el mismo dia
+            excepciones = [e for e in excepciones if e.get('fecha') not in [fecha_libre, fecha_trabaja]]
+            
+            excepciones.append({"fecha": fecha_libre, "accion": "quitar"})
+            excepciones.append({"fecha": fecha_trabaja, "accion": "agregar"})
+
+            col_empleados.update_one({"rut": rut}, {"$set": {"excepciones_jornada": excepciones}})
+
+            # Auditoría
+            actor_rut = request.user_data.get('rut', 'Sistema') if hasattr(request, 'user_data') else 'Sistema'
+            actor_emp = col_empleados.find_one({"rut": actor_rut})
+            actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
+            nombre_empleado = empleado.get("nombre_completo", rut)
+            
+            registrar_auditoria(
+                usuario_rut=actor_rut,
+                usuario_nombre=actor_nombre,
+                modulo="rrhh",
+                accion="Cambio de Turno (Swap)",
+                descripcion=f"Se realizó un swap para {nombre_empleado}: Tomará libre el {fecha_libre} y trabajará el {fecha_trabaja}"
+            )
+
+            empleado_actualizado = col_empleados.find_one({"rut": rut})
+            return JsonResponse({"success": True, "data": [format_mongo_doc(empleado_actualizado)], "message": "Turno cambiado con éxito"}, status=200)
+
+        else:
+            return JsonResponse({"success": False, "data": [], "message": "Método no permitido"}, status=405)
+            
+    except Exception as e:
+        return JsonResponse({"success": False, "data": [], "message": str(e)}, status=500)
+
+
 # --- ASISTENCIA ---
 
 @csrf_exempt
@@ -544,32 +595,45 @@ def api_asistencia_estado_hoy(request):
             from datetime import datetime
             hoy = datetime.now()
             
-            es_finde = hoy.weekday() >= 5
-            if es_finde:
-                return JsonResponse({
-                    "success": True,
-                    "dia_sellado": True,
-                    "es_finde": True,
-                    "total_registros": 0,
-                    "total_activos": 0
-                }, status=200)
-
             inicio_dia = datetime(hoy.year, hoy.month, hoy.day, 0, 0, 0)
             fin_dia = datetime(hoy.year, hoy.month, hoy.day, 23, 59, 59)
             
-            activos = col_empleados.count_documents({"estado": {"$ne": "inactivo"}})
+            empleados_activos = list(col_empleados.find({"estado": {"$ne": "inactivo"}}))
+            
+            # Contar solo los que deben asistir hoy
+            hoy_str = hoy.strftime('%Y-%m-%d')
+            hoy_weekday = hoy.weekday()
+            activos_esperados = 0
+            
+            for emp in empleados_activos:
+                # 1. Revisar excepciones
+                excepciones = emp.get("excepciones_jornada", [])
+                accion_excepcion = next((ex.get("accion") for ex in excepciones if ex.get("fecha") == hoy_str), None)
+                
+                if accion_excepcion == "agregar":
+                    activos_esperados += 1
+                elif accion_excepcion == "quitar":
+                    continue
+                else:
+                    # 2. Revisar jornada base
+                    config = emp.get("config_jornada", {})
+                    dias_asistencia = config.get("dias_asistencia", [0,1,2,3,4]) # Default L-V
+                    if hoy_weekday in dias_asistencia:
+                        activos_esperados += 1
+            
             registros_hoy = col_asistencia.count_documents({
                 "fecha": {"$gte": inicio_dia, "$lte": fin_dia}
             })
             
-            dia_sellado = registros_hoy > 0 and registros_hoy >= activos
+            # Si hoy no se espera a nadie, el día se considera sellado
+            dia_sellado = True if activos_esperados == 0 else (registros_hoy > 0 and registros_hoy >= activos_esperados)
             
             return JsonResponse({
                 "success": True,
                 "dia_sellado": dia_sellado,
-                "es_finde": False,
+                "es_finde": False, # Retornamos False porque la UI ya no debe bloquear fines de semana genéricos
                 "total_registros": registros_hoy,
-                "total_activos": activos
+                "total_activos": activos_esperados
             }, status=200)
         else:
             return JsonResponse({"success": False, "message": "Método no permitido"}, status=405)
@@ -584,9 +648,6 @@ def api_asistencia_sellar(request):
             from datetime import datetime
             hoy = datetime.now()
             
-            if hoy.weekday() >= 5:
-                return JsonResponse({"success": False, "message": "No se puede sellar asistencia en fines de semana."}, status=400)
-                
             inicio_dia = datetime(hoy.year, hoy.month, hoy.day, 0, 0, 0)
             fin_dia = datetime(hoy.year, hoy.month, hoy.day, 23, 59, 59)
             
@@ -604,27 +665,50 @@ def api_asistencia_sellar(request):
                 if rut: ruts_con_registro.add(rut)
                 
             nuevos_registros = []
-            # Usar objeto datetime a la medianoche en UTC (o local) como lo hace el resto del sistema
             fecha_obj = datetime(hoy.year, hoy.month, hoy.day, 0, 0, 0)
+            hoy_str = hoy.strftime('%Y-%m-%d')
+            hoy_weekday = hoy.weekday()
             
             for emp in empleados_activos:
                 rut_emp = emp.get('rut')
-                if rut_emp and rut_emp not in ruts_con_registro:
+                if not rut_emp or rut_emp in ruts_con_registro:
+                    continue
+                    
+                # Lógica Inteligente de Asistencia
+                debe_asistir = False
+                excepciones = emp.get("excepciones_jornada", [])
+                accion_excepcion = next((ex.get("accion") for ex in excepciones if ex.get("fecha") == hoy_str), None)
+                
+                config = emp.get("config_jornada", {})
+                dias_asistencia = config.get("dias_asistencia", [0,1,2,3,4])
+                
+                if accion_excepcion == "agregar":
+                    debe_asistir = True
+                elif accion_excepcion == "quitar":
+                    debe_asistir = False
+                else:
+                    debe_asistir = hoy_weekday in dias_asistencia
+                    
+                if debe_asistir:
+                    # Calcular horas trabajadas proporcionales (K.I.S.S.)
+                    horas_contrato = config.get("horas_contrato", 44)
+                    cant_dias = len(dias_asistencia) if len(dias_asistencia) > 0 else 5
+                    horas_promedio = round(horas_contrato / cant_dias, 1) if horas_contrato else 9
+                    
                     nuevos_registros.append({
                         "rut": rut_emp,
                         "empleado_rut": rut_emp,
                         "estado": "Presente",
                         "fecha": fecha_obj,
                         "hora_entrada": "08:00",
-                        "hora_salida": "17:00",
-                        "horas_trabajadas": 9,
+                        "hora_salida": "17:00", # Horas fijas de referencia
+                        "horas_trabajadas": horas_promedio,
                         "horas_extra": 0,
-                        "comentario": "Generado automáticamente por sellado (Modo Zen)"
+                        "comentario": "Generado automáticamente por sellado (Modo Zen predictivo)"
                     })
             
             insertados = 0
             if nuevos_registros:
-                # Reutilizar validación interna si es necesario, o insertar directo
                 result = col_asistencia.insert_many(nuevos_registros)
                 insertados = len(result.inserted_ids)
                 
@@ -637,7 +721,7 @@ def api_asistencia_sellar(request):
                     usuario_nombre=actor_nombre,
                     modulo="rrhh",
                     accion="Día de Asistencia Sellado",
-                    descripcion=f"Se selló la asistencia insertando {insertados} registros de presentes implícitos."
+                    descripcion=f"Se selló la asistencia predictiva insertando {insertados} presentes implícitos."
                 )
 
             return JsonResponse({

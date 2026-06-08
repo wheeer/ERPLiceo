@@ -16,6 +16,7 @@ from .rrhh import (
     obtener_asistencia_mensual,
     api_empleados,
     api_empleado_detalle,
+    api_empleado_swap,
     api_asistencia,
     api_asistencia_resumen,
     api_horas_extra,

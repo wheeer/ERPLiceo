@@ -9,25 +9,26 @@
       
       <!-- TABS DEL MÓDULO -->
       <div class="module-tabs">
-        <button class="tab-btn" [class.active]="activeTab === 'general'" (click)="changeTab('general')">
-          Vista General
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'gestion'" (click)="changeTab('gestion')">
-          Gestión de Personal
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'asistencia'" (click)="changeTab('asistencia')">
-          Control de Asistencia
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'horasExtra'" (click)="changeTab('horasExtra')">
-          Horas Extra
-        </button>
-        <button class="tab-btn" [class.active]="activeTab === 'calendario'" (click)="changeTab('calendario')">
-          Calendario Mensual
-        </button>
+        <!-- Grupo 1 -->
+        <button class="tab-btn" [class.active]="activeTab === 'general'" (click)="changeTab('general')">Directorio</button>
+        <button class="tab-btn" [class.active]="activeTab === 'gestion'" (click)="changeTab('gestion')">Gestión y Contratos</button>
+        
+        <div class="tab-separator"></div>
+
+        <!-- Grupo 2 -->
+        <button class="tab-btn" [class.active]="activeTab === 'asistencia'" (click)="changeTab('asistencia')">Asistencia Diaria</button>
+        <button class="tab-btn" [class.active]="activeTab === 'horasExtra'" (click)="changeTab('horasExtra')">Horas Extra</button>
+
+        <div class="tab-separator"></div>
+
+        <!-- Grupo 3 -->
+        <button class="tab-btn" [class.active]="activeTab === 'turnos'" (click)="changeTab('turnos')">Matriz de Turnos</button>
+        <button class="tab-btn" [class.active]="activeTab === 'global'" (click)="changeTab('global')">Matriz Asistencia</button>
+        <button class="tab-btn" [class.active]="activeTab === 'calendario'" (click)="changeTab('calendario')">Calendario Individual</button>
+
         @if (activeTab === 'ficha' && selectedEmployee) {
-          <button class="tab-btn active">
-            Ficha: {{ selectedEmployee.nombre.split(' ')[0] }}
-          </button>
+          <div class="tab-separator"></div>
+          <button class="tab-btn active">Ficha: {{ selectedEmployee.nombre.split(' ')[0] }}</button>
         }
       </div>
     </div>
@@ -313,8 +314,41 @@
             </div>
           </div>
 
+          </div>
 
-        </div>
+          <div class="ficha-card" style="margin-top: 1rem;">
+            <div class="ficha-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <h3>Excepciones de Jornada (Cambios de Turno)</h3>
+              <button class="btn-secondary" (click)="showExcepcionJornadaModal()">+ Pre-aprobar Cambio</button>
+            </div>
+            <div class="table-wrapper" style="margin-top: 1rem;">
+              <table class="employees-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (ex of selectedEmployee.excepciones_jornada || []; track $index) {
+                    <tr>
+                      <td>{{ ex.fecha }}</td>
+                      <td>
+                        <span class="status-badge" [class.status-active]="ex.accion === 'agregar'" [class.status-leave]="ex.accion === 'quitar'">
+                          {{ ex.accion === 'agregar' ? 'Agregar Turno (Sí trabaja)' : 'Quitar Turno (Día Libre)' }}
+                        </span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="2" class="center">No hay excepciones registradas</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
       }
     </div>
   }
@@ -470,6 +504,185 @@
         </div>
       }
     }
+  }
+  <!-- ============================================== -->
+  <!-- TAB 7: VISTA GLOBAL MENSUAL                    -->
+  <!-- ============================================== -->
+  @if (activeTab === 'global') {
+    <div class="calendar-wrapper" style="margin-top: 1rem;">
+      <div class="calendar-top">
+        <h3 class="calendar-month">Vista Global de Asistencia</h3>
+        
+        <div class="calendar-filters" style="display: flex; gap: 1rem; align-items: center;">
+          <button class="btn-secondary" (click)="cambiarMesGlobal(-1)">Anterior</button>
+          <span style="font-weight: 500; min-width: 120px; text-align: center;">{{ globalMesSeleccionado }}/{{ globalAnioSeleccionado }}</span>
+          <button class="btn-secondary" (click)="cambiarMesGlobal(1)">Siguiente</button>
+        </div>
+      </div>
+
+      @if (isLoading) {
+        <div class="table-wrapper" style="margin-top: 1rem;">
+          <table class="employees-table">
+            <thead>
+              <tr>
+                <th>Funcionario</th>
+                @for (dia of globalDiasMes; track dia) { <th></th> }
+              </tr>
+            </thead>
+            <tbody>
+              @for (i of [1,2,3,4,5,6,7]; track i) {
+                <tr>
+                  <td><div class="skeleton-box shimmer w-70"></div></td>
+                  @for (dia of globalDiasMes; track dia) { <td><div class="skeleton-box shimmer" style="width:16px; height:16px; border-radius:50%; margin:0 auto;"></div></td> }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="table-wrapper" style="margin-top: 1rem; overflow-x: auto;">
+          <table class="employees-table" style="min-width: 1200px;">
+            <thead>
+              <tr>
+                <th style="position: sticky; left: 0; background: var(--surface-color); z-index: 10;">Funcionario</th>
+                @for (dia of globalDiasMes; track dia) {
+                  <th style="text-align: center; font-size: 0.8rem; padding: 0.5rem;">{{ dia }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (emp of globalEmpleados; track emp.rut) {
+                <tr>
+                  <td style="position: sticky; left: 0; background: var(--surface-color); font-weight: 500; border-right: 1px solid var(--border-color); z-index: 10;">
+                    <div style="font-size: 0.85rem;">{{ emp.nombre_completo || emp.nombre }}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary);">{{ emp.rut }}</div>
+                  </td>
+                  @for (dia of globalDiasMes; track dia) {
+                    <td style="text-align: center; padding: 0.2rem;">
+                      @if (globalAsistenciaMap[emp.rut] && globalAsistenciaMap[emp.rut][dia]) {
+                        @if (globalAsistenciaMap[emp.rut][dia] === 'presente') {
+                          <div title="Presente" style="width: 16px; height: 16px; background: #10b981; border-radius: 50%; margin: 0 auto;"></div>
+                        } @else if (globalAsistenciaMap[emp.rut][dia] === 'ausente') {
+                          <div title="Ausente" style="width: 16px; height: 16px; background: #ef4444; border-radius: 50%; margin: 0 auto;"></div>
+                        } @else if (globalAsistenciaMap[emp.rut][dia] === 'licencia') {
+                          <div title="Licencia" style="width: 16px; height: 16px; background: #f59e0b; border-radius: 50%; margin: 0 auto;"></div>
+                        } @else if (globalAsistenciaMap[emp.rut][dia] === 'atraso') {
+                          <div title="Atraso" style="width: 16px; height: 16px; background: #eab308; border-radius: 50%; margin: 0 auto;"></div>
+                        }
+                      } @else {
+                        <div style="color: #cbd5e1; font-size: 0.8rem;">-</div>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Leyenda -->
+        <div style="display: flex; gap: 1rem; margin-top: 1rem; font-size: 0.85rem; color: #4b5563;">
+          <span style="display: flex; align-items: center; gap: 0.5rem;"><div style="width: 12px; height: 12px; background: #10b981; border-radius: 50%;"></div> Presente</span>
+          <span style="display: flex; align-items: center; gap: 0.5rem;"><div style="width: 12px; height: 12px; background: #ef4444; border-radius: 50%;"></div> Ausente</span>
+          <span style="display: flex; align-items: center; gap: 0.5rem;"><div style="width: 12px; height: 12px; background: #f59e0b; border-radius: 50%;"></div> Licencia</span>
+          <span style="display: flex; align-items: center; gap: 0.5rem;"><div style="width: 12px; height: 12px; background: #eab308; border-radius: 50%;"></div> Atraso</span>
+          <span style="display: flex; align-items: center; gap: 0.5rem;"><div style="color: #cbd5e1;">-</div> Libre / Sin registro</span>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- TAB: VISTA GLOBAL DE TURNOS (FASE 5)           -->
+  <!-- ============================================== -->
+  @if (activeTab === 'turnos') {
+    <div class="calendar-wrapper" style="margin-top: 1rem;">
+      <div class="calendar-top" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+        <h3 class="calendar-month">Vista Global de Turnos</h3>
+        
+        <div class="calendar-filters" style="display: flex; gap: 1rem; align-items: center;">
+          <button class="btn-primary" (click)="showExcepcionJornadaModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem;"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+            Registrar Cambio de Turno
+          </button>
+          
+          <div style="width: 1px; height: 24px; background: var(--border-color); margin: 0 0.5rem;"></div>
+
+          <button class="btn-secondary" (click)="cambiarMesTurnos(-1)">Anterior</button>
+          <span style="font-weight: 500; min-width: 100px; text-align: center;">{{ turnosMesSeleccionado }}/{{ turnosAnioSeleccionado }}</span>
+          <button class="btn-secondary" (click)="cambiarMesTurnos(1)">Siguiente</button>
+        </div>
+      </div>
+
+      @if (isLoading) {
+        <div class="table-wrapper" style="margin-top: 1rem;">
+          <table class="employees-table">
+            <thead>
+              <tr>
+                <th>Funcionario</th>
+                @for (dia of globalDiasTurnosMes; track dia) { <th></th> }
+              </tr>
+            </thead>
+            <tbody>
+              @for (i of [1,2,3,4,5,6,7]; track i) {
+                <tr>
+                  <td><div class="skeleton-box shimmer w-70"></div></td>
+                  @for (dia of globalDiasTurnosMes; track dia) { <td><div class="skeleton-box shimmer" style="width:28px; height:28px; border-radius:6px; margin:0 auto;"></div></td> }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="table-wrapper" style="margin-top: 1rem; overflow-x: auto;">
+          <table class="employees-table" style="min-width: 1200px;">
+            <thead>
+              <tr>
+                <th style="position: sticky; left: 0; background: var(--surface-color); z-index: 10;">Funcionario</th>
+                @for (dia of globalDiasTurnosMes; track dia) {
+                  <th style="text-align: center; font-size: 0.8rem; padding: 0.5rem;">{{ dia }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (emp of globalEmpleados; track emp.rut) {
+                <tr>
+                  <td style="position: sticky; left: 0; background: var(--surface-color); font-weight: 500; border-right: 1px solid var(--border-color); z-index: 10;">
+                    <div style="font-size: 0.85rem;">{{ emp.nombre_completo || emp.nombre }}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary);">{{ emp.rut }}</div>
+                  </td>
+                  @for (dia of globalDiasTurnosMes; track dia) {
+                    <td style="text-align: center; padding: 0.2rem;">
+                      @if (globalTurnosMap[emp.rut] && globalTurnosMap[emp.rut][dia]) {
+                        @if (globalTurnosMap[emp.rut][dia] === 'T') {
+                          <span class="turno-badge regular" title="Turno Regular">T</span>
+                        } @else if (globalTurnosMap[emp.rut][dia] === 'L') {
+                          <span class="turno-badge libre" title="Día Libre">L</span>
+                        } @else if (globalTurnosMap[emp.rut][dia] === 'C-T') {
+                          <span class="turno-badge cambio-turno" title="Turno Agregado (Swap)">C-T</span>
+                        } @else if (globalTurnosMap[emp.rut][dia] === 'C-L') {
+                          <span class="turno-badge cambio-libre" title="Libre Agregado (Swap)">C-L</span>
+                        }
+                      } @else {
+                        <div style="color: #cbd5e1; font-size: 0.8rem;">-</div>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Leyenda -->
+        <div style="display: flex; gap: 1.5rem; margin-top: 1.5rem; flex-wrap: wrap;">
+          <div class="legend-turno-item"><span class="turno-badge regular">T</span> Turno Regular (Contrato)</div>
+          <div class="legend-turno-item"><span class="turno-badge libre">L</span> Día Libre (Contrato)</div>
+          <div class="legend-turno-item"><span class="turno-badge cambio-turno">C-T</span> Cambio a Turno (Extra)</div>
+          <div class="legend-turno-item"><span class="turno-badge cambio-libre">C-L</span> Cambio a Libre (Ausencia Autorizada)</div>
+        </div>
+      }
+    </div>
   }
 
   <!-- ============================================== -->
@@ -665,6 +878,35 @@
                 </select>
               </div>
             </div> <!-- FIN CARD: CONTRATO -->
+            <!-- CARD: JORNADA (Ley Chilena) -->
+            <div class="form-card">
+              <h3>Configuración de Jornada (Ley Chilena)</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Tipo de Jornada</label>
+                  <select formControlName="tipo_jornada">
+                    <option value="Ordinaria">Ordinaria (40-44h)</option>
+                    <option value="Parcial">Parcial (Part-time / Por Horas)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Horas Semanales de Contrato</label>
+                  <input type="number" formControlName="horas_contrato" min="1" max="44" placeholder="Ej: 44">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Días de Asistencia al Establecimiento</label>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                  <label><input type="checkbox" formControlName="dias_asistencia_0"> Lunes</label>
+                  <label><input type="checkbox" formControlName="dias_asistencia_1"> Martes</label>
+                  <label><input type="checkbox" formControlName="dias_asistencia_2"> Miércoles</label>
+                  <label><input type="checkbox" formControlName="dias_asistencia_3"> Jueves</label>
+                  <label><input type="checkbox" formControlName="dias_asistencia_4"> Viernes</label>
+                  <label><input type="checkbox" formControlName="dias_asistencia_5"> Sábado</label>
+                  <label><input type="checkbox" formControlName="dias_asistencia_6"> Domingo</label>
+                </div>
+              </div>
+            </div> <!-- FIN CARD: JORNADA -->
 
             <!-- CARD: REMUNERACIONES -->
             <div class="form-card">
@@ -943,6 +1185,68 @@
             </div>
           }
         }
+      </div>
+    </div>
+  }
+  <!-- ============================================== -->
+  <!-- MODAL DE EXCEPCIÓN DE JORNADA (PRE-APROBACIÓN) -->
+  <!-- ============================================== -->
+  @if (_showExcepcionJornadaModal) {
+    <div class="modal-overlay glass-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Pre-aprobar Cambio de Turno</h2>
+          <button class="btn-close" (click)="closeExcepcionJornadaModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        
+        <div class="modal-subheader glass-panel">
+          @if (selectedEmployee) {
+            <p><strong>Funcionario:</strong> {{ selectedEmployee.nombre_completo || selectedEmployee.nombre }}</p>
+          } @else {
+            <p><strong>Registro Global:</strong> Selecciona un funcionario para registrar la excepción.</p>
+          }
+          <p>Esta excepción será leída por el Modo Zen para procesar automáticamente la asistencia.</p>
+        </div>
+
+        <form [formGroup]="excepcionJornadaForm" (ngSubmit)="saveExcepcionJornada()" class="crud-form">
+          
+          <!-- Selector de Empleado (Solo visible si NO hay selectedEmployee) -->
+          @if (!selectedEmployee) {
+            <div class="form-group">
+              <label>Funcionario a Modificar</label>
+              <select formControlName="rutEmpleado" class="search-input" style="width: 100%;">
+                <option value="" disabled selected>Seleccione un empleado...</option>
+                @for (emp of globalEmpleados; track emp.rut) {
+                  <option [value]="emp.rut">{{ emp.nombre_completo || emp.nombre }} ({{ emp.rut }})</option>
+                }
+              </select>
+            </div>
+          }
+
+          <div class="form-group">
+            <label>Día de trabajo que tomará LIBRE</label>
+            <input type="date" formControlName="fecha_libre">
+          </div>
+
+          <div class="form-group">
+            <label>Día libre que TRABAJARÁ a cambio</label>
+            <input type="date" formControlName="fecha_trabaja">
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" (click)="closeExcepcionJornadaModal()">Cancelar</button>
+            <button type="submit" class="btn-primary btn-save-state" [disabled]="excepcionJornadaForm.invalid || isSaving">
+              @if (isSaving) {
+                <span class="btn-spinner"></span>
+                Guardando...
+              } @else {
+                Confirmar
+              }
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   }

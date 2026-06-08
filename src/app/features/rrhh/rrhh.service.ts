@@ -65,4 +65,11 @@ export class RrhhService {
   darDeBajaEmpleado(rut: string): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}${rut}/`);
   }
+
+  swapTurno(rut: string, fechaLibre: string, fechaTrabaja: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}${rut}/swap/`, {
+      fecha_libre: fechaLibre,
+      fecha_trabaja: fechaTrabaja
+    });
+  }
 }
