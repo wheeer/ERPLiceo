@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from core.db_connection import col_inventario, col_empleados, registrar_auditoria
+from core.db_connection import col_inventario, col_empleados, registrar_auditoria, col_notificaciones
 from core.jwt_middleware import jwt_required
 
 @csrf_exempt
@@ -228,6 +228,46 @@ def inventario_detalle(request, codigo):
                     
             if campos_actualizar:
                 col_inventario.update_one({"codigo": codigo}, {"$set": campos_actualizar})
+                
+            actualizado = col_inventario.find_one({"codigo": codigo})
+            
+            # --- LÓGICA BACKEND-DRIVEN: Notificaciones de Inventario (Fase V3) ---
+            stock_min_val = int(actualizado.get("stock_minimo", 0))
+            if stock_disponible_new <= stock_min_val and stock_disponible_new < stock_disponible_old:
+                hoy_str = datetime.now().strftime("%Y-%m-%d")
+                
+                if stock_disponible_new <= 0:
+                    mensaje_alerta = f"El artículo \"{actualizado.get('nombre')}\" ({codigo}) se ha AGOTADO (Stock: {stock_disponible_new})."
+                    tipo_alerta = "Stock Crítico"
+                    # Forzamos estado a Crítico
+                    actualizado["estado"] = "Crítico"
+                    col_inventario.update_one({"codigo": codigo}, {"$set": {"estado": "Crítico"}})
+                else:
+                    mensaje_alerta = f"El artículo \"{actualizado.get('nombre')}\" ({codigo}) tiene poco stock ({stock_disponible_new} restante). Reponer pronto."
+                    tipo_alerta = "Poco Stock"
+
+                alerta_existente = col_notificaciones.find_one({
+                    "modulo": "inventario",
+                    "tipo": tipo_alerta,
+                    "mensaje": mensaje_alerta,
+                    "fecha_str": hoy_str
+                })
+
+                if not alerta_existente:
+                    roles_destinos = ["Encargado_Bodega", "Administrador_General"]
+                    for rol in roles_destinos:
+                        col_notificaciones.insert_one({
+                            "usuario_id": rol,
+                            "mensaje": mensaje_alerta,
+                            "tipo": tipo_alerta,
+                            "modulo": "inventario",
+                            "url_destino": "/app/inventario",
+                            "leida": False,
+                            "fecha_creacion": datetime.now(),
+                            "fecha_str": hoy_str
+                        })
+            # ---------------------------------------------------------------------
+
                 
             actualizado = col_inventario.find_one({"codigo": codigo})
             actualizado['_id'] = str(actualizado['_id'])
