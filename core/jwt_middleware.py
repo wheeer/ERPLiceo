@@ -25,6 +25,13 @@ def jwt_required(view_func):
                 settings.SECRET_KEY,
                 algorithms=["HS256"]
             )
+            
+            # Verificar si se implementó el nuevo esquema "type"
+            if payload.get("type") == "refresh":
+                return JsonResponse({
+                    "success": False,
+                    "message": "Tipo de token inválido para autorización (Use access_token)."
+                }, status=401)
 
             request.user_data = payload
 

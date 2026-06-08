@@ -36,11 +36,6 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'daphne',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
     'django.contrib.staticfiles',
     
     # Herramientas de terceros
@@ -48,17 +43,17 @@ INSTALLED_APPS = [
     
     # Nuestras aplicaciones
     'core',
+    'rrhh',
+    'remuneraciones',
+    'inventario',
     'channels',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware', # Debe ir lo más arriba posible, justo después de Session/Security
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -72,8 +67,6 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -91,14 +84,8 @@ CHANNEL_LAYERS = {
 
 
 # Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# Ya no usamos SQLite, usamos PyMongo en core/db_connection.py
+DATABASES = {}
 
 
 # Password validation
@@ -137,7 +124,5 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# --- CONFIGURACIÓN DE CORS (Para Angular) ---
-# En desarrollo permitimos que cualquier origen (Angular en puerto 4200) consuma la API
-CORS_ALLOW_ALL_ORIGINS = True
-
+# --- CONFIGURACIÓN DE CORS ---
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:4200').split(',')

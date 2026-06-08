@@ -231,7 +231,7 @@ def inventario_detalle(request, codigo):
                 
             actualizado = col_inventario.find_one({"codigo": codigo})
             
-            # --- LÓGICA BACKEND-DRIVEN: Notificaciones de Inventario (Fase V3) ---
+            # Notificaciones automáticas de stock mínimo
             stock_min_val = int(actualizado.get("stock_minimo", 0))
             if stock_disponible_new <= stock_min_val and stock_disponible_new < stock_disponible_old:
                 hoy_str = datetime.now().strftime("%Y-%m-%d")
@@ -266,7 +266,7 @@ def inventario_detalle(request, codigo):
                             "fecha_creacion": datetime.now(),
                             "fecha_str": hoy_str
                         })
-            # ---------------------------------------------------------------------
+
 
                 
             actualizado = col_inventario.find_one({"codigo": codigo})

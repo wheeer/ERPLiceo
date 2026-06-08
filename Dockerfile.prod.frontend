@@ -1,0 +1,30 @@
+# ETAPA 1: Compilación de Angular
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Instalar dependencias
+COPY package*.json ./
+RUN npm install
+
+# Copiar el código fuente
+COPY . .
+
+# Construir la aplicación para producción
+RUN npm run build -- --configuration=production
+
+# ETAPA 2: Servidor Web NGINX
+FROM nginx:alpine
+
+# Eliminar los archivos por defecto de Nginx
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copiar el build compilado en la etapa 1 al directorio de Nginx
+# En Angular 17+, el output default es dist/[nombre_proyecto]/browser/
+COPY --from=build /app/dist/erp_liceos/browser/ /usr/share/nginx/html/
+
+# Exponer el puerto 80
+EXPOSE 80
+
+# Correr Nginx
+CMD ["nginx", "-g", "daemon off;"]
