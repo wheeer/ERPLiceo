@@ -12,8 +12,8 @@ export interface DashboardMetrics {
 })
 export class DashboardService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://127.0.0.1:8000/api/dashboard/resumen/';
-  private activitiesUrl = 'http://127.0.0.1:8000/api/dashboard/actividades/';
+  private apiUrl = 'http://54.87.191.204:8000/api/dashboard/resumen/';
+  private activitiesUrl = 'http://54.87.191.204:8000/api/dashboard/actividades/';
 
   getMetrics(): Observable<DashboardMetrics> {
     return this.http.get<DashboardMetrics>(this.apiUrl);
@@ -25,14 +25,14 @@ export class DashboardService {
 
   getChartRRHH(query: string): Observable<any> {
     // query ya viene con el formato '?tipo=diario&fecha=...'
-    return this.http.get<any>(`http://127.0.0.1:8000/api/asistencia/resumen/${query}`);
+    return this.http.get<any>(`http://54.87.191.204:8000/api/asistencia/resumen/${query}`);
   }
 
   getChartRemuneraciones(query: string): Observable<any> {
-    return this.http.get<any>(`http://127.0.0.1:8000/api/remuneraciones/${query}`);
+    return this.http.get<any>(`http://54.87.191.204:8000/api/remuneraciones/${query}`);
   }
 
   getChartInventario(categoria: string): Observable<any> {
-    return this.http.get<any>(`http://127.0.0.1:8000/api/inventario/`);
+    return this.http.get<any>(`http://54.87.191.204:8000/api/inventario/`);
   }
 }
