@@ -45,7 +45,7 @@ export class NotificationService {
   }
 
   private http = inject(HttpClient);
-  private readonly apiUrl = 'http://127.0.0.1:8000/api';
+  private readonly apiUrl = 'http://54.87.191.204:8000/api';
 
   public getHistoricalNotifications(): Observable<any> {
     return this.http.get(`${this.apiUrl}/notificaciones/`);

@@ -354,7 +354,7 @@ export class RrhhComponent implements OnInit {
   // ==========================================
 
   obtenerAsistencia(): void {
-    let url = `http://127.0.0.1:8000/api/asistencia/${this.mesSeleccionado}/${this.anioSeleccionado}/`;
+    let url = `http://54.87.191.204:8000/api/asistencia/${this.mesSeleccionado}/${this.anioSeleccionado}/`;
 
     if (this.empleadoSeleccionado) {
       url += `?rut=${this.empleadoSeleccionado}`;
