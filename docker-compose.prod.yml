@@ -1,0 +1,41 @@
+services:
+  backend_prod:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod.backend
+    container_name: erp_backend_prod
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - redis_prod
+    networks:
+      - erp_network_prod
+    restart: always
+
+  frontend_prod:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod.frontend
+    container_name: erp_frontend_prod
+    ports:
+      - "80:80"
+    depends_on:
+      - backend_prod
+    networks:
+      - erp_network_prod
+    restart: always
+
+  redis_prod:
+    image: redis:alpine
+    container_name: erp_redis_prod
+    ports:
+      - "6379:6379"
+    networks:
+      - erp_network_prod
+    restart: always
+
+networks:
+  erp_network_prod:
+    driver: bridge

@@ -88,11 +88,11 @@ def calcular_remuneraciones(request):
  
             dias_ausentes = ausencias_por_rut.get(rut, 0)
  
-            # FIX #25 (🚨2): Mes comercial chileno siempre es 30 días
+            # Mes comercial chileno siempre es 30 días
             valor_dia = round(sueldo_base / 30)
             descuento_asistencia = valor_dia * dias_ausentes
  
-            # FIX #25 (🚨1): El descuento rebaja el imponible antes de calcular AFP/Salud
+            # El descuento rebaja el imponible antes de calcular AFP/Salud
             sueldo_base_pagado = sueldo_base - descuento_asistencia
             gratificacion = min(round(sueldo_base_pagado * 0.25), 205000)
  
@@ -111,7 +111,7 @@ def calcular_remuneraciones(request):
                 cantidad_horas_extra += horas
                 total_horas_extra += round(horas * valor_hora * 1.5)
  
-            # FIX #25 (🚨1): total_imponible usa sueldo_base_pagado, no sueldo_base
+            # total_imponible usa sueldo_base_pagado
             total_imponible = sueldo_base_pagado + gratificacion + total_horas_extra
             afp = round(total_imponible * 0.115)
             salud = round(total_imponible * 0.07)
@@ -119,7 +119,6 @@ def calcular_remuneraciones(request):
             tipo_contrato = empleado.get("tipo_contrato", "").lower()
             seguro_cesantia = round(total_imponible * 0.006) if tipo_contrato == "indefinido" else 0
  
-            # FIX #25 (🚨1): descuento_asistencia ya NO se suma aquí
             total_descuentos = afp + salud + seguro_cesantia
             total_haberes = total_imponible + movilizacion + colacion
             sueldo_liquido = total_haberes - total_descuentos
@@ -242,7 +241,7 @@ def _serializar_liquidacion(liquidacion, empleado):
                 if isinstance(liquidacion["descuentos_legales"].get("asistencia"), dict)
                 else 0
             ),
-            # AJUSTE #25: días ausentes para bloque separado en frontend
+            # Días ausentes
             "diasAusentes": (
                 liquidacion["descuentos_legales"]["asistencia"]["dias_ausentes"]
                 if isinstance(liquidacion["descuentos_legales"].get("asistencia"), dict)

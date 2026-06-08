@@ -87,15 +87,24 @@ def login_view(request):
             {"$set": {"ultimo_acceso": datetime.datetime.now(datetime.timezone.utc)}}
         )
 
-        # Generar Token JWT (expira en 8 horas)
-        payload = {
+        # Generar Access Token (expira en 15 minutos)
+        access_payload = {
             "rut": rut_limpio,
             "rol_nombre": rol_nombre,
-            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=8),
+            "type": "access",
+            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15),
             "iat": datetime.datetime.now(datetime.timezone.utc)
         }
+        access_token = jwt.encode(access_payload, settings.SECRET_KEY, algorithm="HS256")
 
-        token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+        # Generar Refresh Token (expira en 7 días)
+        refresh_payload = {
+            "rut": rut_limpio,
+            "type": "refresh",
+            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7),
+            "iat": datetime.datetime.now(datetime.timezone.utc)
+        }
+        refresh_token = jwt.encode(refresh_payload, settings.SECRET_KEY, algorithm="HS256")
 
         registrar_auditoria(
             usuario_rut=rut_limpio,
@@ -107,7 +116,8 @@ def login_view(request):
 
         return JsonResponse({
             "message": "Login exitoso",
-            "token": token,
+            "token": access_token,
+            "refresh_token": refresh_token,
             "usuario": {
                 "rut": rut_limpio,
                 "nombre_completo": nombre_completo,
@@ -188,4 +198,59 @@ def cambiar_clave_view(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
-    
+
+@csrf_exempt
+def refresh_token_view(request):
+    """
+    Recibe un refresh_token válido y devuelve un nuevo access_token.
+    """
+    if request.method != 'POST':
+        return JsonResponse({"error": "Método no permitido. Usa POST."}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        refresh_token = data.get("refresh_token")
+
+        if not refresh_token:
+            return JsonResponse({"error": "Falta el refresh_token"}, status=400)
+
+        # Decodificar y validar el refresh token
+        try:
+            payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return JsonResponse({"error": "Refresh token expirado. Inicie sesión nuevamente."}, status=401)
+        except jwt.InvalidTokenError:
+            return JsonResponse({"error": "Refresh token inválido."}, status=401)
+
+        # Verificar que sea del tipo correcto
+        if payload.get("type") != "refresh":
+            return JsonResponse({"error": "Token no es un refresh token."}, status=401)
+
+        rut_limpio = payload.get("rut")
+
+        # Obtener el rol actualizado del usuario
+        usuario = col_usuarios.find_one({"rut": rut_limpio})
+        if not usuario or not usuario.get("activo"):
+            return JsonResponse({"error": "Usuario inactivo o no encontrado."}, status=401)
+
+        rol_document = col_roles.find_one({"_id": usuario.get("rol_id")})
+        rol_nombre = rol_document.get("nombre") if rol_document else ""
+
+        # Generar nuevo Access Token
+        access_payload = {
+            "rut": rut_limpio,
+            "rol_nombre": rol_nombre,
+            "type": "access",
+            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15),
+            "iat": datetime.datetime.now(datetime.timezone.utc)
+        }
+        new_access_token = jwt.encode(access_payload, settings.SECRET_KEY, algorithm="HS256")
+
+        return JsonResponse({
+            "message": "Token renovado exitosamente",
+            "token": new_access_token
+        }, status=200)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
