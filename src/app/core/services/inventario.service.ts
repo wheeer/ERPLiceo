@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class InventarioService {
   private http = inject(HttpClient);
-  private readonly apiUrl = 'http://54.87.191.204:8000/api/inventario/';
+  private readonly apiUrl = 'https://erpliceo.ddns.net/api/inventario/';
 
   getInventario(): Observable<any> {
     return this.http.get(this.apiUrl);

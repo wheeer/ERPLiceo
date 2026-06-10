@@ -141,7 +141,7 @@ export class RemuneracionesComponent implements OnInit {
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
     this.http.get<any>(
-      `http://54.87.191.204:8000/api/remuneraciones/${this.mesSeleccionado}/${this.anioSeleccionado}/`,
+      `https://erpliceo.ddns.net/api/remuneraciones/${this.mesSeleccionado}/${this.anioSeleccionado}/`,
       { headers }
     ).subscribe({
       next: (response) => {
@@ -158,7 +158,7 @@ export class RemuneracionesComponent implements OnInit {
         });
 
         this.http.get<any>(
-          `http://54.87.191.204:8000/api/horas-extra/${this.mesSeleccionado}/${this.anioSeleccionado}/`,
+          `https://erpliceo.ddns.net/api/horas-extra/${this.mesSeleccionado}/${this.anioSeleccionado}/`,
           { headers }
         ).subscribe({
           next: (heResponse) => {
@@ -263,7 +263,7 @@ export class RemuneracionesComponent implements OnInit {
       recargo: parseInt(formValues.recargo, 10)
     };
 
-    this.http.post<any>('http://54.87.191.204:8000/api/horas-extra/', payload, { headers }).subscribe({
+    this.http.post<any>('https://erpliceo.ddns.net/api/horas-extra/', payload, { headers }).subscribe({
       next: (res: any) => {
         const savedData = res.data ? res.data[0] : payload;
         const nuevoRegistro: HorasExtraRecord = {
@@ -713,7 +713,7 @@ export class RemuneracionesComponent implements OnInit {
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
     this.http.post<any>(
-      'http://54.87.191.204:8000/api/remuneraciones/calcular/',
+      'https://erpliceo.ddns.net/api/remuneraciones/calcular/',
       { mes: this.mesSeleccionado, anio: this.anioSeleccionado },
       { headers }
     ).subscribe({
@@ -772,7 +772,7 @@ export class RemuneracionesComponent implements OnInit {
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
     this.http.put<any>(
-      `http://54.87.191.204:8000/api/remuneraciones/lote/pagar/`,
+      `https://erpliceo.ddns.net/api/remuneraciones/lote/pagar/`,
       { pagados, impagos },
       { headers }
     ).subscribe({
@@ -828,7 +828,7 @@ export class RemuneracionesComponent implements OnInit {
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
     this.http.put<any>(
-      `http://54.87.191.204:8000/api/remuneraciones/lote/impago/`,
+      `https://erpliceo.ddns.net/api/remuneraciones/lote/impago/`,
       { impagos, motivo: this.motivoImpago },
       { headers }
     ).subscribe({

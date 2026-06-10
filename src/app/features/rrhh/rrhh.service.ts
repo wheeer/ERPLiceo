@@ -7,9 +7,9 @@ import { Observable } from 'rxjs';
 })
 export class RrhhService {
   // URL de tu backend en Django
-  private apiUrl = 'http://54.87.191.204:8000/api/empleados/';
-  private asistenciaUrl = 'http://54.87.191.204:8000/api/asistencia/';
-  private horasExtraUrl = 'http://54.87.191.204:8000/api/horas-extra/';
+  private apiUrl = 'https://erpliceo.ddns.net/api/empleados/';
+  private asistenciaUrl = 'https://erpliceo.ddns.net/api/asistencia/';
+  private horasExtraUrl = 'https://erpliceo.ddns.net/api/horas-extra/';
 
   constructor(private http: HttpClient) { }
 
