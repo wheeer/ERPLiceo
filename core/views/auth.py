@@ -10,6 +10,8 @@ from bson import ObjectId
 from core.jwt_middleware import jwt_required
 
 
+@csrf_exempt
+@jwt_required
 def status_check(request):
 
     try:

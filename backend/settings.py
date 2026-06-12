@@ -29,7 +29,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-for-dev')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['erpliceo.ddns.net', '54.87.191.204', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -125,4 +125,9 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 # --- CONFIGURACIÓN DE CORS ---
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    'https://erpliceo.ddns.net',
+    'http://localhost:4200',
+    'http://127.0.0.1:4200',
+]
