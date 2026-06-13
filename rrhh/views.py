@@ -11,6 +11,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 
 
+@csrf_exempt
+@jwt_required
 def lista_empleados(request):
     coleccion_empleados = db['empleados']
     
@@ -37,6 +39,8 @@ def lista_empleados(request):
 
     return JsonResponse(datos_formateados, safe=False)
 
+@csrf_exempt
+@jwt_required
 def asistencia_mensual(request):
     coleccion_asistencia = db['asistencia']
     asistencia_db = coleccion_asistencia.find()
@@ -56,6 +60,8 @@ def asistencia_mensual(request):
         
     return JsonResponse(datos_formateados, safe=False)
 
+@csrf_exempt
+@jwt_required
 def obtener_asistencia_mensual(request, mes, anio):
     try:
         mes, anio = int(mes), int(anio)
