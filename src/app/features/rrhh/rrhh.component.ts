@@ -6,6 +6,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RrhhService } from './rrhh.service';
 import { forkJoin, of } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 // ==========================================
 // INTERFACES ANTIGUAS
@@ -354,7 +355,7 @@ export class RrhhComponent implements OnInit {
   // ==========================================
 
   obtenerAsistencia(): void {
-    let url = `https://erpliceo.ddns.net/api/asistencia/${this.mesSeleccionado}/${this.anioSeleccionado}/`;
+    let url = `${environment.apiUrl}/asistencia/${this.mesSeleccionado}/${this.anioSeleccionado}/`;
 
     if (this.empleadoSeleccionado) {
       url += `?rut=${this.empleadoSeleccionado}`;

@@ -3,6 +3,7 @@ import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { Observable, timer } from 'rxjs';
 import { retry, delayWhen } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 export interface AppNotification {
   _id?: string;
@@ -26,7 +27,7 @@ export class NotificationService {
 
   private connect() {
     // Para entornos reales la URL debería venir de environment.ts (wss:// vs ws://)
-    this.socket$ = webSocket('ws://localhost:8000/ws/notifications/');
+    this.socket$ = webSocket(`${environment.wsUrl}/notifications/`);
   }
 
   public getNotifications(): Observable<AppNotification> {
@@ -45,7 +46,7 @@ export class NotificationService {
   }
 
   private http = inject(HttpClient);
-  private readonly apiUrl = 'https://erpliceo.ddns.net/api';
+  private readonly apiUrl = environment.apiUrl;
 
   public getHistoricalNotifications(): Observable<any> {
     return this.http.get(`${this.apiUrl}/notificaciones/`);

@@ -1,15 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RrhhService {
-  // URL de tu backend en Django
-  private apiUrl = 'https://erpliceo.ddns.net/api/empleados/';
-  private asistenciaUrl = 'https://erpliceo.ddns.net/api/asistencia/';
-  private horasExtraUrl = 'https://erpliceo.ddns.net/api/horas-extra/';
+  private apiUrl = `${environment.apiUrl}/empleados/`;
+  private asistenciaUrl = `${environment.apiUrl}/asistencia/`;
+  private horasExtraUrl = `${environment.apiUrl}/horas-extra/`;
 
   constructor(private http: HttpClient) { }
 
