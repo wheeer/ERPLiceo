@@ -4,12 +4,12 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from core.db_connection import col_empleados, col_remuneraciones, col_horas_extra, col_asistencia, registrar_auditoria
 from bson import ObjectId
-from core.jwt_middleware import jwt_required
+from core.jwt_middleware import jwt_required, role_required
 from datetime import datetime
  
  
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_Remuneraciones', 'Administrador_General')
 def calcular_remuneraciones(request):
  
     if request.method != 'POST':
@@ -51,7 +51,7 @@ def calcular_remuneraciones(request):
  
         ausencias_por_rut = {}
         for registro in asistencias:
-            rut = registro.get("empleado_rut") or registro.get("rut_empleado") or registro.get("rut")
+            rut = registro.get("rut")
             estado = registro.get("estado", "").lower()
             if estado in ["ausente", "inasistencia", "falta", "licencia"]:
                 ausencias_por_rut[rut] = ausencias_por_rut.get(rut, 0) + 1
@@ -67,7 +67,7 @@ def calcular_remuneraciones(request):
 
             # Buscar si ya existe liquidación para el empleado en el período actual
             liquidacion_existente = col_remuneraciones.find_one({
-                "empleado_rut": rut,
+                "rut": rut,
                 "periodo.mes": mes_int,
                 "periodo.anio": anio_int
             })
@@ -97,7 +97,7 @@ def calcular_remuneraciones(request):
             gratificacion = min(round(sueldo_base_pagado * 0.25), 205000)
  
             horas_extra_empleado = list(col_horas_extra.find({
-                "$or": [{"rut_empleado": rut}, {"rut": rut}],
+                "$or": [{"rut": rut}, {"rut": rut}],
                 "mes": mes_int,
                 "anio": anio_int
             }))
@@ -124,7 +124,7 @@ def calcular_remuneraciones(request):
             sueldo_liquido = total_haberes - total_descuentos
  
             liquidacion = {
-                "empleado_rut": rut,
+                "rut": rut,
                 "estado_pago": estado_previo,
                 "periodo": {"mes": mes_int, "anio": anio_int},
                 "empleado": {
@@ -209,7 +209,7 @@ def _serializar_liquidacion(liquidacion, empleado):
  
         return {
             "id": str(liquidacion["_id"]),
-            "rut": liquidacion["empleado_rut"],
+            "rut": liquidacion["rut"],
             "nombre": empleado.get("nombre_completo", "") if empleado else "",
             "cargo": empleado.get("cargo", "") if empleado else "",
             "mes": liquidacion["periodo"]["mes"],
@@ -284,7 +284,7 @@ def _serializar_liquidacion(liquidacion, empleado):
  
  
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_Remuneraciones', 'Administrador_General')
 def obtener_pdf_liquidacion(request, id):
  
     if request.method != 'GET':
@@ -311,7 +311,7 @@ def obtener_pdf_liquidacion(request, id):
                 "data": None
             }, status=404)
  
-        empleado = col_empleados.find_one({"rut": liquidacion["empleado_rut"]}) or {}
+        empleado = col_empleados.find_one({"rut": liquidacion["rut"]}) or {}
  
         return JsonResponse({
             "success": True,
@@ -328,7 +328,7 @@ def obtener_pdf_liquidacion(request, id):
  
  
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_Remuneraciones', 'Administrador_General')
 def obtener_liquidacion_empleado(request, rut, mes, anio):
  
     if request.method != 'GET':
@@ -340,7 +340,7 @@ def obtener_liquidacion_empleado(request, rut, mes, anio):
  
     try:
         liquidacion = col_remuneraciones.find_one({
-            "empleado_rut": rut,
+            "rut": rut,
             "periodo.mes": int(mes),
             "periodo.anio": int(anio)
         })
@@ -369,7 +369,7 @@ def obtener_liquidacion_empleado(request, rut, mes, anio):
  
  
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_Remuneraciones', 'Administrador_General')
 def obtener_remuneraciones(request, mes=None, anio=None):
 
     if request.method != 'GET':
@@ -474,7 +474,7 @@ def obtener_remuneraciones(request, mes=None, anio=None):
         for liquidacion in liquidaciones_bd:
 
             empleado = col_empleados.find_one({
-                "rut": liquidacion["empleado_rut"]
+                "rut": liquidacion["rut"]
             })
 
             liq_serializada = _serializar_liquidacion(liquidacion, empleado)
@@ -499,7 +499,7 @@ def obtener_remuneraciones(request, mes=None, anio=None):
  
  
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_Remuneraciones', 'Administrador_General')
 def obtener_horas_extra(request, mes, anio):
  
     if request.method != 'GET':
@@ -517,7 +517,7 @@ def obtener_horas_extra(request, mes, anio):
  
         horas_extra_frontend = []
         for he in horas_extra_bd:
-            rut_empleado = he.get("rut") or he.get("empleado_rut")
+            rut_empleado = he.get("rut")
             empleado_obj = col_empleados.find_one({"rut": rut_empleado})
             nombre_empleado = empleado_obj.get("nombre_completo", rut_empleado) if empleado_obj else rut_empleado
             config = empleado_obj.get("config_remuneracion", {}) if empleado_obj else {}
@@ -551,7 +551,7 @@ def obtener_horas_extra(request, mes, anio):
 
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_Remuneraciones', 'Administrador_General')
 def procesar_pagos_lote(request):
     if request.method not in ['POST', 'PUT']:
         return JsonResponse({
@@ -647,7 +647,7 @@ def procesar_pagos_lote(request):
         }, status=500)
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_Remuneraciones', 'Administrador_General')
 def declarar_impagos_lote(request):
     if request.method not in ['POST', 'PUT']:
         return JsonResponse({

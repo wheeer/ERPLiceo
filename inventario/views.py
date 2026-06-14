@@ -3,21 +3,31 @@ from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from core.db_connection import col_inventario, col_empleados, registrar_auditoria, col_notificaciones
-from core.jwt_middleware import jwt_required
+from core.jwt_middleware import jwt_required, role_required
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_Bodega', 'Administrador_General')
 def inventario_lista(request):
     if request.method == 'GET':
         try:
-            items = list(col_inventario.find({}))
+            page = int(request.GET.get('page', 1))
+            limit = int(request.GET.get('limit', 50))
+            skip = (page - 1) * limit
+            
+            items_cursor = col_inventario.find({}).skip(skip).limit(limit)
+            items = list(items_cursor)
+            total_items = col_inventario.count_documents({})
+            
             # Convert ObjectId to string for JSON serialization
             for item in items:
                 item['_id'] = str(item['_id'])
             return JsonResponse({
                 "success": True,
                 "message": "Inventario obtenido correctamente",
-                "data": items
+                "data": items,
+                "total": total_items,
+                "page": page,
+                "limit": limit
             }, status=200)
         except Exception as e:
             return JsonResponse({
@@ -84,7 +94,7 @@ def inventario_lista(request):
 
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_Bodega', 'Administrador_General')
 def inventario_criticos(request):
     if request.method == 'GET':
         try:
@@ -115,7 +125,7 @@ def inventario_criticos(request):
 
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_Bodega', 'Administrador_General')
 def inventario_poco_stock(request):
     if request.method == 'GET':
         try:
@@ -147,7 +157,7 @@ def inventario_poco_stock(request):
 
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_Bodega', 'Administrador_General')
 def inventario_detalle(request, codigo):
     if request.method == 'PUT':
         try:

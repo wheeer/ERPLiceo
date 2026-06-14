@@ -50,3 +50,25 @@ def jwt_required(view_func):
         return view_func(request, *args, **kwargs)
 
     return wrapper
+
+def role_required(*allowed_roles):
+    """
+    Decorador que verifica si el usuario autenticado tiene uno de los roles permitidos.
+    Debe usarse siempre DEBAJO de @jwt_required (o incluir su lógica).
+    """
+    def decorator(view_func):
+        # Primero aseguramos que pase la validación del JWT
+        @jwt_required
+        def wrapper(request, *args, **kwargs):
+            # Obtener el rol decodificado del token
+            user_role = request.user_data.get('rol_nombre')
+            
+            if not user_role or user_role not in allowed_roles:
+                return JsonResponse({
+                    "success": False,
+                    "message": f"Acceso denegado. Rol insuficiente. Se requiere uno de: {', '.join(allowed_roles)}"
+                }, status=403)
+                
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
