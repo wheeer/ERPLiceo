@@ -26,9 +26,9 @@
         <button class="tab-btn" [class.active]="activeTab === 'global'" (click)="changeTab('global')">Matriz Asistencia</button>
         <button class="tab-btn" [class.active]="activeTab === 'calendario'" (click)="changeTab('calendario')">Calendario Individual</button>
 
-        @if (activeTab === 'ficha' && selectedEmployee) {
+        @if (activeTab === 'ficha' && selectedEmpleado) {
           <div class="tab-separator"></div>
-          <button class="tab-btn active">Ficha: {{ selectedEmployee.nombre.split(' ')[0] }}</button>
+          <button class="tab-btn active">Ficha: {{ selectedEmpleado.nombre.split(' ')[0] }}</button>
         }
       </div>
     </div>
@@ -38,7 +38,7 @@
   <!-- ============================================== -->
   @if (activeTab === 'general') {
     <div class="action-bar-simple">
-      <input type="text" class="search-input" placeholder="Buscar empleado por nombre, RUT o cargo..." (keyup)="onSearchEmployee($event)">
+      <input type="text" class="search-input" placeholder="Buscar empleado por nombre, RUT o cargo..." (keyup)="onSearchEmpleado($event)">
     </div>
 
     @if (isLoading) {
@@ -72,7 +72,7 @@
         </table>
       </div>
     } @else {
-      @if (filteredEmployees.length > 0) {
+      @if (filteredEmpleados.length > 0) {
         <div class="table-wrapper">
           <table class="employees-table">
             <thead>
@@ -142,7 +142,7 @@
     <div class="action-bar">
       <div class="bar-left">
         <h2>Directorio de Empleados</h2>
-        <input type="text" class="search-input" placeholder="Buscar empleado por nombre o RUT..." (keyup)="onSearchEmployee($event)">
+        <input type="text" class="search-input" placeholder="Buscar empleado por nombre o RUT..." (keyup)="onSearchEmpleado($event)">
       </div>
       <button class="btn-primary" (click)="openNewModal()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -181,7 +181,7 @@
         </table>
       </div>
     } @else {
-      @if (filteredEmployees.length > 0) {
+      @if (filteredEmpleados.length > 0) {
         <div class="table-wrapper">
           <table class="employees-table crud-table">
             <thead>
@@ -216,7 +216,7 @@
                     <button class="btn-action btn-edit" (click)="openEditModal(employee)" title="Editar">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
-                    <button class="btn-action btn-delete" (click)="deleteEmployee(employee.rut)" title="Eliminar">
+                    <button class="btn-action btn-delete" (click)="deleteEmpleado(employee.rut)" title="Eliminar">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                   </td>
@@ -254,14 +254,14 @@
   <!-- ============================================== -->
   <!-- TAB 3: FICHA DE EMPLEADO -->
   <!-- ============================================== -->
-  @if (activeTab === 'ficha' && selectedEmployee) {
+  @if (activeTab === 'ficha' && selectedEmpleado) {
     <div class="ficha-wrapper">
       <div class="ficha-header">
         <button class="btn-back" (click)="changeTab('gestion')">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           Volver
         </button>
-        <button class="btn-primary" (click)="openEditModal(selectedEmployee)">Editar Datos</button>
+        <button class="btn-primary" (click)="openEditModal(selectedEmpleado)">Editar Datos</button>
       </div>
 
       @if (isLoading) {
@@ -285,12 +285,12 @@
       } @else {
         <div class="ficha-card">
           <div class="ficha-perfil">
-            <div class="ficha-avatar">{{ selectedEmployee.nombre.charAt(0) }}</div>
+            <div class="ficha-avatar">{{ selectedEmpleado.nombre.charAt(0) }}</div>
             <div class="ficha-nombres">
-              <h2>{{ selectedEmployee.nombre }}</h2>
-              <p>{{ selectedEmployee.cargo }}</p>
-              <span class="status-badge" [class]="getStatusColor(selectedEmployee.estado)">
-                {{ getStatusLabel(selectedEmployee.estado) }}
+              <h2>{{ selectedEmpleado.nombre }}</h2>
+              <p>{{ selectedEmpleado.cargo }}</p>
+              <span class="status-badge" [class]="getStatusColor(selectedEmpleado.estado)">
+                {{ getStatusLabel(selectedEmpleado.estado) }}
               </span>
             </div>
           </div>
@@ -298,19 +298,19 @@
           <div class="ficha-detalles">
             <div class="detalle-grupo">
               <label>RUT</label>
-              <p>{{ selectedEmployee.rut }}</p>
+              <p>{{ selectedEmpleado.rut }}</p>
             </div>
             <div class="detalle-grupo">
               <label>Correo Institucional</label>
-              <p>{{ selectedEmployee.correo }}</p>
+              <p>{{ selectedEmpleado.correo }}</p>
             </div>
             <div class="detalle-grupo">
               <label>Departamento</label>
-              <p>{{ selectedEmployee.departamento || 'Sin asignar' }}</p>
+              <p>{{ selectedEmpleado.departamento || 'Sin asignar' }}</p>
             </div>
             <div class="detalle-grupo">
               <label>Fecha de Ingreso</label>
-              <p>{{ formatDate(selectedEmployee.fechaIngreso) }}</p>
+              <p>{{ formatDate(selectedEmpleado.fechaIngreso) }}</p>
             </div>
           </div>
 
@@ -330,7 +330,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (ex of selectedEmployee.excepciones_jornada || []; track $index) {
+                  @for (ex of selectedEmpleado.excepciones_jornada || []; track $index) {
                     <tr>
                       <td>{{ ex.fecha }}</td>
                       <td>
@@ -788,7 +788,7 @@
       </div>
 
       <div class="form-container">
-        <form id="employeeForm" [formGroup]="employeeForm" (ngSubmit)="saveEmployee()" class="crud-form full-width-form">
+        <form id="employeeForm" [formGroup]="employeeForm" (ngSubmit)="saveEmpleado()" class="crud-form full-width-form">
           <div class="form-grid">
             <!-- CARD: DATOS PERSONALES -->
             <div class="form-card">
@@ -1202,8 +1202,8 @@
         </div>
         
         <div class="modal-subheader glass-panel">
-          @if (selectedEmployee) {
-            <p><strong>Funcionario:</strong> {{ selectedEmployee.nombre_completo || selectedEmployee.nombre }}</p>
+          @if (selectedEmpleado) {
+            <p><strong>Funcionario:</strong> {{ selectedEmpleado.nombre_completo || selectedEmpleado.nombre }}</p>
           } @else {
             <p><strong>Registro Global:</strong> Selecciona un funcionario para registrar la excepción.</p>
           }
@@ -1212,8 +1212,8 @@
 
         <form [formGroup]="excepcionJornadaForm" (ngSubmit)="saveExcepcionJornada()" class="crud-form">
           
-          <!-- Selector de Empleado (Solo visible si NO hay selectedEmployee) -->
-          @if (!selectedEmployee) {
+          <!-- Selector de Empleado (Solo visible si NO hay selectedEmpleado) -->
+          @if (!selectedEmpleado) {
             <div class="form-group">
               <label>Funcionario a Modificar</label>
               <select formControlName="rutEmpleado" class="search-input" style="width: 100%;">

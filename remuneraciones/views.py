@@ -207,6 +207,7 @@ def _serializar_liquidacion(liquidacion, empleado):
         seguro_cesantia = liquidacion["descuentos_legales"]["seguro_cesantia"]
         seguro_cesantia_monto = seguro_cesantia["monto"] if isinstance(seguro_cesantia, dict) else seguro_cesantia
  
+        rut_empleado = liquidacion.get("empleado_rut") or liquidacion.get("rut") or liquidacion.get("rut_empleado") or ""
         return {
             "id": str(liquidacion["_id"]),
             "rut": liquidacion["rut"],
@@ -473,6 +474,7 @@ def obtener_remuneraciones(request, mes=None, anio=None):
         liquidaciones_frontend = []
         for liquidacion in liquidaciones_bd:
 
+            rut_empleado = liquidacion.get("empleado_rut") or liquidacion.get("rut") or liquidacion.get("rut_empleado")
             empleado = col_empleados.find_one({
                 "rut": liquidacion["rut"]
             })
