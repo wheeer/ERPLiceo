@@ -6,13 +6,13 @@ from bson.objectid import ObjectId
 from django.http import JsonResponse
 
 from core.db_connection import db, col_empleados, col_asistencia, col_horas_extra, registrar_auditoria
-from core.jwt_middleware import jwt_required
+from core.jwt_middleware import jwt_required, role_required
 from django.views.decorators.csrf import csrf_exempt
 
 
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_RRHH', 'Administrador_General')
 def lista_empleados(request):
     coleccion_empleados = db['empleados']
     
@@ -40,7 +40,7 @@ def lista_empleados(request):
     return JsonResponse(datos_formateados, safe=False)
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_RRHH', 'Administrador_General')
 def asistencia_mensual(request):
     coleccion_asistencia = db['asistencia']
     asistencia_db = coleccion_asistencia.find()
@@ -49,7 +49,7 @@ def asistencia_mensual(request):
     for asis in asistencia_db:
         datos_formateados.append({
             '_id': str(asis.get('_id')),
-            'empleado_rut': asis.get('empleado_rut', ''),
+            'rut': asis.get('rut', ''),
             'fecha': asis.get('fecha', ''),
             'hora_entrada': asis.get('hora_entrada', ''),
             'hora_salida': asis.get('hora_salida', ''),
@@ -61,7 +61,7 @@ def asistencia_mensual(request):
     return JsonResponse(datos_formateados, safe=False)
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_RRHH', 'Administrador_General')
 def obtener_asistencia_mensual(request, mes, anio):
     try:
         mes, anio = int(mes), int(anio)
@@ -80,8 +80,6 @@ def obtener_asistencia_mensual(request, mes, anio):
         
         if empleado_id:
             filtros = [
-                {"empleado_rut": empleado_id},
-                {"empleado_id": empleado_id},
                 {"rut": empleado_id}
             ]
             
@@ -146,7 +144,7 @@ def parse_request_body(request):
 # --- EMPLEADOS ---
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_RRHH', 'Administrador_General')
 def api_empleados(request):
     try:
         if request.method == 'GET':
@@ -188,7 +186,7 @@ def api_empleados(request):
         return JsonResponse({"success": False, "data": [], "message": str(e)}, status=500)
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_RRHH', 'Administrador_General')
 def api_empleado_detalle(request, rut):
     try:
         empleado = col_empleados.find_one({"rut": rut})
@@ -242,7 +240,7 @@ def api_empleado_detalle(request, rut):
 
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_RRHH', 'Administrador_General')
 def api_empleado_swap(request, rut):
     try:
         if request.method == 'POST':
@@ -295,7 +293,7 @@ def api_empleado_swap(request, rut):
 # --- ASISTENCIA ---
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_RRHH', 'Administrador_General')
 def api_asistencia(request, mes=None, anio=None):
     try:
         if request.method == 'GET':
@@ -311,7 +309,7 @@ def api_asistencia(request, mes=None, anio=None):
             query = {"fecha": {"$gte": primer_dia, "$lte": ultimo_dia}}
             
             if rut:
-                query["$or"] = [{"empleado_rut": rut}, {"rut": rut}]
+                query["rut"] = rut
                 
             asistencias = list(col_asistencia.find(query))
             data = [format_mongo_doc(a) for a in asistencias]
@@ -341,7 +339,7 @@ def api_asistencia(request, mes=None, anio=None):
             for reg in registros:
                 estado = reg.get('estado')
                 horas_extra = reg.get('horas_extra', 0)
-                rut_empleado = reg.get('rut') or reg.get('empleado_rut')
+                rut_empleado = reg.get('rut')
                 
                 if not estado or estado not in estados_validos or not rut_empleado:
                     continue
@@ -385,7 +383,7 @@ def api_asistencia(request, mes=None, anio=None):
                 fin_dia = datetime(fecha_obj.year, fecha_obj.month, fecha_obj.day, 23, 59, 59)
                 
                 duplicado = col_asistencia.find_one({
-                    "$or": [{"empleado_rut": rut_empleado}, {"rut": rut_empleado}],
+                    "rut": rut_empleado,
                     "fecha": {"$gte": inicio_dia, "$lte": fin_dia}
                 })
                 
@@ -395,9 +393,6 @@ def api_asistencia(request, mes=None, anio=None):
                         "data": [],
                         "message": f"Conflicto: Ya existe un registro de asistencia para el RUT {rut_empleado} en la fecha {fecha_obj.strftime('%Y-%m-%d')}."
                     }, status=409)
-                    
-                if 'rut' in reg and 'empleado_rut' not in reg:
-                    reg['empleado_rut'] = reg['rut']
                     
                 registros_a_procesar.append(reg)
 
@@ -439,7 +434,7 @@ def api_asistencia(request, mes=None, anio=None):
         return JsonResponse({"success": False, "data": [], "message": str(e)}, status=500)
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_RRHH', 'Administrador_General')
 def api_asistencia_resumen(request, mes=None, anio=None):
     try:
         if request.method == 'GET':
@@ -520,7 +515,7 @@ def api_asistencia_resumen(request, mes=None, anio=None):
             resumen_cronologico = {} # Para el dashboard
             
             for asis in asistencias:
-                rut = asis.get('empleado_rut') or asis.get('rut')
+                rut = asis.get('rut')
                 fecha = asis.get('fecha')
                 estado = asis.get('estado')
                 
@@ -561,7 +556,7 @@ def api_asistencia_resumen(request, mes=None, anio=None):
                 
             horas_extras = list(col_horas_extra.find(filtro_he))
             for he in horas_extras:
-                rut = he.get('rut') or he.get('rut_empleado') or he.get('empleado_rut')
+                rut = he.get('rut')
                 if not rut or rut not in resumen:
                     continue
                     
@@ -590,7 +585,7 @@ def api_asistencia_resumen(request, mes=None, anio=None):
         return JsonResponse({"success": False, "data": [], "message": str(e)}, status=500)
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_RRHH', 'Administrador_General')
 def api_asistencia_estado_hoy(request):
     try:
         if request.method == 'GET':
@@ -643,7 +638,7 @@ def api_asistencia_estado_hoy(request):
         return JsonResponse({"success": False, "message": str(e)}, status=500)
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_RRHH', 'Administrador_General')
 def api_asistencia_sellar(request):
     try:
         if request.method == 'POST':
@@ -663,7 +658,7 @@ def api_asistencia_sellar(request):
             
             ruts_con_registro = set()
             for r in registros_hoy:
-                rut = r.get('empleado_rut') or r.get('rut')
+                rut = r.get('rut')
                 if rut: ruts_con_registro.add(rut)
                 
             nuevos_registros = []
@@ -699,7 +694,6 @@ def api_asistencia_sellar(request):
                     
                     nuevos_registros.append({
                         "rut": rut_emp,
-                        "empleado_rut": rut_emp,
                         "estado": "Presente",
                         "fecha": fecha_obj,
                         "hora_entrada": "08:00",
@@ -740,7 +734,7 @@ def api_asistencia_sellar(request):
 # --- HORAS EXTRA ---
 
 @csrf_exempt
-@jwt_required
+@role_required('Encargado_RRHH', 'Administrador_General')
 def api_horas_extra(request, mes=None, anio=None):
     try:
         if request.method == 'GET':
@@ -754,7 +748,7 @@ def api_horas_extra(request, mes=None, anio=None):
             
             rut = request.GET.get('rut')
             if rut:
-                query["empleado_rut"] = rut
+                query["rut"] = rut
                 
             horas_extra_list = list(col_horas_extra.find(query))
             data = [format_mongo_doc(hx) for hx in horas_extra_list]
@@ -798,7 +792,7 @@ def api_horas_extra(request, mes=None, anio=None):
             actor_emp = col_empleados.find_one({"rut": actor_rut})
             actor_nombre = actor_emp.get("nombre_completo", actor_rut) if actor_emp else actor_rut
             
-            rut_afectado = body.get('rut') or body.get('empleado_rut') or body.get('rut_empleado') or ''
+            rut_afectado = body.get('rut') or ''
             horas_he = body.get('horas') or body.get('cantidad_horas') or 0
             
             registrar_auditoria(

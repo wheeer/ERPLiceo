@@ -58,7 +58,7 @@ def login_view(request):
         usuario = col_usuarios.find_one({"rut": rut_limpio})
 
         if not usuario:
-            return JsonResponse({"error": "Usuario no encontrado"}, status=404)
+            return JsonResponse({"error": "Credenciales inválidas"}, status=401)
 
         # Validar contraseña con bcrypt
         stored_hash = usuario.get("password_hash")
@@ -70,7 +70,7 @@ def login_view(request):
             stored_hash = stored_hash.encode('utf-8')
 
         if not bcrypt.checkpw(password.encode('utf-8'), stored_hash):
-            return JsonResponse({"error": "Contraseña incorrecta"}, status=401)
+            return JsonResponse({"error": "Credenciales inválidas"}, status=401)
 
         # Login exitoso: cruzar datos con la colección de empleados
         empleado = col_empleados.find_one({"rut": rut_limpio})
