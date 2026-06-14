@@ -207,9 +207,10 @@ def _serializar_liquidacion(liquidacion, empleado):
         seguro_cesantia = liquidacion["descuentos_legales"]["seguro_cesantia"]
         seguro_cesantia_monto = seguro_cesantia["monto"] if isinstance(seguro_cesantia, dict) else seguro_cesantia
  
+        rut_empleado = liquidacion.get("empleado_rut") or liquidacion.get("rut") or liquidacion.get("rut_empleado") or ""
         return {
             "id": str(liquidacion["_id"]),
-            "rut": liquidacion["empleado_rut"],
+            "rut": rut_empleado,
             "nombre": empleado.get("nombre_completo", "") if empleado else "",
             "cargo": empleado.get("cargo", "") if empleado else "",
             "mes": liquidacion["periodo"]["mes"],
@@ -311,7 +312,8 @@ def obtener_pdf_liquidacion(request, id):
                 "data": None
             }, status=404)
  
-        empleado = col_empleados.find_one({"rut": liquidacion["empleado_rut"]}) or {}
+        rut_empleado = liquidacion.get("empleado_rut") or liquidacion.get("rut") or liquidacion.get("rut_empleado")
+        empleado = col_empleados.find_one({"rut": rut_empleado}) or {}
  
         return JsonResponse({
             "success": True,
@@ -473,8 +475,9 @@ def obtener_remuneraciones(request, mes=None, anio=None):
         liquidaciones_frontend = []
         for liquidacion in liquidaciones_bd:
 
+            rut_empleado = liquidacion.get("empleado_rut") or liquidacion.get("rut") or liquidacion.get("rut_empleado")
             empleado = col_empleados.find_one({
-                "rut": liquidacion["empleado_rut"]
+                "rut": rut_empleado
             })
 
             liq_serializada = _serializar_liquidacion(liquidacion, empleado)
