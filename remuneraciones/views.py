@@ -97,7 +97,7 @@ def calcular_remuneraciones(request):
             gratificacion = min(round(sueldo_base_pagado * 0.25), 205000)
  
             horas_extra_empleado = list(col_horas_extra.find({
-                "$or": [{"rut": rut}, {"rut": rut}],
+                "rut": rut,
                 "mes": mes_int,
                 "anio": anio_int
             }))

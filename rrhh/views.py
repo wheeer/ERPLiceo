@@ -80,8 +80,6 @@ def obtener_asistencia_mensual(request, mes, anio):
         
         if empleado_id:
             filtros = [
-                {"rut": empleado_id},
-                {"empleado_id": empleado_id},
                 {"rut": empleado_id}
             ]
             
@@ -311,7 +309,7 @@ def api_asistencia(request, mes=None, anio=None):
             query = {"fecha": {"$gte": primer_dia, "$lte": ultimo_dia}}
             
             if rut:
-                query["$or"] = [{"rut": rut}, {"rut": rut}]
+                query["rut"] = rut
                 
             asistencias = list(col_asistencia.find(query))
             data = [format_mongo_doc(a) for a in asistencias]
@@ -385,7 +383,7 @@ def api_asistencia(request, mes=None, anio=None):
                 fin_dia = datetime(fecha_obj.year, fecha_obj.month, fecha_obj.day, 23, 59, 59)
                 
                 duplicado = col_asistencia.find_one({
-                    "$or": [{"rut": rut_empleado}, {"rut": rut_empleado}],
+                    "rut": rut_empleado,
                     "fecha": {"$gte": inicio_dia, "$lte": fin_dia}
                 })
                 
@@ -395,9 +393,6 @@ def api_asistencia(request, mes=None, anio=None):
                         "data": [],
                         "message": f"Conflicto: Ya existe un registro de asistencia para el RUT {rut_empleado} en la fecha {fecha_obj.strftime('%Y-%m-%d')}."
                     }, status=409)
-                    
-                if 'rut' in reg and 'rut' not in reg:
-                    reg['rut'] = reg['rut']
                     
                 registros_a_procesar.append(reg)
 
@@ -698,7 +693,6 @@ def api_asistencia_sellar(request):
                     horas_promedio = round(horas_contrato / cant_dias, 1) if horas_contrato else 9
                     
                     nuevos_registros.append({
-                        "rut": rut_emp,
                         "rut": rut_emp,
                         "estado": "Presente",
                         "fecha": fecha_obj,
