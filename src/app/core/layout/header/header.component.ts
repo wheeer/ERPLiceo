@@ -191,6 +191,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
           this.ngZone.run(() => {
             // Agregar al principio de la lista y forzar nueva referencia
             this.notificaciones = [{ ...msg, leida: false }, ...this.notificaciones];
+            this.cdr.detectChanges();
             console.log('✅ Notificación aprobada y agregada para el rol:', this.userRole);
           });
         } else {

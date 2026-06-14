@@ -9,8 +9,6 @@ import { forkJoin, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 
-// NUEVAS INTERFACES (Issue #21)
-// ==========================================
 export interface Empleado {
   id: string | number;
   rut: string;
@@ -95,9 +93,7 @@ export type TabType = 'general' | 'gestion' | 'ficha' | 'asistencia' | 'horasExt
 })
 export class RrhhComponent implements OnInit {
 
-  // ==========================================
-  // DEPENDENCIAS (Unificadas al estilo moderno)
-  // ==========================================
+
   private fb = inject(FormBuilder);
   private toastService = inject(ToastService);
   private route = inject(ActivatedRoute);
@@ -106,9 +102,7 @@ export class RrhhComponent implements OnInit {
   private rrhhService = inject(RrhhService);
   private http = inject(HttpClient);
 
-  // ==========================================
-  // ESTADO ANTIGUO (CRUD, Tabs, Horas Extra)
-  // ==========================================
+
   activeTab: TabType = 'general';
   isLoading = true;
   viewingForm = false;
@@ -141,9 +135,7 @@ export class RrhhComponent implements OnInit {
   filteredEmpleados: Empleado[] = [];
   filteredAsistenciaList: AsistenciaEmpleadoNuevo[] = [];
 
-  // ==========================================
-  // ESTADO NUEVO (Issue #21 - Calendario)
-  // ==========================================
+
   mesSeleccionado: number = 6;
   anioSeleccionado: number = 2026;
   empleadoSeleccionado: string = '';
@@ -163,7 +155,7 @@ export class RrhhComponent implements OnInit {
   turnosAnioSeleccionado: number = new Date().getFullYear();
   globalDiasTurnosMes: number[] = [];
   globalTurnosMap: { [rut: string]: { [dia: number]: string } } = {};
-  
+
   totalPresentes: number = 0;
   totalAusentes: number = 0;
   totalTardanzas: number = 0;
@@ -179,9 +171,7 @@ export class RrhhComponent implements OnInit {
   ];
   anios = [2024, 2025, 2026, 2027];
 
-  // ==========================================
-  // PAGINACIÓN (Antiguo)
-  // ==========================================
+
   paginaActual = 1;
   itemsPorPagina = 20;
   opcionesPorPagina = [10, 20, 50, 100];
@@ -347,9 +337,7 @@ export class RrhhComponent implements OnInit {
     });
   }
 
-  // ==========================================
-  // LÓGICA NUEVA: CALENDARIO (Issue #21)
-  // ==========================================
+
 
   obtenerAsistencia(): void {
     let url = `${environment.apiUrl}/asistencia/${this.mesSeleccionado}/${this.anioSeleccionado}/`;
@@ -463,8 +451,8 @@ export class RrhhComponent implements OnInit {
 
       // Prioridad 1: Dato duro diario (Base de datos)
       if (asistenciaMap[i] && asistenciaMap[i] !== 'Sin registro' && asistenciaMap[i] !== 'Finde') {
-        estadoFinal = asistenciaMap[i]; 
-      } 
+        estadoFinal = asistenciaMap[i];
+      }
       // Prioridad 2: Fallback al estado global (Licencia, etc) si el casillero está vacío
       else if (esGlobalLicencia) {
         estadoFinal = estadoGlobal;
@@ -472,7 +460,7 @@ export class RrhhComponent implements OnInit {
       // Prioridad 3: Lógica normal del calendario
       else if (esFinde) {
         estadoFinal = 'Finde';
-      } 
+      }
       else if (esMesPasado || (esMesActual && i <= diaActual)) {
         // Modo Zen: Si el día ya pasó, no es finde y no tiene registro negativo en BD, se asume presente por defecto.
         estadoFinal = 'Presente';
@@ -486,10 +474,6 @@ export class RrhhComponent implements OnInit {
       });
     }
   }
-
-  // ==========================================
-  // LÓGICA ANTIGUA (CRUD y Tablas) MANTENIDA INTACTA
-  // ==========================================
 
   cargarDatosEmpleados(): void {
     this.isLoading = true;
@@ -524,10 +508,10 @@ export class RrhhComponent implements OnInit {
           rut: emp.rut,
           nombre: emp.nombre,
           cargo: emp.cargo,
-          estado: 'Sin Registro',
-          entrada: '--:--',
-          salida: '--:--',
-          diasVacaciones: 0,
+          estado: 'Presente',
+          entrada: '08:00',
+          salida: '17:00',
+          diasVacaciones: 15,
           inasistenciasInjustificadas: 0
         }));
         this.filteredAsistenciaList = [...this.asistenciaList];
@@ -624,14 +608,14 @@ export class RrhhComponent implements OnInit {
 
   cargarVistaGlobal() {
     this.isLoading = true;
-    
+
     // Obtener días del mes
     const daysInMonth = new Date(this.globalAnioSeleccionado, this.globalMesSeleccionado, 0).getDate();
-    this.globalDiasMes = Array.from({length: daysInMonth}, (_, i) => i + 1);
+    this.globalDiasMes = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
     // Obtener empleados (usar caché si ya existen)
-    const empleadosObs = this.globalEmpleados && this.globalEmpleados.length > 0 
-      ? of({ data: this.globalEmpleados }) 
+    const empleadosObs = this.globalEmpleados && this.globalEmpleados.length > 0
+      ? of({ data: this.globalEmpleados })
       : this.rrhhService.obtenerEmpleados(true);
 
     // Obtener asistencia
@@ -644,7 +628,7 @@ export class RrhhComponent implements OnInit {
       next: ({ resEmp, resAsis }) => {
         this.globalEmpleados = resEmp.data || resEmp;
         const asistencias = resAsis.data || [];
-        
+
         // Mapear por RUT y Día
         this.globalAsistenciaMap = {};
         this.globalEmpleados.forEach(emp => {
@@ -692,7 +676,7 @@ export class RrhhComponent implements OnInit {
   cargarVistaTurnos() {
     this.isLoading = true;
     const daysInMonth = new Date(this.turnosAnioSeleccionado, this.turnosMesSeleccionado, 0).getDate();
-    this.globalDiasTurnosMes = Array.from({length: daysInMonth}, (_, i) => i + 1);
+    this.globalDiasTurnosMes = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
     const obs = this.globalEmpleados && this.globalEmpleados.length > 0
       ? of({ data: this.globalEmpleados })
@@ -705,16 +689,16 @@ export class RrhhComponent implements OnInit {
 
         this.globalEmpleados.forEach((emp: any) => {
           this.globalTurnosMap[emp.rut] = {};
-          
+
           // Días de contrato normales (0=Lunes, 6=Domingo en nuestra interfaz)
-          const diasAsistencia = emp.config_jornada?.dias_asistencia || [0,1,2,3,4];
-          
+          const diasAsistencia = emp.config_jornada?.dias_asistencia || [0, 1, 2, 3, 4];
+
           // Iterar por cada día del mes
           for (let day = 1; day <= daysInMonth; day++) {
             const dateObj = new Date(this.turnosAnioSeleccionado, this.turnosMesSeleccionado - 1, day);
             const jsDay = dateObj.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
             const mappedDay = jsDay === 0 ? 6 : jsDay - 1; // Convertir a 0=Mon, ..., 6=Sun
-            
+
             // Estado base por contrato
             let estadoTurno = diasAsistencia.includes(mappedDay) ? 'T' : 'L';
 
@@ -722,7 +706,7 @@ export class RrhhComponent implements OnInit {
             if (emp.excepciones_jornada && emp.excepciones_jornada.length > 0) {
               const dateStr = `${this.turnosAnioSeleccionado}-${String(this.turnosMesSeleccionado).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
               const excepcion = emp.excepciones_jornada.find((ex: any) => ex.fecha === dateStr || ex.fecha.startsWith(dateStr));
-              
+
               if (excepcion) {
                 if (excepcion.accion === 'agregar') {
                   estadoTurno = 'C-T'; // Cambio a Turno (Era libre, ahora trabaja)
@@ -802,13 +786,13 @@ export class RrhhComponent implements OnInit {
       colacion: employee.config_remuneracion?.colacion || 0,
       tipo_jornada: employee.config_jornada?.tipo_jornada || 'Ordinaria',
       horas_contrato: employee.config_jornada?.horas_contrato || 44,
-      dias_asistencia_0: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(0),
-      dias_asistencia_1: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(1),
-      dias_asistencia_2: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(2),
-      dias_asistencia_3: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(3),
-      dias_asistencia_4: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(4),
-      dias_asistencia_5: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(5),
-      dias_asistencia_6: (employee.config_jornada?.dias_asistencia || [0,1,2,3,4]).includes(6)
+      dias_asistencia_0: (employee.config_jornada?.dias_asistencia || [0, 1, 2, 3, 4]).includes(0),
+      dias_asistencia_1: (employee.config_jornada?.dias_asistencia || [0, 1, 2, 3, 4]).includes(1),
+      dias_asistencia_2: (employee.config_jornada?.dias_asistencia || [0, 1, 2, 3, 4]).includes(2),
+      dias_asistencia_3: (employee.config_jornada?.dias_asistencia || [0, 1, 2, 3, 4]).includes(3),
+      dias_asistencia_4: (employee.config_jornada?.dias_asistencia || [0, 1, 2, 3, 4]).includes(4),
+      dias_asistencia_5: (employee.config_jornada?.dias_asistencia || [0, 1, 2, 3, 4]).includes(5),
+      dias_asistencia_6: (employee.config_jornada?.dias_asistencia || [0, 1, 2, 3, 4]).includes(6)
     });
     this.viewingForm = true;
   }
@@ -1025,7 +1009,7 @@ export class RrhhComponent implements OnInit {
           horas: 1,
           recargo: 50
         });
-        
+
         this.isSaving = false;
         this.cdr.detectChanges();
       },
@@ -1154,13 +1138,13 @@ export class RrhhComponent implements OnInit {
         // Actualizamos localmente si estamos en la ficha de ese empleado
         const empleadoActualizado = res.data[0];
         if (this.selectedEmpleado && this.selectedEmpleado.rut === val.rutEmpleado) {
-           this.selectedEmpleado.excepciones_jornada = empleadoActualizado.excepciones_jornada;
+          this.selectedEmpleado.excepciones_jornada = empleadoActualizado.excepciones_jornada;
         }
-        
+
         this.isSaving = false;
         this.closeExcepcionJornadaModal();
         this.toastService.show('Swap realizado exitosamente.', 'success');
-        
+
         this.cargarDatosEmpleados();
         if (this.activeTab === 'turnos') {
           this.cargarVistaTurnos(); // refrescar la matriz
