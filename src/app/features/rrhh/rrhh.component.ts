@@ -8,10 +8,10 @@ import { RrhhService } from './rrhh.service';
 import { forkJoin, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+
+// NUEVAS INTERFACES (Issue #21)
 // ==========================================
-// INTERFACES ANTIGUAS
-// ==========================================
-export interface Employee {
+export interface Empleado {
   id: string | number;
   rut: string;
   nombre: string;
@@ -40,7 +40,7 @@ export interface Employee {
   }[];
 }
 
-export interface RegistroHorasExtra {
+export interface RegistroHorasExtraNuevo {
   id: string | number;
   empleadoId: string | number;
   empleado: string;
@@ -55,7 +55,7 @@ export interface RegistroHorasExtra {
   autorizadoPor: string;
 }
 
-export interface AsistenciaEmpleado {
+export interface AsistenciaEmpleadoNuevo {
   id: number;
   rut: string;
   nombre: string;
@@ -67,9 +67,6 @@ export interface AsistenciaEmpleado {
   inasistenciasInjustificadas: number;
 }
 
-// ==========================================
-// NUEVAS INTERFACES (Issue #21)
-// ==========================================
 export interface EmpleadoCalendario {
   rut: string;
   nombre_completo?: string;
@@ -116,14 +113,14 @@ export class RrhhComponent implements OnInit {
   isLoading = true;
   viewingForm = false;
   isEditing = false;
-  selectedEmployee: Employee | null = null;
+  selectedEmpleado: Empleado | null = null;
   employeeForm: FormGroup;
   isSaving = false;
   mostrarSoloActivos: boolean = false;
 
   fechaHoy: Date = new Date();
   showAsistenciaModal = false;
-  selectedAsistencia: AsistenciaEmpleado | null = null;
+  selectedAsistencia: AsistenciaEmpleadoNuevo | null = null;
   showHorasExtraModal = false;
   _showExcepcionJornadaModal = false;
   excepcionForm: FormGroup;
@@ -136,13 +133,13 @@ export class RrhhComponent implements OnInit {
   esFindeHoy: boolean = false;
 
   horasExtraForm: FormGroup;
-  historialHorasExtra: RegistroHorasExtra[] = [];
+  historialHorasExtra: RegistroHorasExtraNuevo[] = [];
 
-  asistenciaList: AsistenciaEmpleado[] = [];
+  asistenciaList: AsistenciaEmpleadoNuevo[] = [];
 
-  employees: Employee[] = [];
-  filteredEmployees: Employee[] = [];
-  filteredAsistenciaList: AsistenciaEmpleado[] = [];
+  employees: Empleado[] = [];
+  filteredEmpleados: Empleado[] = [];
+  filteredAsistenciaList: AsistenciaEmpleadoNuevo[] = [];
 
   // ==========================================
   // ESTADO NUEVO (Issue #21 - Calendario)
@@ -189,22 +186,22 @@ export class RrhhComponent implements OnInit {
   itemsPorPagina = 20;
   opcionesPorPagina = [10, 20, 50, 100];
 
-  get empleadosPaginados(): Employee[] {
+  get empleadosPaginados(): Empleado[] {
     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
-    return this.filteredEmployees.slice(inicio, inicio + this.itemsPorPagina);
+    return this.filteredEmpleados.slice(inicio, inicio + this.itemsPorPagina);
   }
 
   get totalPaginasEmpleados(): number {
-    return Math.ceil(this.filteredEmployees.length / this.itemsPorPagina) || 1;
+    return Math.ceil(this.filteredEmpleados.length / this.itemsPorPagina) || 1;
   }
 
   get rangoMostradoEmpleados(): string {
     const inicio = (this.paginaActual - 1) * this.itemsPorPagina + 1;
-    const fin = Math.min(this.paginaActual * this.itemsPorPagina, this.filteredEmployees.length);
-    return `${inicio}-${fin} de ${this.filteredEmployees.length}`;
+    const fin = Math.min(this.paginaActual * this.itemsPorPagina, this.filteredEmpleados.length);
+    return `${inicio}-${fin} de ${this.filteredEmpleados.length}`;
   }
 
-  get asistenciaPaginada(): AsistenciaEmpleado[] {
+  get asistenciaPaginada(): AsistenciaEmpleadoNuevo[] {
     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
     return this.filteredAsistenciaList.slice(inicio, inicio + this.itemsPorPagina);
   }
@@ -518,7 +515,7 @@ export class RrhhComponent implements OnInit {
           }
         }));
 
-        this.filteredEmployees = [...this.employees];
+        this.filteredEmpleados = [...this.employees];
 
         // Restaurado: Mapear los empleados reales a la lista de asistencia diaria (Modo Zen)
         // Esto NO es un mock, es la lógica de negocio para tener a quién marcarle excepciones.
@@ -527,10 +524,10 @@ export class RrhhComponent implements OnInit {
           rut: emp.rut,
           nombre: emp.nombre,
           cargo: emp.cargo,
-          estado: 'Presente',
-          entrada: '08:00',
-          salida: '17:00',
-          diasVacaciones: 15,
+          estado: 'Sin Registro',
+          entrada: '--:--',
+          salida: '--:--',
+          diasVacaciones: 0,
           inasistenciasInjustificadas: 0
         }));
         this.filteredAsistenciaList = [...this.asistenciaList];
@@ -575,8 +572,8 @@ export class RrhhComponent implements OnInit {
 
 
 
-  getStatusColor(status: Employee['estado']): string {
-    const colors: Record<Employee['estado'], string> = {
+  getStatusColor(status: Empleado['estado']): string {
+    const colors: Record<Empleado['estado'], string> = {
       'activo': 'status-active',
       'inactivo': 'status-inactive',
       'licencia': 'status-leave'
@@ -584,8 +581,8 @@ export class RrhhComponent implements OnInit {
     return colors[status] || 'status-inactive';
   }
 
-  getStatusLabel(status: Employee['estado']): string {
-    const labels: Record<Employee['estado'], string> = {
+  getStatusLabel(status: Empleado['estado']): string {
+    const labels: Record<Empleado['estado'], string> = {
       'activo': 'Activo',
       'inactivo': 'Inactivo',
       'licencia': 'En Licencia'
@@ -621,7 +618,7 @@ export class RrhhComponent implements OnInit {
     }
 
     if (tab !== 'ficha') {
-      this.selectedEmployee = null;
+      this.selectedEmpleado = null;
     }
   }
 
@@ -762,8 +759,8 @@ export class RrhhComponent implements OnInit {
     this.cargarVistaTurnos();
   }
 
-  viewFicha(employee: Employee) {
-    this.selectedEmployee = employee;
+  viewFicha(employee: Empleado) {
+    this.selectedEmpleado = employee;
     this.activeTab = 'ficha';
   }
 
@@ -792,9 +789,9 @@ export class RrhhComponent implements OnInit {
     this.viewingForm = true;
   }
 
-  openEditModal(employee: Employee) {
+  openEditModal(employee: Empleado) {
     this.isEditing = true;
-    this.selectedEmployee = employee;
+    this.selectedEmpleado = employee;
     this.employeeForm.patchValue({
       ...employee,
       fechaIngreso: employee.fechaIngreso.toISOString().split('T')[0],
@@ -820,7 +817,7 @@ export class RrhhComponent implements OnInit {
     this.viewingForm = false;
   }
 
-  saveEmployee() {
+  saveEmpleado() {
     if (this.employeeForm.invalid) {
       Object.keys(this.employeeForm.controls).forEach(key => {
         const control = this.employeeForm.get(key);
@@ -868,8 +865,8 @@ export class RrhhComponent implements OnInit {
     delete empleadoData.horas_contrato;
     for (let i = 0; i <= 6; i++) delete empleadoData[`dias_asistencia_${i}`];
 
-    if (this.isEditing && this.selectedEmployee) {
-      this.rrhhService.actualizarEmpleado(this.selectedEmployee.rut, empleadoData).subscribe({
+    if (this.isEditing && this.selectedEmpleado) {
+      this.rrhhService.actualizarEmpleado(this.selectedEmpleado.rut, empleadoData).subscribe({
         next: (res: any) => {
           this.isSaving = false;
           this.closeForm();
@@ -900,7 +897,7 @@ export class RrhhComponent implements OnInit {
     }
   }
 
-  deleteEmployee(rut: string) {
+  deleteEmpleado(rut: string) {
     if (confirm('¿Está seguro de dar de baja este empleado?')) {
       this.rrhhService.darDeBajaEmpleado(rut).subscribe({
         next: () => {
@@ -915,9 +912,9 @@ export class RrhhComponent implements OnInit {
     }
   }
 
-  onSearchEmployee(event: Event) {
+  onSearchEmpleado(event: Event) {
     const query = (event.target as HTMLInputElement).value.toLowerCase();
-    this.filteredEmployees = this.employees.filter(e =>
+    this.filteredEmpleados = this.employees.filter(e =>
       e.nombre.toLowerCase().includes(query) ||
       e.rut.toLowerCase().includes(query) ||
       e.cargo.toLowerCase().includes(query)
@@ -1046,7 +1043,7 @@ export class RrhhComponent implements OnInit {
     console.log('Registro eliminado');
   }
 
-  openExcepcionModal(empleado: AsistenciaEmpleado) {
+  openExcepcionModal(empleado: AsistenciaEmpleadoNuevo) {
     this.selectedAsistencia = empleado;
     this.excepcionForm.reset({
       tipoExcepcion: 'atraso',
@@ -1133,12 +1130,12 @@ export class RrhhComponent implements OnInit {
   // --- MODO ZEN PREDICTIVO: Excepciones Pre-aprobadas ---
   showExcepcionJornadaModal() {
     this.excepcionJornadaForm.reset({
-      rutEmpleado: this.selectedEmployee ? this.selectedEmployee.rut : '',
+      rutEmpleado: this.selectedEmpleado ? this.selectedEmpleado.rut : '',
       fecha_libre: '',
       fecha_trabaja: ''
     });
     this.isSaving = false;
-    // Usamos una variable separada para mostrar el modal de turnos independientemente del selectedEmployee
+    // Usamos una variable separada para mostrar el modal de turnos independientemente del selectedEmpleado
     this._showExcepcionJornadaModal = true;
   }
 
@@ -1156,8 +1153,8 @@ export class RrhhComponent implements OnInit {
       next: (res) => {
         // Actualizamos localmente si estamos en la ficha de ese empleado
         const empleadoActualizado = res.data[0];
-        if (this.selectedEmployee && this.selectedEmployee.rut === val.rutEmpleado) {
-           this.selectedEmployee.excepciones_jornada = empleadoActualizado.excepciones_jornada;
+        if (this.selectedEmpleado && this.selectedEmpleado.rut === val.rutEmpleado) {
+           this.selectedEmpleado.excepciones_jornada = empleadoActualizado.excepciones_jornada;
         }
         
         this.isSaving = false;

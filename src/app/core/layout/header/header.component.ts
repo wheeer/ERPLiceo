@@ -158,6 +158,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
       mergeMap(route => route.data)
     ).subscribe(data => {
       this.pageTitle = data['title'] || 'ERP EMTP';
+      this.cdr.detectChanges();
     });
 
     this.userRole = this.authService.getUserRole();

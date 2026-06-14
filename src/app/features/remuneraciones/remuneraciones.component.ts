@@ -4,10 +4,10 @@ import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } 
 import { ToastService } from '../../core/services/toast.service';
 import { ActivatedRoute } from '@angular/router';
 import { jsPDF } from 'jspdf';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core'; // FIX: NgZone eliminado
 import { Title } from '@angular/platform-browser';
 import { environment } from '../../../environments/environment';
+import { RemuneracionesService } from './remuneraciones.service';
 
 
 
@@ -118,7 +118,7 @@ export class RemuneracionesComponent implements OnInit {
     return this.filteredPayrollData.filter(p => p.selected).length;
   }
 
-  constructor(private http: HttpClient) {
+  constructor(private remuneracionesService: RemuneracionesService) {
     this.horasExtraForm = this.fb.group({
       empleadoId: ['', Validators.required],
       horas: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
@@ -127,24 +127,13 @@ export class RemuneracionesComponent implements OnInit {
   }
 
   cargarRemuneraciones() {
-    const token = localStorage.getItem('erp_token');
-    if (!token) {
-      setTimeout(() => this.toastService.show('Sesión expirada.', 'warning'), 0);
-      return;
-    }
-
     setTimeout(() => {
       this.isLoading = true;
       this.isLoadingData = true;
       this.cdr.detectChanges();
     }, 0);
 
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-
-    this.http.get<any>(
-      `${environment.apiUrl}/remuneraciones/${this.mesSeleccionado}/${this.anioSeleccionado}/`,
-      { headers }
-    ).subscribe({
+    this.remuneracionesService.obtenerRemuneraciones(this.mesSeleccionado, this.anioSeleccionado).subscribe({
       next: (response) => {
         this.payrollData = response.data;
         this.filteredPayrollData = response.data;
@@ -158,10 +147,7 @@ export class RemuneracionesComponent implements OnInit {
           }
         });
 
-        this.http.get<any>(
-          `${environment.apiUrl}/horas-extra/${this.mesSeleccionado}/${this.anioSeleccionado}/`,
-          { headers }
-        ).subscribe({
+        this.remuneracionesService.obtenerHorasExtra(this.mesSeleccionado, this.anioSeleccionado).subscribe({
           next: (heResponse) => {
             this.historialHorasExtra = (heResponse.data || []).map((he: any) => {
               const empleadoEnNomina = this.payrollData.find(p => p.rut === he.rut || p.rut === he.empleado_rut);
@@ -246,13 +232,6 @@ export class RemuneracionesComponent implements OnInit {
     const recargoMultiplicador = 1 + (formValues.recargo / 100);
     const montoTotal = valorHoraNormal * recargoMultiplicador * formValues.horas;
 
-    const token = localStorage.getItem('erp_token');
-    if (!token) {
-      this.toastService.show('Sesión expirada.', 'warning');
-      return;
-    }
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-
     const payload = {
       rut: empleado.rut,
       empleado_rut: empleado.rut,
@@ -264,7 +243,7 @@ export class RemuneracionesComponent implements OnInit {
       recargo: parseInt(formValues.recargo, 10)
     };
 
-    this.http.post<any>(`${environment.apiUrl}/horas-extra/`, payload, { headers }).subscribe({
+    this.remuneracionesService.registrarHorasExtra(payload).subscribe({
       next: (res: any) => {
         const savedData = res.data ? res.data[0] : payload;
         const nuevoRegistro: HorasExtraRecord = {
@@ -702,22 +681,10 @@ export class RemuneracionesComponent implements OnInit {
   }
 
   generarLiquidaciones() {
-    const token = localStorage.getItem('erp_token');
-    if (!token) {
-      setTimeout(() => this.toastService.show('Sesión expirada.', 'warning'), 0);
-      return;
-    }
-
     this.isGenerating = true;
     this.liquidacionesActivo = true;
 
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-
-    this.http.post<any>(
-      `${environment.apiUrl}/remuneraciones/calcular/`,
-      { mes: this.mesSeleccionado, anio: this.anioSeleccionado },
-      { headers }
-    ).subscribe({
+    this.remuneracionesService.calcularRemuneraciones(this.mesSeleccionado, this.anioSeleccionado).subscribe({
       next: (response) => {
         setTimeout(() => {
           this.isGenerating = false;
@@ -758,9 +725,6 @@ export class RemuneracionesComponent implements OnInit {
   }
 
   formalizarPagos() {
-    const token = localStorage.getItem('erp_token');
-    if (!token) return;
-
     const pagados = this.filteredPayrollData.filter(p => p.selected).map(p => p.id);
     const impagos: string[] = []; // Ya no agrupamos desmarcados automáticamente
 
@@ -770,13 +734,8 @@ export class RemuneracionesComponent implements OnInit {
     }
 
     this.isFormalizing = true;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
-    this.http.put<any>(
-      `${environment.apiUrl}/remuneraciones/lote/pagar/`,
-      { pagados, impagos },
-      { headers }
-    ).subscribe({
+    this.remuneracionesService.pagarLote(pagados, impagos).subscribe({
       next: (res) => {
         if (res.success) {
           this.toastService.show(res.message, 'success');
@@ -810,9 +769,6 @@ export class RemuneracionesComponent implements OnInit {
   }
 
   confirmarImpagos() {
-    const token = localStorage.getItem('erp_token');
-    if (!token) return;
-
     const impagos = this.filteredPayrollData.filter(p => p.selected).map(p => p.id);
 
     if (impagos.length === 0) {
@@ -826,13 +782,8 @@ export class RemuneracionesComponent implements OnInit {
     }
 
     this.isFormalizing = true;
-    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
 
-    this.http.put<any>(
-      `${environment.apiUrl}/remuneraciones/lote/impago/`,
-      { impagos, motivo: this.motivoImpago },
-      { headers }
-    ).subscribe({
+    this.remuneracionesService.marcarImpagoLote(impagos, this.motivoImpago).subscribe({
       next: (res) => {
         if (res.success) {
           this.toastService.show(res.message, 'success');
