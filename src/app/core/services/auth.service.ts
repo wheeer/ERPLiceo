@@ -2,6 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,7 @@ export class AuthService {
   private isAuthenticatedSignal = signal<boolean>(this.hasToken());
 
   private http = inject(HttpClient);
-  private readonly apiUrl = 'https://erpliceo.ddns.net/api';
+  private readonly apiUrl = environment.apiUrl;
 
   constructor(private router: Router) {}
 

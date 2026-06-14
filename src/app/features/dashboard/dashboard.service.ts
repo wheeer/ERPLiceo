@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 export interface DashboardMetrics {
   empleados_activos: number;
   articulos_criticos: number;
@@ -12,8 +13,8 @@ export interface DashboardMetrics {
 })
 export class DashboardService {
   private http = inject(HttpClient);
-  private apiUrl = 'https://erpliceo.ddns.net/api/dashboard/resumen/';
-  private activitiesUrl = 'https://erpliceo.ddns.net/api/dashboard/actividades/';
+  private apiUrl = `${environment.apiUrl}/dashboard/resumen/`;
+  private activitiesUrl = `${environment.apiUrl}/dashboard/actividades/`;
 
   getMetrics(): Observable<DashboardMetrics> {
     return this.http.get<DashboardMetrics>(this.apiUrl);
@@ -25,14 +26,14 @@ export class DashboardService {
 
   getChartRRHH(query: string): Observable<any> {
     // query ya viene con el formato '?tipo=diario&fecha=...'
-    return this.http.get<any>(`https://erpliceo.ddns.net/api/asistencia/resumen/${query}`);
+    return this.http.get<any>(`${environment.apiUrl}/asistencia/resumen/${query}`);
   }
 
   getChartRemuneraciones(query: string): Observable<any> {
-    return this.http.get<any>(`https://erpliceo.ddns.net/api/remuneraciones/${query}`);
+    return this.http.get<any>(`${environment.apiUrl}/remuneraciones/${query}`);
   }
 
   getChartInventario(categoria: string): Observable<any> {
-    return this.http.get<any>(`https://erpliceo.ddns.net/api/inventario/`);
+    return this.http.get<any>(`${environment.apiUrl}/inventario/`);
   }
 }
